@@ -1,5 +1,6 @@
-import { config } from '@/config';
 import { HealthStatus } from '@/types';
+import { config } from '@/config';
+import { DatabaseService } from '@/services/databaseService';
 
 export class HealthService {
   static getHealthStatus(): HealthStatus {
@@ -13,8 +14,16 @@ export class HealthService {
   }
 
   static async checkDatabase(): Promise<boolean> {
-    // TODO: Add actual database health check
-    return true;
+    if (!DatabaseService.isAvailable()) {
+      return true; // Database not configured, so consider it "healthy"
+    }
+
+    try {
+      // TODO: Add actual database health check
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
 
   static async checkExternalServices(): Promise<boolean> {

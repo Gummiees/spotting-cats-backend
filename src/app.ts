@@ -1,3 +1,4 @@
+import 'module-alias/register';
 import { config } from '@/config';
 import { errorHandler, notFoundHandler } from '@/middleware/errorHandler';
 import routes from '@/routes';
