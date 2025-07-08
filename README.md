@@ -1,12 +1,15 @@
 # Backend Project
 
-A modern Node.js backend API with Express.js, TypeScript, and MVC architecture.
+A modern Node.js backend API with Express.js, TypeScript, MongoDB, Redis cache, and clean service separation.
 
 ## Features
 
 - **TypeScript**: Full TypeScript support with strict type checking
-- **MVC Architecture**: Clean separation of concerns with Models, Views (Controllers), and Services
+- **MVC Architecture**: Clean separation of concerns with Models, Controllers, and Services
 - **Express.js**: Fast, unopinionated web framework
+- **MongoDB**: Flexible, scalable NoSQL database
+- **Redis Cache**: High-performance caching layer for fast reads
+- **Service Separation**: Interface, database, and cache service layers
 - **CORS Support**: Cross-origin resource sharing enabled
 - **Error Handling**: Comprehensive error handling middleware
 - **Environment Configuration**: Environment variable management
@@ -19,13 +22,16 @@ A modern Node.js backend API with Express.js, TypeScript, and MVC architecture.
 ```
 src/
 ├── config/          # Configuration files
-├── controllers/     # Request handlers (MVC Controllers)
+├── controllers/     # Request handlers (Controllers)
 ├── middleware/      # Express middleware
-├── models/          # Data models (MVC Models)
+├── models/          # Data models
 ├── routes/          # Route definitions
-├── services/        # Business logic (MVC Services)
+├── services/
+│   ├── interfaces/      # Service interfaces (contracts)
+│   ├── implementations/ # Service implementations (DB, cache)
+│   └── ...              # Main service entry points
 ├── types/           # TypeScript type definitions
-├── utils/           # Utility functions
+├── utils/           # Utility functions (MongoDB, Redis, etc.)
 ├── app.ts           # Express app setup
 └── server.ts        # Server entry point
 ```
@@ -41,7 +47,10 @@ npm install
 ```bash
 PORT=3000
 NODE_ENV=development
-CORS_ORIGIN=*
+CORS_ORIGINS=http://localhost:8000,https://spottingcats.com
+MONGO_URL=mongodb://localhost:27017/your-db
+MONGO_DB_NAME=your-db
+REDIS_URL=redis://localhost:6379
 ```
 
 ## Development
@@ -79,21 +88,33 @@ npm run clean
 ### Health Check
 - **GET** `/api/health` - Basic health status
 - **GET** `/api/health/detailed` - Detailed health with service status
+- **GET** `/api/health/database` - Database and cache status
+
+### Cat CRUD (MongoDB + Redis cache)
+- **POST** `/api/cats` - Create a cat
+- **GET** `/api/cats` - List all cats (cached)
+- **GET** `/api/cats/:id` - Get a cat by ID (cached)
+- **PUT** `/api/cats/:id` - Update a cat
+- **DELETE** `/api/cats/:id` - Delete a cat
+
+### Cache Management
+- **POST** `/api/cache/flush` - Flush all cache
+- **GET** `/api/cache/:key` - Get cache info
+- **POST** `/api/cache/:key` - Set cache value
+- **DELETE** `/api/cache/:key` - Delete cache key
 
 ## Example Responses
 
-### Hello World Endpoint
+### Cat List Endpoint
 ```json
-{
-  "success": true,
-  "message": "Hello message retrieved successfully",
-  "data": {
-    "message": "Hello World!",
-    "timestamp": "2024-01-01T12:00:00.000Z",
-    "status": "success"
-  },
-  "timestamp": "2024-01-01T12:00:00.000Z"
-}
+[
+  {
+    "_id": "...",
+    "name": "Whiskers",
+    "age": 2,
+    "breed": "Tabby"
+  }
+]
 ```
 
 ### Health Check Endpoint
@@ -112,18 +133,38 @@ npm run clean
 }
 ```
 
+### Database & Cache Status
+```json
+{
+  "success": true,
+  "message": "Database status retrieved",
+  "data": {
+    "available": true,
+    "configured": true,
+    "databaseName": "your-db",
+    "redis": {
+      "configured": true,
+      "available": true
+    }
+  }
+}
+```
+
 ## Dependencies
 
 ### Production
 - `express`: Web framework
 - `cors`: Cross-origin resource sharing
 - `dotenv`: Environment variable management
+- `mongodb`: MongoDB driver
+- `redis`: Redis client
 
 ### Development
 - `typescript`: TypeScript compiler
 - `@types/node`: Node.js type definitions
 - `@types/express`: Express type definitions
 - `@types/cors`: CORS type definitions
+- `@types/mongodb`: MongoDB type definitions
 - `ts-node`: TypeScript execution engine
 - `nodemon`: Auto-restart server during development
 
@@ -137,11 +178,11 @@ The project uses strict TypeScript configuration with:
 
 ## Architecture
 
-### MVC Pattern
-- **Models**: Data structures and database interactions (to be implemented)
-- **Views**: API responses (handled by controllers)
-- **Controllers**: Request handling and response formatting
-- **Services**: Business logic and external service interactions
+### Service Separation Pattern
+- **Interface Layer**: Defines contracts for services (e.g., `ICatService`)
+- **Database Layer**: Handles MongoDB operations (e.g., `CatDatabaseService`)
+- **Cache Layer**: Handles Redis caching and wraps the database service (e.g., `CatCacheService`)
+- **Main Service**: Exposes the cache service as the main entry point (e.g., `CatService`)
 
 ### Middleware Stack
 1. CORS handling
@@ -157,4 +198,7 @@ The project uses strict TypeScript configuration with:
 |----------|---------|-------------|
 | `PORT` | `3000` | Server port |
 | `NODE_ENV` | `development` | Environment mode |
-| `CORS_ORIGIN` | `*` | CORS origin setting | 
+| `CORS_ORIGINS` | `*` | CORS origin setting |
+| `MONGO_URL` | | MongoDB connection string |
+| `MONGO_DB_NAME` | | MongoDB database name |
+| `REDIS_URL` | | Redis connection string | 
