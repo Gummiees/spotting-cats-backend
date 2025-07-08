@@ -1,4 +1,4 @@
-import { isMongoConfigured } from '@/utils/mongo';
+import { isMongoConfigured, getDatabaseName } from '@/utils/mongo';
 
 export class DatabaseService {
   static isAvailable(): boolean {
@@ -13,10 +13,15 @@ export class DatabaseService {
     }
   }
 
-  static getStatus(): { available: boolean; configured: boolean } {
+  static getStatus(): {
+    available: boolean;
+    configured: boolean;
+    databaseName: string;
+  } {
     return {
       available: this.isAvailable(),
       configured: this.isAvailable(),
+      databaseName: getDatabaseName(),
     };
   }
 }
