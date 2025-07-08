@@ -1,5 +1,5 @@
-import { CatController } from '@/controllers/catController';
 import { Router } from 'express';
+import { CatController } from '@/controllers/catController';
 
 const router = Router();
 

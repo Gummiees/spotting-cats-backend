@@ -1,4 +1,5 @@
 import { isMongoConfigured, getDatabaseName } from '@/utils/mongo';
+import { isRedisConfigured } from '@/utils/redis';
 
 export class DatabaseService {
   static isAvailable(): boolean {
@@ -17,11 +18,19 @@ export class DatabaseService {
     available: boolean;
     configured: boolean;
     databaseName: string;
+    redis: {
+      configured: boolean;
+      available: boolean;
+    };
   } {
     return {
       available: this.isAvailable(),
       configured: this.isAvailable(),
       databaseName: getDatabaseName(),
+      redis: {
+        configured: isRedisConfigured(),
+        available: isRedisConfigured(),
+      },
     };
   }
 }
