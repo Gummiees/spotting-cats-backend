@@ -4,6 +4,11 @@ import { DatabaseService } from '@/services/databaseService';
 import { ICatService } from '@/services/interfaces/catServiceInterface';
 import { ObjectId } from 'mongodb';
 
+// Helper function to safely convert to ObjectId
+function toObjectId(id: string | ObjectId): ObjectId {
+  return id instanceof ObjectId ? id : new ObjectId(id);
+}
+
 const COLLECTION = 'cats';
 
 export class CatDatabaseService implements ICatService {
@@ -31,7 +36,7 @@ export class CatDatabaseService implements ICatService {
     const db = await connectToMongo();
     const cat = await db
       .collection(COLLECTION)
-      .findOne({ _id: new ObjectId(id) });
+      .findOne({ _id: toObjectId(id) });
 
     if (!cat) return null;
 
@@ -52,7 +57,7 @@ export class CatDatabaseService implements ICatService {
 
     const result = await db
       .collection(COLLECTION)
-      .updateOne({ _id: new ObjectId(id) }, { $set: updateData });
+      .updateOne({ _id: toObjectId(id) }, { $set: updateData });
 
     return result.modifiedCount > 0;
   }
@@ -62,7 +67,7 @@ export class CatDatabaseService implements ICatService {
     const db = await connectToMongo();
     const result = await db
       .collection(COLLECTION)
-      .deleteOne({ _id: new ObjectId(id) });
+      .deleteOne({ _id: toObjectId(id) });
 
     return result.deletedCount > 0;
   }
