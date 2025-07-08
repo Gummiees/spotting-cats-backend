@@ -46,9 +46,13 @@ export class CatDatabaseService implements ICatService {
   async update(id: string, update: Partial<Cat>): Promise<boolean> {
     DatabaseService.requireDatabase();
     const db = await connectToMongo();
+
+    // Remove _id from update payload to prevent BSONError
+    const { _id, ...updateData } = update;
+
     const result = await db
       .collection(COLLECTION)
-      .updateOne({ _id: new ObjectId(id) }, { $set: update });
+      .updateOne({ _id: new ObjectId(id) }, { $set: updateData });
 
     return result.modifiedCount > 0;
   }
