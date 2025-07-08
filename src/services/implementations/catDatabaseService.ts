@@ -4,9 +4,18 @@ import { DatabaseService } from '@/services/databaseService';
 import { ICatService } from '@/services/interfaces/catServiceInterface';
 import { ObjectId } from 'mongodb';
 
-// Helper function to safely convert to ObjectId
+// Helper function to safely convert to ObjectId with validation
 function toObjectId(id: string | ObjectId): ObjectId {
-  return id instanceof ObjectId ? id : new ObjectId(id);
+  if (id instanceof ObjectId) {
+    return id;
+  }
+
+  // Validate that the string is a valid ObjectId format
+  if (!ObjectId.isValid(id)) {
+    throw new Error(`Invalid ObjectId format: ${id}`);
+  }
+
+  return new ObjectId(id);
 }
 
 const COLLECTION = 'cats';
