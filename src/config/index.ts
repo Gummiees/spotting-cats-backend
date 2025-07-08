@@ -15,6 +15,11 @@ export const config = {
       origin: string | undefined,
       callback: (err: Error | null, allow?: boolean) => void
     ) {
+      // Allow all origins for staging environment
+      if (process.env.NODE_ENV === 'staging') {
+        return callback(null, true);
+      }
+
       // Allow requests with no origin (like mobile apps, curl, etc.)
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) {
