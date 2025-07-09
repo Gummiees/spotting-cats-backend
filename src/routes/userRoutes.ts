@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { userController } from '@/controllers/userController';
+import { UserController } from '@/controllers/userController';
 import { authRateLimit } from '@/middleware/security';
 import { authMiddleware } from '@/middleware/auth';
 
@@ -40,7 +40,7 @@ const router = Router();
  *       429:
  *         description: Rate limit exceeded
  */
-router.post('/send-code', authRateLimit, userController.sendVerificationCode);
+router.post('/send-code', authRateLimit, UserController.sendVerificationCode);
 
 /**
  * @swagger
@@ -99,7 +99,7 @@ router.post('/send-code', authRateLimit, userController.sendVerificationCode);
 router.post(
   '/verify-code',
   authRateLimit,
-  userController.verifyCodeAndAuthenticate
+  UserController.verifyCodeAndAuthenticate
 );
 
 /**
@@ -116,7 +116,7 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/SuccessResponse'
  */
-router.post('/logout', userController.logout);
+router.post('/logout', UserController.logout);
 
 /**
  * @swagger
@@ -158,7 +158,7 @@ router.post('/logout', userController.logout);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/profile', authMiddleware, userController.getCurrentUser);
+router.get('/profile', authMiddleware, UserController.getCurrentUser);
 
 /**
  * @swagger
@@ -200,7 +200,7 @@ router.get('/profile', authMiddleware, userController.getCurrentUser);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.put('/username', authMiddleware, userController.updateUsername);
+router.put('/username', authMiddleware, UserController.updateUsername);
 
 /**
  * @swagger
@@ -230,6 +230,6 @@ router.put('/username', authMiddleware, userController.updateUsername);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/deactivate', authMiddleware, userController.deactivateAccount);
+router.post('/deactivate', authMiddleware, UserController.deactivateAccount);
 
 export { router as userRoutes };

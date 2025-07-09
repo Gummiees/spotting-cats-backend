@@ -12,7 +12,7 @@ interface AuthRequest extends Request {
 }
 
 export class UserController {
-  async sendVerificationCode(
+  static async sendVerificationCode(
     req: Request,
     res: Response,
     next: NextFunction
@@ -20,20 +20,20 @@ export class UserController {
     try {
       const { email } = req.body;
 
-      const emailValidation = this.validateEmail(email);
+      const emailValidation = UserController.validateEmail(email);
       if (!emailValidation.valid) {
         ResponseUtil.badRequest(res, emailValidation.message!);
         return;
       }
 
       const result = await userService.sendVerificationCode(email);
-      this.handleServiceResponse(res, result);
+      UserController.handleServiceResponse(res, result);
     } catch (error) {
       next(error);
     }
   }
 
-  async verifyCodeAndAuthenticate(
+  static async verifyCodeAndAuthenticate(
     req: Request,
     res: Response,
     next: NextFunction
@@ -41,7 +41,7 @@ export class UserController {
     try {
       const { email, code } = req.body;
 
-      const validation = this.validateEmailAndCode(email, code);
+      const validation = UserController.validateEmailAndCode(email, code);
       if (!validation.valid) {
         ResponseUtil.badRequest(res, validation.message!);
         return;
@@ -50,7 +50,7 @@ export class UserController {
       const result = await userService.verifyCodeAndAuthenticate(email, code);
 
       if (result.success && result.token) {
-        this.setAuthCookie(res, result.token);
+        UserController.setAuthCookie(res, result.token);
         ResponseUtil.success(
           res,
           {
@@ -67,15 +67,15 @@ export class UserController {
     }
   }
 
-  async getCurrentUser(
+  static async getCurrentUser(
     req: AuthRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     try {
-      const authValidation = this.validateUserAuth(req);
+      const authValidation = UserController.validateUserAuth(req);
       if (!authValidation.valid) {
-        this.handleAuthError(res, authValidation.message);
+        UserController.handleAuthError(res, authValidation.message);
         return;
       }
 
@@ -96,31 +96,35 @@ export class UserController {
     }
   }
 
-  async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
+  static async logout(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
-      this.clearAuthCookie(res);
+      UserController.clearAuthCookie(res);
       ResponseUtil.success(res, null, 'Logged out successfully');
     } catch (error) {
       next(error);
     }
   }
 
-  async deactivateAccount(
+  static async deactivateAccount(
     req: AuthRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     try {
-      const authValidation = this.validateUserAuth(req);
+      const authValidation = UserController.validateUserAuth(req);
       if (!authValidation.valid) {
-        this.handleAuthError(res, authValidation.message);
+        UserController.handleAuthError(res, authValidation.message);
         return;
       }
 
       const result = await userService.deactivateUser(req.user!.userId);
 
       if (result.success) {
-        this.clearAuthCookie(res);
+        UserController.clearAuthCookie(res);
         ResponseUtil.success(res, null, result.message);
       } else {
         ResponseUtil.badRequest(res, result.message);
@@ -130,20 +134,20 @@ export class UserController {
     }
   }
 
-  async updateUsername(
+  static async updateUsername(
     req: AuthRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     try {
-      const authValidation = this.validateUserAuth(req);
+      const authValidation = UserController.validateUserAuth(req);
       if (!authValidation.valid) {
-        this.handleAuthError(res, authValidation.message);
+        UserController.handleAuthError(res, authValidation.message);
         return;
       }
 
       const { username } = req.body;
-      const usernameValidation = this.validateUsername(username);
+      const usernameValidation = UserController.validateUsername(username);
 
       if (!usernameValidation.valid) {
         ResponseUtil.badRequest(res, usernameValidation.message!);
@@ -154,20 +158,23 @@ export class UserController {
         username: usernameValidation.trimmedUsername!,
       });
 
-      this.handleServiceResponse(res, result);
+      UserController.handleServiceResponse(res, result);
     } catch (error) {
       next(error);
     }
   }
 
-  private validateEmail(email: any): { valid: boolean; message?: string } {
+  private static validateEmail(email: any): {
+    valid: boolean;
+    message?: string;
+  } {
     if (!email || typeof email !== 'string') {
       return { valid: false, message: 'Email is required' };
     }
     return { valid: true };
   }
 
-  private validateEmailAndCode(
+  private static validateEmailAndCode(
     email: any,
     code: any
   ): { valid: boolean; message?: string } {
@@ -177,7 +184,7 @@ export class UserController {
     return { valid: true };
   }
 
-  private validateUserAuth(req: AuthRequest): {
+  private static validateUserAuth(req: AuthRequest): {
     valid: boolean;
     message?: string;
   } {
@@ -187,7 +194,7 @@ export class UserController {
     return { valid: true };
   }
 
-  private validateUsername(username: any): {
+  private static validateUsername(username: any): {
     valid: boolean;
     message?: string;
     trimmedUsername?: string;
@@ -235,7 +242,7 @@ export class UserController {
     return { valid: true, trimmedUsername };
   }
 
-  private setAuthCookie(res: Response, token: string): void {
+  private static setAuthCookie(res: Response, token: string): void {
     res.cookie('auth_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -245,7 +252,7 @@ export class UserController {
     });
   }
 
-  private clearAuthCookie(res: Response): void {
+  private static clearAuthCookie(res: Response): void {
     res.clearCookie('auth_token', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -254,7 +261,7 @@ export class UserController {
     });
   }
 
-  private handleServiceResponse(
+  private static handleServiceResponse(
     res: Response,
     result: { success: boolean; message: string },
     successData?: any
@@ -266,12 +273,10 @@ export class UserController {
     }
   }
 
-  private handleAuthError(
+  private static handleAuthError(
     res: Response,
     message: string = 'Unauthorized'
   ): void {
     ResponseUtil.error(res, message, message, 401);
   }
 }
-
-export const userController = new UserController();
