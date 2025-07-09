@@ -37,6 +37,8 @@ export class UserCacheService implements UserServiceInterface {
 
     // Cache user data if authentication was successful
     if (result.success && result.user) {
+      // Invalidate any existing cache for this user first (in case of reactivation)
+      await this.invalidateUserCache(result.user._id!);
       await this.cacheUserData(result.user);
     }
 

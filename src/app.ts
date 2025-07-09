@@ -4,6 +4,7 @@ import { errorHandler, notFoundHandler } from '@/middleware/errorHandler';
 import { configureSecurityMiddleware } from '@/middleware/security';
 import { securityCheck } from '@/utils/security';
 import routes from '@/routes';
+import swaggerMiddleware from '@/middleware/swagger';
 import cors from 'cors';
 import express from 'express';
 import cookieParser from 'cookie-parser';
@@ -27,6 +28,9 @@ app.use(
 
 // Cookie parser middleware
 app.use(cookieParser());
+
+// Swagger documentation
+app.use('/api-docs', swaggerMiddleware);
 
 // Security monitoring middleware
 app.use(securityCheck);

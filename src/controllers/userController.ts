@@ -160,31 +160,6 @@ export class UserController {
     }
   }
 
-  async deleteAccount(
-    req: AuthRequest,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
-    try {
-      const authValidation = this.validateUserAuth(req);
-      if (!authValidation.valid) {
-        this.handleAuthError(res, authValidation.message);
-        return;
-      }
-
-      const result = await userService.deleteUser(req.user!.userId);
-
-      if (result.success) {
-        this.clearAuthCookie(res);
-        ResponseUtil.success(res, null, result.message);
-      } else {
-        ResponseUtil.badRequest(res, result.message);
-      }
-    } catch (error) {
-      next(error);
-    }
-  }
-
   private validateEmail(email: any): { valid: boolean; message?: string } {
     if (!email || typeof email !== 'string') {
       return { valid: false, message: 'Email is required' };

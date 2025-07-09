@@ -6,9 +6,9 @@ This project now includes a secure user authentication system using email-based 
 
 - **Email-based authentication**: Users receive verification codes via email
 - **Secure HTTP-only cookies**: JWT tokens stored in secure cookies
-- **Account management**: Users can deactivate or delete their accounts
+- **Account management**: Users can deactivate their accounts
 - **Rate limiting**: Protection against brute force attacks
-- **Soft deletion**: Users can be deactivated or soft-deleted
+- **Account deactivation**: Users can be deactivated but not deleted
 - **Email verification**: Automatic email sending for verification codes
 
 ## Environment Variables Required
@@ -82,10 +82,7 @@ GET /api/v1/users/profile
 POST /api/v1/users/deactivate
 ```
 
-#### Delete Account
-```
-DELETE /api/v1/users/account
-```
+
 
 ## Security Features
 
@@ -93,8 +90,8 @@ DELETE /api/v1/users/account
 2. **Rate Limiting**: Authentication endpoints are rate-limited to prevent brute force attacks
 3. **Email Validation**: Proper email format validation
 4. **Code Expiration**: Verification codes expire after 10 minutes
-5. **Account Status Tracking**: Users can be active, deactivated, or deleted
-6. **Soft Deletion**: Deleted users are marked as deleted but not physically removed
+5. **Account Status Tracking**: Users can be active or deactivated
+6. **Account Deactivation**: Deactivated users are marked as inactive but not physically removed
 7. **Secure Headers**: Helmet.js provides security headers
 8. **CORS Protection**: Configurable CORS settings
 

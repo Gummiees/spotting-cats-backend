@@ -7,7 +7,6 @@ export interface User {
   username?: string;
   usernameUpdatedAt?: Date;
   isAdmin?: boolean;
-  isVerified: boolean;
   isActive: boolean;
   isDeleted: boolean;
   createdAt: Date;

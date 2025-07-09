@@ -66,40 +66,32 @@ export class UserDatabaseService implements UserServiceInterface {
     isNewUser?: boolean;
   }> {
     try {
-      const authCode = await this.findValidAuthCode(email, code);
-      if (!authCode) {
-        return {
-          success: false,
-          message: 'Invalid or expired verification code',
-        };
+      // Step 1: Validate the verification code
+      const codeValidation = await this.validateVerificationCode(email, code);
+      if (!codeValidation.valid) {
+        return { success: false, message: codeValidation.message! };
       }
 
-      await this.markCodeAsUsed(authCode._id);
-
-      let user = await this.findUserByEmail(email);
-      let isNewUser = false;
-
-      if (!user) {
-        user = await this.createNewUser(email);
-        isNewUser = true;
-        await emailService.sendWelcomeEmail(email);
-      } else {
-        if (!user.isActive) {
-          return { success: false, message: 'Account is deactivated' };
-        }
-        user = await this.updateExistingUser(user._id);
+      // Step 2: Process user authentication
+      const userResult = await this.processUserAuthentication(email);
+      if (!userResult.success) {
+        return { success: false, message: userResult.message! };
       }
 
-      const token = this.createToken(user._id.toString(), user.email);
+      // Step 3: Generate authentication token
+      const token = this.createToken(
+        userResult.user!._id.toString(),
+        userResult.user!.email
+      );
 
       return {
         success: true,
-        message: isNewUser
+        message: userResult.isNewUser
           ? 'Account created successfully'
           : 'Login successful',
         token,
-        user: this.mapUserToResponse(user),
-        isNewUser,
+        user: this.mapUserToResponse(userResult.user!),
+        isNewUser: userResult.isNewUser,
       };
     } catch (error) {
       console.error('Error verifying code:', error);
@@ -125,7 +117,7 @@ export class UserDatabaseService implements UserServiceInterface {
   async getUserByEmail(email: string): Promise<User | null> {
     try {
       const user = await this.findUserByEmail(email);
-      if (!user) return null;
+      if (!user || user.isDeleted) return null;
       return this.mapUserToResponse(user);
     } catch (error) {
       console.error('Error getting user by email:', error);
@@ -207,7 +199,6 @@ export class UserDatabaseService implements UserServiceInterface {
     const normalizedEmail = this.normalizeEmail(email);
     return await this.usersCollection.findOne({
       email: normalizedEmail,
-      isDeleted: false,
     });
   }
 
@@ -385,7 +376,6 @@ export class UserDatabaseService implements UserServiceInterface {
     return {
       _id: user._id.toString(),
       email: user.email,
-      isVerified: user.isVerified,
       isActive: user.isActive,
       isDeleted: user.isDeleted,
       createdAt: user.createdAt,
@@ -435,6 +425,114 @@ export class UserDatabaseService implements UserServiceInterface {
     }
 
     return query;
+  }
+
+  /**
+   * Validates the verification code for the given email
+   */
+  private async validateVerificationCode(
+    email: string,
+    code: string
+  ): Promise<{ valid: boolean; message?: string }> {
+    const authCode = await this.findValidAuthCode(email, code);
+    if (!authCode) {
+      return {
+        valid: false,
+        message: 'Invalid or expired verification code',
+      };
+    }
+
+    await this.markCodeAsUsed(authCode._id);
+    return { valid: true };
+  }
+
+  /**
+   * Processes user authentication, handling new users, reactivation, and existing users
+   */
+  private async processUserAuthentication(email: string): Promise<{
+    success: boolean;
+    message?: string;
+    user?: any;
+    isNewUser?: boolean;
+  }> {
+    let user = await this.findUserByEmail(email);
+    let isNewUser = false;
+
+    if (!user) {
+      // Create new user
+      const newUserResult = await this.handleNewUserCreation(email);
+      if (!newUserResult.success) {
+        return { success: false, message: newUserResult.message };
+      }
+      user = newUserResult.user!;
+      isNewUser = true;
+    } else {
+      // Handle existing user
+      const existingUserResult = await this.handleExistingUser(user);
+      if (!existingUserResult.success) {
+        return { success: false, message: existingUserResult.message };
+      }
+      user = existingUserResult.user!;
+    }
+
+    return { success: true, user, isNewUser };
+  }
+
+  /**
+   * Handles the creation of a new user
+   */
+  private async handleNewUserCreation(email: string): Promise<{
+    success: boolean;
+    message?: string;
+    user?: any;
+  }> {
+    try {
+      const user = await this.createNewUser(email);
+      await emailService.sendWelcomeEmail(email);
+      return { success: true, user };
+    } catch (error) {
+      console.error('Error creating new user:', error);
+      return { success: false, message: 'Failed to create new user' };
+    }
+  }
+
+  /**
+   * Handles authentication for existing users, including reactivation logic
+   */
+  private async handleExistingUser(user: any): Promise<{
+    success: boolean;
+    message?: string;
+    user?: any;
+  }> {
+    try {
+      // Check if user is deleted
+      if (user.isDeleted) {
+        throw new Error(
+          'Account has been permanently deleted and cannot be restored'
+        );
+      }
+
+      // Reactivate user if deactivated
+      if (!user.isActive) {
+        const reactivationResult = await this.reactivateUser(
+          user._id.toString()
+        );
+        if (!reactivationResult.success) {
+          return { success: false, message: 'Failed to reactivate account' };
+        }
+      }
+
+      // Update existing user (last login, etc.)
+      const updatedUser = await this.updateExistingUser(user._id);
+      return { success: true, user: updatedUser };
+    } catch (error) {
+      console.error('Error handling existing user:', error);
+      return {
+        success: false,
+        message:
+          error instanceof Error ? error.message : 'Internal server error',
+      };
+    }
   }
 
   private async initializeCollections(): Promise<void> {

@@ -16,6 +16,9 @@ A modern Node.js backend API with Express.js, TypeScript, MongoDB, Redis cache, 
 - **Health Checks**: Built-in health monitoring endpoints
 - **Request Logging**: Automatic request logging
 - **Graceful Shutdown**: Proper server shutdown handling
+- **Swagger Documentation**: Interactive API documentation with OpenAPI 3.0
+- **User Authentication**: Email-based authentication with JWT cookies
+- **Rate Limiting**: Protection against brute force attacks
 
 ## Project Structure
 
@@ -75,33 +78,55 @@ npm start
 npm run clean
 ```
 
-## API Endpoints
+## API Documentation
 
-### Root
-- **GET** `/` - Welcome message
+### Interactive Swagger Documentation
+Access the complete interactive API documentation at:
+```
+http://localhost:3000/api-docs
+```
 
-### Hello World
-- **GET** `/api/hello` - Hello World message
-- **GET** `/api/hello?name=John` - Personalized hello message
-- **GET** `/api/hello/welcome` - Welcome message
+The Swagger UI provides:
+- Interactive testing of all endpoints
+- Request/response examples
+- Authentication support
+- Schema definitions
+- Error documentation
 
-### Health Check
-- **GET** `/api/health` - Basic health status
-- **GET** `/api/health/detailed` - Detailed health with service status
-- **GET** `/api/health/database` - Database and cache status
+### API Endpoints
 
-### Cat CRUD (MongoDB + Redis cache)
-- **POST** `/api/cats` - Create a cat
-- **GET** `/api/cats` - List all cats (cached)
-- **GET** `/api/cats/:id` - Get a cat by ID (cached)
-- **PUT** `/api/cats/:id` - Update a cat
-- **DELETE** `/api/cats/:id` - Delete a cat
+#### Authentication
+- **POST** `/api/v1/users/send-code` - Send verification code to email
+- **POST** `/api/v1/users/verify-code` - Verify code and authenticate user
+- **POST** `/api/v1/users/logout` - Logout user
 
-### Cache Management
-- **POST** `/api/cache/flush` - Flush all cache
-- **GET** `/api/cache/:key` - Get cache info
-- **POST** `/api/cache/:key` - Set cache value
-- **DELETE** `/api/cache/:key` - Delete cache key
+#### User Management (Protected)
+- **GET** `/api/v1/users/profile` - Get current user profile
+- **PUT** `/api/v1/users/username` - Update user's username
+- **POST** `/api/v1/users/deactivate` - Deactivate user account
+
+#### Cat Management
+- **POST** `/api/v1/cats` - Create a new cat
+- **GET** `/api/v1/cats` - List all cats with filtering and pagination
+- **GET** `/api/v1/cats/:id` - Get a cat by ID
+- **PUT** `/api/v1/cats/:id` - Update a cat
+- **DELETE** `/api/v1/cats/:id` - Delete a cat
+
+#### Health Check
+- **GET** `/api/v1/health` - Basic health status
+- **GET** `/api/v1/health/detailed` - Detailed health with system info
+- **GET** `/api/v1/health/database` - Database connection status
+
+#### Cache Management
+- **POST** `/api/v1/cache/flush` - Flush all cache data
+- **GET** `/api/v1/cache/:key` - Get cache information for a key
+- **POST** `/api/v1/cache/:key` - Set cache data for a key
+- **DELETE** `/api/v1/cache/:key` - Delete cache data for a key
+
+#### Hello Endpoints
+- **GET** `/` - Root welcome message
+- **GET** `/api/v1/hello` - Simple hello message
+- **GET** `/api/v1/hello/welcome` - Welcome message
 
 ## Example Responses
 
@@ -158,6 +183,14 @@ npm run clean
 - `dotenv`: Environment variable management
 - `mongodb`: MongoDB driver
 - `redis`: Redis client
+- `swagger-jsdoc`: Swagger documentation generator
+- `swagger-ui-express`: Swagger UI for Express
+- `jsonwebtoken`: JWT authentication
+- `nodemailer`: Email sending
+- `bcryptjs`: Password hashing
+- `cookie-parser`: Cookie parsing
+- `express-rate-limit`: Rate limiting
+- `helmet`: Security headers
 
 ### Development
 - `typescript`: TypeScript compiler
@@ -165,6 +198,12 @@ npm run clean
 - `@types/express`: Express type definitions
 - `@types/cors`: CORS type definitions
 - `@types/mongodb`: MongoDB type definitions
+- `@types/swagger-jsdoc`: Swagger JSDoc type definitions
+- `@types/swagger-ui-express`: Swagger UI Express type definitions
+- `@types/jsonwebtoken`: JWT type definitions
+- `@types/nodemailer`: Nodemailer type definitions
+- `@types/bcryptjs`: Bcrypt type definitions
+- `@types/cookie-parser`: Cookie parser type definitions
 - `ts-node`: TypeScript execution engine
 - `nodemon`: Auto-restart server during development
 
@@ -183,6 +222,16 @@ The project uses strict TypeScript configuration with:
 - **Database Layer**: Handles MongoDB operations (e.g., `CatDatabaseService`)
 - **Cache Layer**: Handles Redis caching and wraps the database service (e.g., `CatCacheService`)
 - **Main Service**: Exposes the cache service as the main entry point (e.g., `CatService`)
+
+### API Documentation
+The project uses Swagger/OpenAPI 3.0 for comprehensive API documentation:
+- **Interactive Documentation**: Browse and test endpoints at `/api-docs`
+- **JSDoc Integration**: Documentation generated from code comments
+- **Authentication Support**: Cookie-based auth for protected endpoints
+- **Schema Definitions**: Complete data models and response formats
+- **Error Documentation**: Detailed error responses and status codes
+
+For detailed information about the Swagger setup, see [SWAGGER_SETUP.md](./SWAGGER_SETUP.md).
 
 ### Middleware Stack
 1. CORS handling
