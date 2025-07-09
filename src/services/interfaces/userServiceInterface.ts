@@ -1,0 +1,38 @@
+import { User, UserSession } from '@/models/user';
+import { UserUpdateRequest } from '@/models/requests';
+
+export interface UserServiceInterface {
+  // Authentication methods
+  sendVerificationCode(
+    email: string
+  ): Promise<{ success: boolean; message: string }>;
+  verifyCodeAndAuthenticate(
+    email: string,
+    code: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    token?: string;
+    user?: User;
+    isNewUser?: boolean;
+  }>;
+  verifyToken(token: string): UserSession | null;
+
+  // User management methods
+  getUserById(userId: string): Promise<User | null>;
+  getUserByEmail(email: string): Promise<User | null>;
+  updateUser(
+    userId: string,
+    updates: UserUpdateRequest
+  ): Promise<{ success: boolean; message: string }>;
+  deactivateUser(
+    userId: string
+  ): Promise<{ success: boolean; message: string }>;
+  reactivateUser(
+    userId: string
+  ): Promise<{ success: boolean; message: string }>;
+  deleteUser(userId: string): Promise<{ success: boolean; message: string }>;
+
+  // Utility methods
+  cleanupExpiredCodes(): Promise<void>;
+}

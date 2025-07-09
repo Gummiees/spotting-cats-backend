@@ -4,157 +4,208 @@ import { DatabaseService } from '@/services/databaseService';
 import { ICatService } from '@/services/interfaces/catServiceInterface';
 import { ObjectId } from 'mongodb';
 
-// Helper function to safely convert to ObjectId with validation
-function toObjectId(id: string | ObjectId): ObjectId {
-  if (id instanceof ObjectId) {
-    return id;
-  }
-
-  // Validate that the string is a valid ObjectId format
-  if (!ObjectId.isValid(id)) {
-    throw new Error(`Invalid ObjectId format: ${id}`);
-  }
-
-  return new ObjectId(id);
-}
-
-// Sanitize input data to prevent NoSQL injection
-function sanitizeCatData(data: any): {
-  name?: string;
-  age?: number;
-  breed?: string;
-} {
-  const sanitized: { name?: string; age?: number; breed?: string } = {};
-
-  if (data.name && typeof data.name === 'string') {
-    sanitized.name = data.name.trim().substring(0, 100);
-  }
-
-  if (data.age !== undefined) {
-    const age = parseInt(data.age);
-    if (!isNaN(age) && age >= 0 && age <= 30) {
-      sanitized.age = age;
-    }
-  }
-
-  if (data.breed && typeof data.breed === 'string') {
-    sanitized.breed = data.breed.trim().substring(0, 100);
-  }
-
-  return sanitized;
-}
-
 const COLLECTION = 'cats';
 
 export class CatDatabaseService implements ICatService {
   async create(cat: Omit<Cat, '_id'>): Promise<Cat> {
-    DatabaseService.requireDatabase();
+    try {
+      const sanitizedCat = this.sanitizeCatData(cat);
+      const validation = this.validateRequiredFields(sanitizedCat);
 
-    // Sanitize input data
-    const sanitizedCat = sanitizeCatData(cat);
+      if (!validation.valid) {
+        throw new Error(validation.message);
+      }
 
-    // Validate required fields
-    if (!sanitizedCat.name || sanitizedCat.age === undefined) {
-      throw new Error('Name and age are required');
+      const insertedId = await this.insertCat(sanitizedCat);
+
+      return {
+        _id: insertedId.toString(),
+        name: sanitizedCat.name!,
+        age: sanitizedCat.age!,
+        breed: sanitizedCat.breed,
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      this.handleDatabaseError(error, 'create');
     }
-
-    const db = await connectToMongo();
-    const result = await db.collection(COLLECTION).insertOne({
-      name: sanitizedCat.name,
-      age: sanitizedCat.age,
-      breed: sanitizedCat.breed,
-    });
-
-    return {
-      _id: result.insertedId.toString(),
-      name: sanitizedCat.name,
-      age: sanitizedCat.age,
-      breed: sanitizedCat.breed,
-    };
   }
 
   async getAll(): Promise<Cat[]> {
-    DatabaseService.requireDatabase();
-    const db = await connectToMongo();
-
-    // Use projection to only return necessary fields
-    const cats = await db
-      .collection(COLLECTION)
-      .find({}, { projection: { _id: 1, name: 1, age: 1, breed: 1 } })
-      .toArray();
-
-    return cats.map((cat) => ({
-      _id: cat._id.toString(),
-      name: cat.name,
-      age: cat.age,
-      breed: cat.breed,
-    }));
+    try {
+      const collection = await this.getCollection();
+      const cats = await collection.find({}, this.createProjection()).toArray();
+      return cats.map((cat) => this.mapCatToResponse(cat));
+    } catch (error) {
+      this.handleDatabaseError(error, 'getAll');
+    }
   }
 
   async getById(id: string): Promise<Cat | null> {
-    DatabaseService.requireDatabase();
-    const db = await connectToMongo();
-
     try {
-      const cat = await db
-        .collection(COLLECTION)
-        .findOne(
-          { _id: toObjectId(id) },
-          { projection: { _id: 1, name: 1, age: 1, breed: 1 } }
-        );
-
+      const cat = await this.findCatById(id);
       if (!cat) return null;
-
-      return {
-        _id: cat._id.toString(),
-        name: cat.name,
-        age: cat.age,
-        breed: cat.breed,
-      };
+      return this.mapCatToResponse(cat);
     } catch (error) {
-      // Log the error but don't expose internal details
-      console.error('Database error in getById:', error);
-      throw new Error('Invalid request');
+      this.handleDatabaseError(error, 'getById');
     }
   }
 
   async update(id: string, update: Partial<Cat>): Promise<boolean> {
-    DatabaseService.requireDatabase();
-    const db = await connectToMongo();
-
-    // Sanitize update data
-    const sanitizedUpdate = sanitizeCatData(update);
-
-    // Don't allow empty updates
-    if (Object.keys(sanitizedUpdate).length === 0) {
-      throw new Error('No valid fields to update');
-    }
-
     try {
-      const result = await db
-        .collection(COLLECTION)
-        .updateOne({ _id: toObjectId(id) }, { $set: sanitizedUpdate });
+      const sanitizedUpdate = this.sanitizeCatData(update);
+      const validation = this.validateUpdateData(sanitizedUpdate);
 
-      return result.modifiedCount > 0;
+      if (!validation.valid) {
+        throw new Error(validation.message);
+      }
+
+      return await this.updateCatById(id, sanitizedUpdate);
     } catch (error) {
-      console.error('Database error in update:', error);
-      throw new Error('Invalid request');
+      if (error instanceof Error) {
+        throw error;
+      }
+      this.handleDatabaseError(error, 'update');
     }
   }
 
   async delete(id: string): Promise<boolean> {
+    try {
+      return await this.deleteCatById(id);
+    } catch (error) {
+      this.handleDatabaseError(error, 'delete');
+    }
+  }
+
+  private async insertCat(catData: any): Promise<ObjectId> {
+    const collection = await this.getCollection();
+    const result = await collection.insertOne(catData);
+    return result.insertedId;
+  }
+
+  private async findCatById(id: string): Promise<any> {
+    const collection = await this.getCollection();
+    return await collection.findOne(
+      { _id: this.toObjectId(id) },
+      this.createProjection()
+    );
+  }
+
+  private async updateCatById(id: string, updateData: any): Promise<boolean> {
+    const collection = await this.getCollection();
+    const result = await collection.updateOne(
+      { _id: this.toObjectId(id) },
+      { $set: updateData }
+    );
+    return result.modifiedCount > 0;
+  }
+
+  private async deleteCatById(id: string): Promise<boolean> {
+    const collection = await this.getCollection();
+    const result = await collection.deleteOne({ _id: this.toObjectId(id) });
+    return result.deletedCount > 0;
+  }
+
+  private async getCollection() {
     DatabaseService.requireDatabase();
     const db = await connectToMongo();
+    return db.collection(COLLECTION);
+  }
 
-    try {
-      const result = await db
-        .collection(COLLECTION)
-        .deleteOne({ _id: toObjectId(id) });
+  private createProjection() {
+    return { projection: { _id: 1, name: 1, age: 1, breed: 1 } };
+  }
 
-      return result.deletedCount > 0;
-    } catch (error) {
-      console.error('Database error in delete:', error);
-      throw new Error('Invalid request');
+  private mapCatToResponse(cat: any): Cat {
+    return {
+      _id: cat._id.toString(),
+      name: cat.name,
+      age: cat.age,
+      breed: cat.breed,
+    };
+  }
+
+  private sanitizeCatData(data: any): {
+    name?: string;
+    age?: number;
+    breed?: string;
+  } {
+    return {
+      name: this.sanitizeString(data.name),
+      age: this.sanitizeNumber(data.age, 0, 30),
+      breed: this.sanitizeString(data.breed),
+    };
+  }
+
+  private validateRequiredFields(sanitizedCat: any): {
+    valid: boolean;
+    message?: string;
+  } {
+    if (!sanitizedCat.name) {
+      return { valid: false, message: 'Name is required' };
     }
+    if (sanitizedCat.age === undefined) {
+      return { valid: false, message: 'Age is required' };
+    }
+    return { valid: true };
+  }
+
+  private validateUpdateData(sanitizedUpdate: any): {
+    valid: boolean;
+    message?: string;
+  } {
+    if (Object.keys(sanitizedUpdate).length === 0) {
+      return { valid: false, message: 'No valid fields to update' };
+    }
+    return { valid: true };
+  }
+
+  private toObjectId(id: string | ObjectId): ObjectId {
+    if (id instanceof ObjectId) {
+      return id;
+    }
+
+    if (!this.isValidObjectId(id)) {
+      throw new Error(`Invalid ObjectId format: ${id}`);
+    }
+
+    return new ObjectId(id);
+  }
+
+  private sanitizeString(
+    value: any,
+    maxLength: number = 100
+  ): string | undefined {
+    if (value && typeof value === 'string') {
+      return value.trim().substring(0, maxLength);
+    }
+    return undefined;
+  }
+
+  private sanitizeNumber(
+    value: any,
+    min: number,
+    max: number
+  ): number | undefined {
+    if (value !== undefined) {
+      const num = parseInt(value);
+      if (!isNaN(num) && num >= min && num <= max) {
+        return num;
+      }
+    }
+    return undefined;
+  }
+
+  private isValidObjectId(id: string | ObjectId): boolean {
+    if (id instanceof ObjectId) {
+      return true;
+    }
+    return ObjectId.isValid(id);
+  }
+
+  private handleDatabaseError(error: any, operation: string): never {
+    console.error(`Database error in ${operation}:`, error);
+    throw new Error('Invalid request');
   }
 }

@@ -11,8 +11,7 @@ interface AuthRequest extends Request {
   };
 }
 
-export const userController = {
-  // Send verification code
+export class UserController {
   async sendVerificationCode(
     req: Request,
     res: Response,
@@ -21,24 +20,19 @@ export const userController = {
     try {
       const { email } = req.body;
 
-      if (!email) {
-        ResponseUtil.badRequest(res, 'Email is required');
+      const emailValidation = this.validateEmail(email);
+      if (!emailValidation.valid) {
+        ResponseUtil.badRequest(res, emailValidation.message!);
         return;
       }
 
       const result = await userService.sendVerificationCode(email);
-
-      if (result.success) {
-        ResponseUtil.success(res, null, result.message);
-      } else {
-        ResponseUtil.badRequest(res, result.message);
-      }
+      this.handleServiceResponse(res, result);
     } catch (error) {
       next(error);
     }
-  },
+  }
 
-  // Verify code and authenticate
   async verifyCodeAndAuthenticate(
     req: Request,
     res: Response,
@@ -47,23 +41,16 @@ export const userController = {
     try {
       const { email, code } = req.body;
 
-      if (!email || !code) {
-        ResponseUtil.badRequest(res, 'Email and code are required');
+      const validation = this.validateEmailAndCode(email, code);
+      if (!validation.valid) {
+        ResponseUtil.badRequest(res, validation.message!);
         return;
       }
 
       const result = await userService.verifyCodeAndAuthenticate(email, code);
 
       if (result.success && result.token) {
-        // Set secure HTTP-only cookie
-        res.cookie('auth_token', result.token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-          path: '/',
-        });
-
+        this.setAuthCookie(res, result.token);
         ResponseUtil.success(
           res,
           {
@@ -78,21 +65,21 @@ export const userController = {
     } catch (error) {
       next(error);
     }
-  },
+  }
 
-  // Get current user profile
   async getCurrentUser(
     req: AuthRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     try {
-      if (!req.user) {
-        ResponseUtil.error(res, 'Unauthorized', 'Unauthorized', 401);
+      const authValidation = this.validateUserAuth(req);
+      if (!authValidation.valid) {
+        this.handleAuthError(res, authValidation.message);
         return;
       }
 
-      const user = await userService.getUserById(req.user.userId);
+      const user = await userService.getUserById(req.user!.userId);
 
       if (!user) {
         ResponseUtil.notFound(res, 'User not found');
@@ -107,48 +94,33 @@ export const userController = {
     } catch (error) {
       next(error);
     }
-  },
+  }
 
-  // Logout user
   async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      // Clear the auth cookie
-      res.clearCookie('auth_token', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        path: '/',
-      });
-
+      this.clearAuthCookie(res);
       ResponseUtil.success(res, null, 'Logged out successfully');
     } catch (error) {
       next(error);
     }
-  },
+  }
 
-  // Deactivate user account
   async deactivateAccount(
     req: AuthRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     try {
-      if (!req.user) {
-        ResponseUtil.error(res, 'Unauthorized', 'Unauthorized', 401);
+      const authValidation = this.validateUserAuth(req);
+      if (!authValidation.valid) {
+        this.handleAuthError(res, authValidation.message);
         return;
       }
 
-      const result = await userService.deactivateUser(req.user.userId);
+      const result = await userService.deactivateUser(req.user!.userId);
 
       if (result.success) {
-        // Clear the auth cookie
-        res.clearCookie('auth_token', {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          path: '/',
-        });
-
+        this.clearAuthCookie(res);
         ResponseUtil.success(res, null, result.message);
       } else {
         ResponseUtil.badRequest(res, result.message);
@@ -156,74 +128,54 @@ export const userController = {
     } catch (error) {
       next(error);
     }
-  },
+  }
 
-  // Update username
   async updateUsername(
     req: AuthRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     try {
-      if (!req.user) {
-        ResponseUtil.error(res, 'Unauthorized', 'Unauthorized', 401);
+      const authValidation = this.validateUserAuth(req);
+      if (!authValidation.valid) {
+        this.handleAuthError(res, authValidation.message);
         return;
       }
 
       const { username } = req.body;
+      const usernameValidation = this.validateUsername(username);
 
-      if (!username) {
-        ResponseUtil.badRequest(res, 'Username is required');
+      if (!usernameValidation.valid) {
+        ResponseUtil.badRequest(res, usernameValidation.message!);
         return;
       }
 
-      // Validate username format (alphanumeric, 3-20 characters)
-      const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
-      if (!usernameRegex.test(username)) {
-        ResponseUtil.badRequest(
-          res,
-          'Username must be 3-20 characters long and contain only letters, numbers, and underscores'
-        );
-        return;
-      }
-
-      const result = await userService.updateUser(req.user.userId, {
-        username,
+      const result = await userService.updateUser(req.user!.userId, {
+        username: usernameValidation.trimmedUsername!,
       });
 
-      if (result.success) {
-        ResponseUtil.success(res, null, result.message);
-      } else {
-        ResponseUtil.badRequest(res, result.message);
-      }
+      this.handleServiceResponse(res, result);
     } catch (error) {
       next(error);
     }
-  },
+  }
 
-  // Delete user account
   async deleteAccount(
     req: AuthRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     try {
-      if (!req.user) {
-        ResponseUtil.error(res, 'Unauthorized', 'Unauthorized', 401);
+      const authValidation = this.validateUserAuth(req);
+      if (!authValidation.valid) {
+        this.handleAuthError(res, authValidation.message);
         return;
       }
 
-      const result = await userService.deleteUser(req.user.userId);
+      const result = await userService.deleteUser(req.user!.userId);
 
       if (result.success) {
-        // Clear the auth cookie
-        res.clearCookie('auth_token', {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          path: '/',
-        });
-
+        this.clearAuthCookie(res);
         ResponseUtil.success(res, null, result.message);
       } else {
         ResponseUtil.badRequest(res, result.message);
@@ -231,5 +183,120 @@ export const userController = {
     } catch (error) {
       next(error);
     }
-  },
-};
+  }
+
+  private validateEmail(email: any): { valid: boolean; message?: string } {
+    if (!email || typeof email !== 'string') {
+      return { valid: false, message: 'Email is required' };
+    }
+    return { valid: true };
+  }
+
+  private validateEmailAndCode(
+    email: any,
+    code: any
+  ): { valid: boolean; message?: string } {
+    if (!email || !code) {
+      return { valid: false, message: 'Email and code are required' };
+    }
+    return { valid: true };
+  }
+
+  private validateUserAuth(req: AuthRequest): {
+    valid: boolean;
+    message?: string;
+  } {
+    if (!req.user) {
+      return { valid: false, message: 'Unauthorized' };
+    }
+    return { valid: true };
+  }
+
+  private validateUsername(username: any): {
+    valid: boolean;
+    message?: string;
+    trimmedUsername?: string;
+  } {
+    if (!username || typeof username !== 'string' || username.trim() === '') {
+      return {
+        valid: false,
+        message: 'Username is required and cannot be empty',
+      };
+    }
+
+    const trimmedUsername = username.trim();
+
+    if (trimmedUsername.length < 3 || trimmedUsername.length > 20) {
+      return {
+        valid: false,
+        message: 'Username must be between 3 and 20 characters long',
+      };
+    }
+
+    const usernameRegex = /^[a-zA-Z0-9_]+$/;
+    if (!usernameRegex.test(trimmedUsername)) {
+      return {
+        valid: false,
+        message: 'Username can only contain letters, numbers, and underscores',
+      };
+    }
+
+    const reservedUsernames = [
+      'admin',
+      'administrator',
+      'root',
+      'system',
+      'support',
+      'help',
+      'info',
+    ];
+    if (reservedUsernames.includes(trimmedUsername.toLowerCase())) {
+      return {
+        valid: false,
+        message: 'This username is reserved and cannot be used',
+      };
+    }
+
+    return { valid: true, trimmedUsername };
+  }
+
+  private setAuthCookie(res: Response, token: string): void {
+    res.cookie('auth_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/',
+    });
+  }
+
+  private clearAuthCookie(res: Response): void {
+    res.clearCookie('auth_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+    });
+  }
+
+  private handleServiceResponse(
+    res: Response,
+    result: { success: boolean; message: string },
+    successData?: any
+  ): void {
+    if (result.success) {
+      ResponseUtil.success(res, successData, result.message);
+    } else {
+      ResponseUtil.badRequest(res, result.message);
+    }
+  }
+
+  private handleAuthError(
+    res: Response,
+    message: string = 'Unauthorized'
+  ): void {
+    ResponseUtil.error(res, message, message, 401);
+  }
+}
+
+export const userController = new UserController();
