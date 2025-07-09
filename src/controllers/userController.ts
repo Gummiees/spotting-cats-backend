@@ -158,6 +158,49 @@ export const userController = {
     }
   },
 
+  // Update username
+  async updateUsername(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      if (!req.user) {
+        ResponseUtil.error(res, 'Unauthorized', 'Unauthorized', 401);
+        return;
+      }
+
+      const { username } = req.body;
+
+      if (!username) {
+        ResponseUtil.badRequest(res, 'Username is required');
+        return;
+      }
+
+      // Validate username format (alphanumeric, 3-20 characters)
+      const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+      if (!usernameRegex.test(username)) {
+        ResponseUtil.badRequest(
+          res,
+          'Username must be 3-20 characters long and contain only letters, numbers, and underscores'
+        );
+        return;
+      }
+
+      const result = await userService.updateUser(req.user.userId, {
+        username,
+      });
+
+      if (result.success) {
+        ResponseUtil.success(res, null, result.message);
+      } else {
+        ResponseUtil.badRequest(res, result.message);
+      }
+    } catch (error) {
+      next(error);
+    }
+  },
+
   // Delete user account
   async deleteAccount(
     req: AuthRequest,

@@ -307,6 +307,43 @@ export class UserService {
         updateData.deletedAt = updates.isDeleted ? new Date() : null;
       }
 
+      if (updates.username !== undefined) {
+        // Check if username update is allowed (90 days restriction)
+        const currentUser = await this.getUserById(userId);
+        if (!currentUser) {
+          return { success: false, message: 'User not found' };
+        }
+
+        if (currentUser.usernameUpdatedAt) {
+          const daysSinceUpdate = Math.floor(
+            (Date.now() - currentUser.usernameUpdatedAt.getTime()) /
+              (1000 * 60 * 60 * 24)
+          );
+
+          if (daysSinceUpdate < 90) {
+            const daysRemaining = 90 - daysSinceUpdate;
+            return {
+              success: false,
+              message: `Username can only be updated once every 90 days. You can update it again in ${daysRemaining} days.`,
+            };
+          }
+        }
+
+        // Check if username is already taken
+        const existingUser = await this.usersCollection.findOne({
+          username: updates.username,
+          _id: { $ne: new ObjectId(userId) },
+          isDeleted: false,
+        });
+
+        if (existingUser) {
+          return { success: false, message: 'Username is already taken' };
+        }
+
+        updateData.username = updates.username;
+        updateData.usernameUpdatedAt = new Date();
+      }
+
       const result = await this.usersCollection.updateOne(
         { _id: new ObjectId(userId) },
         { $set: updateData }

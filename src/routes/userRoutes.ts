@@ -16,6 +16,7 @@ router.post('/logout', userController.logout);
 
 // Protected routes (authentication required)
 router.get('/profile', authMiddleware, userController.getCurrentUser);
+router.put('/username', authMiddleware, userController.updateUsername);
 router.post('/deactivate', authMiddleware, userController.deactivateAccount);
 router.delete('/account', authMiddleware, userController.deleteAccount);
 

@@ -4,6 +4,9 @@ import { ObjectId } from 'mongodb';
 export interface User {
   _id?: string;
   email: string;
+  username?: string;
+  usernameUpdatedAt?: Date;
+  isAdmin?: boolean;
   isVerified: boolean;
   isActive: boolean;
   isDeleted: boolean;
