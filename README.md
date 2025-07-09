@@ -53,6 +53,9 @@ PORT=3000
 NODE_ENV=development
 CORS_ORIGINS=http://localhost:8000,https://spottingcats.com
 
+# Security Configuration
+TRUST_PROXY=true
+
 # Database Configuration
 MONGO_URL=mongodb://localhost:27017/your-db
 MONGO_DB_NAME=your-db
@@ -285,6 +288,7 @@ For detailed information about the Swagger setup, see [SWAGGER_SETUP.md](./SWAGG
 | `PORT` | `3000` | Server port |
 | `NODE_ENV` | `development` | Environment mode |
 | `CORS_ORIGINS` | `*` | CORS origin setting |
+| `TRUST_PROXY` | `false` | Trust proxy for rate limiting (set to `true` when behind reverse proxy) |
 | `MONGO_URL` | - | MongoDB connection string |
 | `MONGO_DB_NAME` | - | MongoDB database name |
 | `REDIS_URL` | - | Redis connection string |

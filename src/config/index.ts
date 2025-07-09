@@ -70,7 +70,9 @@ export const config = {
       delayMs: () => 500, // begin adding 500ms of delay per request above 50
     },
     requestSizeLimit: '10mb',
-    trustProxy: process.env.NODE_ENV === 'production',
+    trustProxy:
+      process.env.NODE_ENV === 'production' ||
+      process.env.TRUST_PROXY === 'true',
   },
 } as const;
 
