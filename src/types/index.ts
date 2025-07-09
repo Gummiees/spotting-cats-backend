@@ -13,6 +13,7 @@ export interface ErrorResponse {
   error: string;
   message: string;
   timestamp: string;
+  details?: any;
 }
 
 // Controller types

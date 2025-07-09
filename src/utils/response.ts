@@ -38,7 +38,19 @@ export class ResponseUtil {
     this.error(res, message, 'Not Found', 404);
   }
 
-  static badRequest(res: Response, message: string = 'Bad request'): void {
-    this.error(res, message, 'Bad Request', 400);
+  static badRequest(
+    res: Response,
+    message: string = 'Bad request',
+    details?: any
+  ): void {
+    const response: ErrorResponse = {
+      success: false,
+      error: 'Bad Request',
+      message,
+      timestamp: new Date().toISOString(),
+      ...(details && { details }),
+    };
+
+    res.status(400).json(response);
   }
 }
