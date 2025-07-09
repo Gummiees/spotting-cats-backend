@@ -6,6 +6,7 @@ import { securityCheck } from '@/utils/security';
 import routes from '@/routes';
 import cors from 'cors';
 import express from 'express';
+import cookieParser from 'cookie-parser';
 
 const app = express();
 
@@ -23,6 +24,9 @@ app.use(
     limit: config.security.requestSizeLimit,
   })
 );
+
+// Cookie parser middleware
+app.use(cookieParser());
 
 // Security monitoring middleware
 app.use(securityCheck);
