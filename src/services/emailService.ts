@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer';
 import { config } from '@/config';
 
 export interface EmailOptions {
+  from: string;
   to: string;
   subject: string;
   html: string;
@@ -9,8 +10,12 @@ export interface EmailOptions {
 
 export class EmailService {
   private transporter: nodemailer.Transporter;
+  private fromEmail: string;
 
   constructor() {
+    this.fromEmail =
+      process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@example.com';
+
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.SMTP_PORT || '587'),
@@ -39,6 +44,7 @@ export class EmailService {
       `;
 
       const mailOptions: EmailOptions = {
+        from: this.fromEmail,
         to: email,
         subject: 'Your Verification Code',
         html,
@@ -65,6 +71,7 @@ export class EmailService {
       `;
 
       const mailOptions: EmailOptions = {
+        from: this.fromEmail,
         to: email,
         subject: 'Welcome to Our Service',
         html,

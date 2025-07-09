@@ -35,6 +35,7 @@ SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your-email@gmail.com
 SMTP_PASS=your-app-password
+SMTP_FROM=your-email@gmail.com
 
 # CORS Configuration
 CORS_ORIGINS=http://localhost:3000,http://localhost:3001
@@ -137,10 +138,19 @@ POST /api/v1/users/deactivate
 
 ## Email Setup
 
+### Gmail Configuration
 For Gmail, you'll need to:
-1. Enable 2-factor authentication
-2. Generate an App Password
-3. Use the App Password in SMTP_PASS
+1. Enable 2-factor authentication on your Google account
+2. Generate an App Password (Google Account → Security → App Passwords)
+3. Use the App Password in `SMTP_PASS`
+
+### SMTP_FROM Configuration
+The `SMTP_FROM` environment variable specifies the sender email address that will appear in the "From" field of emails. This should be:
+- The same as `SMTP_USER` for most cases
+- A verified email address that your SMTP provider allows you to send from
+- Properly configured to avoid email delivery issues
+
+**Note**: The `SMTP_FROM` field is required by most SMTP servers. If not set, it defaults to the `SMTP_USER` value.
 
 ## Development
 

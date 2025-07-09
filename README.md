@@ -48,12 +48,25 @@ npm install
 
 2. Create a `.env` file in the root directory:
 ```bash
+# Server Configuration
 PORT=3000
 NODE_ENV=development
 CORS_ORIGINS=http://localhost:8000,https://spottingcats.com
+
+# Database Configuration
 MONGO_URL=mongodb://localhost:27017/your-db
 MONGO_DB_NAME=your-db
 REDIS_URL=redis://localhost:6379
+
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
+
+# Email Configuration (SMTP)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+SMTP_FROM=your-email@gmail.com
 ```
 
 ## Development
@@ -215,6 +228,30 @@ The project uses strict TypeScript configuration with:
 - Declaration files generation
 - Strict null checks and function types
 
+## Email Configuration
+
+The application uses Nodemailer for sending emails (verification codes, welcome emails, etc.). 
+
+### SMTP Configuration
+The email service requires the following environment variables:
+- `SMTP_HOST`: SMTP server host (default: `smtp.gmail.com`)
+- `SMTP_PORT`: SMTP server port (default: `587`)
+- `SMTP_USER`: SMTP username/email address
+- `SMTP_PASS`: SMTP password or app password
+- `SMTP_FROM`: Sender email address (defaults to `SMTP_USER`)
+
+### Gmail Setup
+For Gmail, you'll need to:
+1. Enable 2-factor authentication on your Google account
+2. Generate an App Password (Google Account → Security → App Passwords)
+3. Use the App Password in `SMTP_PASS`
+
+### Production Considerations
+- Use a dedicated email service (SendGrid, Mailgun, etc.) for production
+- Ensure the `SMTP_FROM` address is properly configured and verified
+- Monitor email delivery rates and bounce rates
+- Consider using email templates for consistent branding
+
 ## Architecture
 
 ### Service Separation Pattern
@@ -248,6 +285,12 @@ For detailed information about the Swagger setup, see [SWAGGER_SETUP.md](./SWAGG
 | `PORT` | `3000` | Server port |
 | `NODE_ENV` | `development` | Environment mode |
 | `CORS_ORIGINS` | `*` | CORS origin setting |
-| `MONGO_URL` | | MongoDB connection string |
-| `MONGO_DB_NAME` | | MongoDB database name |
-| `REDIS_URL` | | Redis connection string | 
+| `MONGO_URL` | - | MongoDB connection string |
+| `MONGO_DB_NAME` | - | MongoDB database name |
+| `REDIS_URL` | - | Redis connection string |
+| `JWT_SECRET` | - | Secret key for JWT token signing |
+| `SMTP_HOST` | `smtp.gmail.com` | SMTP server host |
+| `SMTP_PORT` | `587` | SMTP server port |
+| `SMTP_USER` | - | SMTP username/email |
+| `SMTP_PASS` | - | SMTP password/app password |
+| `SMTP_FROM` | `SMTP_USER` | Sender email address | 
