@@ -86,9 +86,9 @@ const swaggerOptions: Options = {
               type: 'string',
               example: 'johndoe',
             },
-            usernameUpdatedAt: {
+            avatarUrl: {
               type: 'string',
-              format: 'date-time',
+              example: 'https://example.com/avatar.jpg',
             },
             isAdmin: {
               type: 'boolean',
@@ -106,6 +106,14 @@ const swaggerOptions: Options = {
               type: 'boolean',
               example: false,
             },
+            banReason: {
+              type: 'string',
+              example: 'Violation of community guidelines',
+            },
+            lastLoginAt: {
+              type: 'string',
+              format: 'date-time',
+            },
             createdAt: {
               type: 'string',
               format: 'date-time',
@@ -114,7 +122,15 @@ const swaggerOptions: Options = {
               type: 'string',
               format: 'date-time',
             },
-            lastLoginAt: {
+            emailUpdatedAt: {
+              type: 'string',
+              format: 'date-time',
+            },
+            usernameUpdatedAt: {
+              type: 'string',
+              format: 'date-time',
+            },
+            avatarUpdatedAt: {
               type: 'string',
               format: 'date-time',
             },

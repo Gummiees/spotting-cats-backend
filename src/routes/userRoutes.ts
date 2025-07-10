@@ -224,14 +224,18 @@ router.get('/profile', authMiddleware, UserController.getCurrentUser);
  *                           type: string
  *                           format: date-time
  *                           example: "2024-01-15T10:30:00.000Z"
- *                         usernameUpdatedAt:
- *                           type: string
- *                           format: date-time
- *                           example: "2024-01-10T15:20:00.000Z"
  *                         emailUpdatedAt:
  *                           type: string
  *                           format: date-time
  *                           example: "2024-01-05T12:00:00.000Z"
+ *                         usernameUpdatedAt:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2024-01-10T15:20:00.000Z"
+ *                         avatarUpdatedAt:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2024-01-12T09:15:00.000Z"
  *                         deactivatedAt:
  *                           type: string
  *                           format: date-time
