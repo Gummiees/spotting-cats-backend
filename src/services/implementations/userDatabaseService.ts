@@ -154,6 +154,17 @@ export class UserDatabaseService implements UserServiceInterface {
         updateData.emailUpdatedAt = this.createTimestamp();
       }
 
+      if (this.isValidAvatarUrl(updates.avatarUrl)) {
+        const avatarUrl = updates.avatarUrl;
+        const avatarCheck = await this.handleAvatarUpdate(userId, avatarUrl);
+        if (!avatarCheck.success) {
+          return { success: false, message: avatarCheck.message! };
+        }
+
+        updateData.avatarUrl = avatarUrl;
+        updateData.avatarUpdatedAt = this.createTimestamp();
+      }
+
       // Apply business logic to ensure data consistency
       const finalUpdateData = applyUserBusinessLogic(updateData);
 
@@ -416,6 +427,26 @@ export class UserDatabaseService implements UserServiceInterface {
     return { success: true };
   }
 
+  private async handleAvatarUpdate(
+    userId: string,
+    avatarUrl: string
+  ): Promise<{ success: boolean; message?: string }> {
+    const currentUser = await this.getUserById(userId);
+    if (!currentUser) {
+      return { success: false, message: 'User not found' };
+    }
+
+    const eligibility = await this.checkAvatarUpdateEligibility(currentUser);
+    if (!eligibility.eligible) {
+      return {
+        success: false,
+        message: `Avatar can only be updated once every 30 days. You can update it again in ${eligibility.daysRemaining} days.`,
+      };
+    }
+
+    return { success: true };
+  }
+
   private async checkEmailUpdateEligibility(
     user: User
   ): Promise<{ eligible: boolean; daysRemaining?: number }> {
@@ -432,6 +463,25 @@ export class UserDatabaseService implements UserServiceInterface {
     return {
       eligible: false,
       daysRemaining: 90 - daysSinceUpdate,
+    };
+  }
+
+  private async checkAvatarUpdateEligibility(
+    user: User
+  ): Promise<{ eligible: boolean; daysRemaining?: number }> {
+    if (!user.avatarUpdatedAt) {
+      return { eligible: true };
+    }
+
+    const daysSinceUpdate = this.calculateDaysSince(user.avatarUpdatedAt);
+
+    if (daysSinceUpdate >= 30) {
+      return { eligible: true };
+    }
+
+    return {
+      eligible: false,
+      daysRemaining: 30 - daysSinceUpdate,
     };
   }
 
@@ -490,6 +540,7 @@ export class UserDatabaseService implements UserServiceInterface {
       usernameUpdatedAt: user.usernameUpdatedAt,
       emailUpdatedAt: user.emailUpdatedAt,
       avatarUrl: user.avatarUrl,
+      avatarUpdatedAt: user.avatarUpdatedAt,
       isAdmin: user.isAdmin || false,
       banReason: user.banReason,
     };
@@ -512,6 +563,12 @@ export class UserDatabaseService implements UserServiceInterface {
 
   private isValidEmailForUpdate(email: string | undefined): email is string {
     return email !== undefined && email !== null && email.trim() !== '';
+  }
+
+  private isValidAvatarUrl(avatarUrl: string | undefined): avatarUrl is string {
+    return (
+      avatarUrl !== undefined && avatarUrl !== null && avatarUrl.trim() !== ''
+    );
   }
 
   private createToken(userId: string, email: string): string {

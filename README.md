@@ -70,6 +70,7 @@ erDiagram
         DateTime updatedAt
         DateTime emailUpdatedAt
         DateTime usernameUpdatedAt
+        DateTime avatarUpdatedAt
         DateTime deactivatedAt
         DateTime deletedAt
         DateTime bannedAt
@@ -336,6 +337,7 @@ The Swagger UI provides:
       "updatedAt": "2024-01-15T10:30:00.000Z",
       "usernameUpdatedAt": "2024-01-10T15:20:00.000Z",
       "emailUpdatedAt": "2024-01-05T12:00:00.000Z",
+      "avatarUpdatedAt": "2024-01-12T09:15:00.000Z",
       "deactivatedAt": null,
       "deletedAt": null,
       "bannedAt": null

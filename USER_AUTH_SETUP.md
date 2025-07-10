@@ -124,6 +124,8 @@ GET /api/v1/users/admin/all
   email: String (unique, lowercase),
   username: String (optional),
   usernameUpdatedAt: Date (optional),
+  avatarUrl: String (optional),
+  avatarUpdatedAt: Date (optional),
   isAdmin: Boolean (default: false),
   isVerified: Boolean,
   isActive: Boolean,

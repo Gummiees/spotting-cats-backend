@@ -16,6 +16,7 @@ export interface User {
   updatedAt?: Date;
   emailUpdatedAt?: Date;
   usernameUpdatedAt?: Date;
+  avatarUpdatedAt?: Date;
   deactivatedAt?: Date;
   deletedAt?: Date;
   bannedAt?: Date;
@@ -36,6 +37,7 @@ export interface CreateUser {
   updatedAt?: Date;
   emailUpdatedAt?: Date;
   usernameUpdatedAt?: Date;
+  avatarUpdatedAt?: Date;
   deactivatedAt?: Date;
   deletedAt?: Date;
   bannedAt?: Date;

@@ -371,7 +371,7 @@ router.put('/email', authMiddleware, UserController.updateEmail);
  *             schema:
  *               $ref: '#/components/schemas/SuccessResponse'
  *       400:
- *         description: Invalid avatar URL format or unsupported image type
+ *         description: Invalid avatar URL format, unsupported image type, or too soon to update (30-day limit)
  *         content:
  *           application/json:
  *             schema:
