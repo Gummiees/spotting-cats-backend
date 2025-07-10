@@ -73,7 +73,7 @@ const swaggerOptions: Options = {
         User: {
           type: 'object',
           properties: {
-            _id: {
+            id: {
               type: 'string',
               example: '507f1f77bcf86cd799439011',
             },
@@ -113,6 +113,9 @@ const swaggerOptions: Options = {
             lastLoginAt: {
               type: 'string',
               format: 'date-time',
+              description:
+                'Last login timestamp (set to creation time for new users)',
+              example: '2024-01-15T10:30:00.000Z',
             },
             createdAt: {
               type: 'string',
@@ -148,10 +151,60 @@ const swaggerOptions: Options = {
             },
           },
         },
+        PublicUser: {
+          type: 'object',
+          description:
+            'Public user information returned by getUserById endpoint',
+          properties: {
+            id: {
+              type: 'string',
+              description: 'User ID (renamed from _id)',
+              example: '507f1f77bcf86cd799439011',
+            },
+            username: {
+              type: 'string',
+              description: 'User username (optional)',
+              example: 'johndoe',
+            },
+            avatarUrl: {
+              type: 'string',
+              description: 'User avatar URL (optional)',
+              example: 'https://example.com/avatar.jpg',
+            },
+            isAdmin: {
+              type: 'boolean',
+              description: 'Whether the user is an admin',
+              example: false,
+            },
+            isInactive: {
+              type: 'boolean',
+              description: 'True if user is not active or banned or deleted',
+              example: false,
+            },
+            isBanned: {
+              type: 'boolean',
+              description: 'Whether the user is banned',
+              example: false,
+            },
+            lastLoginAt: {
+              type: 'string',
+              format: 'date-time',
+              description:
+                'Last login timestamp (set to creation time for new users)',
+              example: '2024-01-15T10:30:00.000Z',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Account creation timestamp',
+              example: '2024-01-01T00:00:00.000Z',
+            },
+          },
+        },
         Cat: {
           type: 'object',
           properties: {
-            _id: {
+            id: {
               type: 'string',
               example: '507f1f77bcf86cd799439011',
             },

@@ -15,7 +15,7 @@ export class CatCacheService implements ICatService {
     this.dbService = new CatDatabaseService();
   }
 
-  async create(cat: Omit<Cat, '_id'>): Promise<Cat> {
+  async create(cat: Omit<Cat, 'id'>): Promise<Cat> {
     const newCat = await this.dbService.create(cat);
 
     // Invalidate all related caches
@@ -148,7 +148,7 @@ export class CatCacheService implements ICatService {
     const invalidationPromises: Promise<void>[] = [];
 
     // Invalidate the specific cat cache
-    invalidationPromises.push(CacheService.delete(`cats:${currentCat._id}`));
+    invalidationPromises.push(CacheService.delete(`cats:${currentCat.id}`));
 
     // Invalidate general list cache
     invalidationPromises.push(CacheService.delete('cats:all'));
@@ -193,7 +193,7 @@ export class CatCacheService implements ICatService {
     const invalidationPromises: Promise<void>[] = [];
 
     // Invalidate the specific cat cache
-    invalidationPromises.push(CacheService.delete(`cats:${deletedCat._id}`));
+    invalidationPromises.push(CacheService.delete(`cats:${deletedCat.id}`));
 
     // Invalidate general list cache
     invalidationPromises.push(CacheService.delete('cats:all'));

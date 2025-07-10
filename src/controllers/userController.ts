@@ -11,6 +11,7 @@ import {
   BanUserRequest,
   UnbanUserRequest,
 } from '@/models/requests';
+import { PublicUser } from '@/models/user';
 
 export class UserController {
   static async sendVerificationCode(
@@ -556,7 +557,7 @@ export class UserController {
         return;
       }
 
-      const result = await userService.updateUser(targetUser._id!, {
+      const result = await userService.updateUser(targetUser.id!, {
         isBanned: true,
         banReason: banReason.trim(),
       });
@@ -595,7 +596,7 @@ export class UserController {
         return;
       }
 
-      const result = await userService.updateUser(targetUser._id!, {
+      const result = await userService.updateUser(targetUser.id!, {
         isBanned: false,
         banReason: undefined, // Clear the ban reason when unbanning
       });
@@ -658,8 +659,16 @@ export class UserController {
         return;
       }
 
-      // Filter out sensitive fields (email and banReason)
-      const { email, banReason, ...publicUser } = user;
+      const publicUser: PublicUser = {
+        id: user.id!,
+        username: user.username,
+        avatarUrl: user.avatarUrl,
+        isAdmin: user.isAdmin,
+        isInactive: !user.isActive || user.isBanned || user.isDeleted,
+        isBanned: user.isBanned,
+        lastLoginAt: user.lastLoginAt,
+        createdAt: user.createdAt,
+      };
 
       ResponseUtil.success(
         res,

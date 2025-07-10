@@ -10,7 +10,7 @@ import { ObjectId } from 'mongodb';
 const COLLECTION = 'cats';
 
 export class CatDatabaseService implements ICatService {
-  async create(cat: Omit<Cat, '_id'>): Promise<Cat> {
+  async create(cat: Omit<Cat, 'id'>): Promise<Cat> {
     try {
       const sanitizedCat = this.sanitizeCatData(cat);
       const validation = this.validateRequiredFields(sanitizedCat);
@@ -46,7 +46,7 @@ export class CatDatabaseService implements ICatService {
       const insertedId = await this.insertCat(catWithDefaults);
 
       return {
-        _id: insertedId.toString(),
+        id: insertedId.toString(),
         ...catWithDefaults,
       };
     } catch (error) {
@@ -248,7 +248,7 @@ export class CatDatabaseService implements ICatService {
 
   private mapCatToResponse(cat: any): Cat {
     return {
-      _id: cat._id.toString(),
+      id: cat._id.toString(),
       userId: cat.userId,
       protectorId: cat.protectorId,
       colonyId: cat.colonyId,

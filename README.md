@@ -282,7 +282,7 @@ The Swagger UI provides:
 - **POST** `/api/v1/users/logout` - Logout user
 
 #### User Management
-- **GET** `/api/v1/users/:userId` - Get user by ID (public access, excludes email and banReason)
+- **GET** `/api/v1/users/:userId` - Get user by ID (public access, returns limited user fields)
 - **GET** `/api/v1/users/profile` - Get current user profile (protected)
 - **PUT** `/api/v1/users/username` - Update user's username (90-day limit, protected)
 - **PUT** `/api/v1/users/email` - Update user's email address (90-day limit, protected)
@@ -325,22 +325,14 @@ The Swagger UI provides:
   "success": true,
   "data": {
     "user": {
-      "_id": "507f1f77bcf86cd799439011",
+      "id": "507f1f77bcf86cd799439011",
       "username": "johndoe",
       "avatarUrl": "https://example.com/avatar.jpg",
       "isAdmin": false,
-      "isActive": true,
+      "isInactive": false,
       "isBanned": false,
-      "isDeleted": false,
       "lastLoginAt": "2024-01-15T10:30:00.000Z",
-      "createdAt": "2024-01-01T00:00:00.000Z",
-      "updatedAt": "2024-01-15T10:30:00.000Z",
-      "usernameUpdatedAt": "2024-01-10T15:20:00.000Z",
-      "emailUpdatedAt": "2024-01-05T12:00:00.000Z",
-      "avatarUpdatedAt": "2024-01-12T09:15:00.000Z",
-      "deactivatedAt": null,
-      "deletedAt": null,
-      "bannedAt": null
+      "createdAt": "2024-01-01T00:00:00.000Z"
     }
   },
   "message": "User retrieved successfully"
@@ -351,7 +343,7 @@ The Swagger UI provides:
 ```json
 [
   {
-    "_id": "...",
+    "id": "...",
     "name": "Whiskers",
     "age": 2,
     "breed": "Tabby"

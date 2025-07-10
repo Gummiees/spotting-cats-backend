@@ -80,7 +80,7 @@ export class UserDatabaseService implements UserServiceInterface {
 
       // Step 3: Generate authentication token
       const token = this.createToken(
-        userResult.user!._id.toString(),
+        userResult.user!.id!,
         userResult.user!.email
       );
 
@@ -319,6 +319,7 @@ export class UserDatabaseService implements UserServiceInterface {
       isActive: true,
       isDeleted: false,
       isBanned: false,
+      lastLoginAt: timestamp,
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -525,7 +526,7 @@ export class UserDatabaseService implements UserServiceInterface {
 
   private mapUserToResponse(user: any): User {
     return {
-      _id: user._id.toString(),
+      id: user._id.toString(),
       email: user.email,
       isActive: user.isActive,
       isDeleted: user.isDeleted,

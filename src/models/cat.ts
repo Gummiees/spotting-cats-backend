@@ -1,5 +1,5 @@
 export interface Cat {
-  _id?: string;
+  id?: string;
   userId: string;
   protectorId?: string;
   colonyId?: string;

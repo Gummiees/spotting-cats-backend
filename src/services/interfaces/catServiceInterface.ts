@@ -15,7 +15,7 @@ export interface CatFilters {
 }
 
 export interface ICatService {
-  create(cat: Omit<Cat, '_id'>): Promise<Cat>;
+  create(cat: Omit<Cat, 'id'>): Promise<Cat>;
   getAll(filters?: CatFilters): Promise<Cat[]>;
   getById(id: string): Promise<Cat | null>;
   getByUserId(userId: string): Promise<Cat[]>;

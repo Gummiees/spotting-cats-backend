@@ -165,6 +165,7 @@ router.get('/profile', authMiddleware, UserController.getCurrentUser);
  * /api/v1/users/{userId}:
  *   get:
  *     summary: Get user by ID (public access)
+ *     description: Retrieve public user information by ID. Returns a limited set of user fields suitable for public display.
  *     tags: [Users]
  *     parameters:
  *       - in: path
@@ -189,68 +190,16 @@ router.get('/profile', authMiddleware, UserController.getCurrentUser);
  *                   type: object
  *                   properties:
  *                     user:
- *                       type: object
- *                       properties:
- *                         _id:
- *                           type: string
- *                           example: "507f1f77bcf86cd799439011"
- *                         username:
- *                           type: string
- *                           example: "johndoe"
- *                         avatarUrl:
- *                           type: string
- *                           example: "https://example.com/avatar.jpg"
- *                         isAdmin:
- *                           type: boolean
- *                           example: false
- *                         isActive:
- *                           type: boolean
- *                           example: true
- *                         isBanned:
- *                           type: boolean
- *                           example: false
- *                         isDeleted:
- *                           type: boolean
- *                           example: false
- *                         lastLoginAt:
- *                           type: string
- *                           format: date-time
- *                           example: "2024-01-15T10:30:00.000Z"
- *                         createdAt:
- *                           type: string
- *                           format: date-time
- *                           example: "2024-01-01T00:00:00.000Z"
- *                         updatedAt:
- *                           type: string
- *                           format: date-time
- *                           example: "2024-01-15T10:30:00.000Z"
- *                         emailUpdatedAt:
- *                           type: string
- *                           format: date-time
- *                           example: "2024-01-05T12:00:00.000Z"
- *                         usernameUpdatedAt:
- *                           type: string
- *                           format: date-time
- *                           example: "2024-01-10T15:20:00.000Z"
- *                         avatarUpdatedAt:
- *                           type: string
- *                           format: date-time
- *                           example: "2024-01-12T09:15:00.000Z"
- *                         deactivatedAt:
- *                           type: string
- *                           format: date-time
- *                           nullable: true
- *                         deletedAt:
- *                           type: string
- *                           format: date-time
- *                           nullable: true
- *                         bannedAt:
- *                           type: string
- *                           format: date-time
- *                           nullable: true
+ *                       $ref: '#/components/schemas/PublicUser'
  *                 message:
  *                   type: string
  *                   example: "User retrieved successfully"
+ *       400:
+ *         description: Invalid user ID format
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       404:
  *         description: User not found
  *         content:

@@ -38,7 +38,7 @@ export class UserCacheService implements UserServiceInterface {
     // Cache user data if authentication was successful
     if (result.success && result.user) {
       // Invalidate any existing cache for this user first (in case of reactivation)
-      await this.invalidateUserCache(result.user._id!);
+      await this.invalidateUserCache(result.user.id!);
       await this.cacheUserData(result.user);
     }
 
@@ -152,14 +152,14 @@ export class UserCacheService implements UserServiceInterface {
   private async cacheUserData(user: User): Promise<void> {
     try {
       const redisClient = getRedisClient();
-      const userKey = `${this.USER_CACHE_PREFIX}${user._id}`;
+      const userKey = `${this.USER_CACHE_PREFIX}${user.id}`;
       const emailKey = `${this.USER_EMAIL_CACHE_PREFIX}${user.email}`;
 
       // Cache user data
       await redisClient.setEx(userKey, this.CACHE_TTL, JSON.stringify(user));
 
       // Cache email to user ID mapping
-      await redisClient.setEx(emailKey, this.CACHE_TTL, user._id!);
+      await redisClient.setEx(emailKey, this.CACHE_TTL, user.id!);
     } catch (error) {
       console.error('Error caching user data:', error);
     }
