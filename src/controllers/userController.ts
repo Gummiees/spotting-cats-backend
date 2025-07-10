@@ -1,24 +1,25 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { userService } from '@/services/userService';
 import { ResponseUtil } from '@/utils/response';
-
-interface AuthRequest extends Request {
-  user?: {
-    userId: string;
-    email: string;
-    iat: number;
-    exp: number;
-  };
-}
+import {
+  AuthRequest,
+  EmailVerificationRequest,
+  CodeVerificationRequest,
+  UsernameUpdateRequest,
+  EmailUpdateRequest,
+  AvatarUpdateRequest,
+  BanUserRequest,
+  UnbanUserRequest,
+} from '@/models/requests';
 
 export class UserController {
   static async sendVerificationCode(
-    req: Request,
+    req: AuthRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     try {
-      const { email } = req.body;
+      const { email }: EmailVerificationRequest = req.body;
 
       const emailValidation = UserController.validateEmail(email);
       if (!emailValidation.valid) {
@@ -34,12 +35,12 @@ export class UserController {
   }
 
   static async verifyCodeAndAuthenticate(
-    req: Request,
+    req: AuthRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     try {
-      const { email, code } = req.body;
+      const { email, code }: CodeVerificationRequest = req.body;
 
       const validation = UserController.validateEmailAndCode(email, code);
       if (!validation.valid) {
@@ -97,7 +98,7 @@ export class UserController {
   }
 
   static async logout(
-    req: Request,
+    req: AuthRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> {
@@ -146,7 +147,7 @@ export class UserController {
         return;
       }
 
-      const { username } = req.body;
+      const { username }: UsernameUpdateRequest = req.body;
       const usernameValidation = UserController.validateUsername(username);
 
       if (!usernameValidation.valid) {
@@ -156,6 +157,66 @@ export class UserController {
 
       const result = await userService.updateUser(req.user!.userId, {
         username: usernameValidation.trimmedUsername!,
+      });
+
+      UserController.handleServiceResponse(res, result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateEmail(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const authValidation = UserController.validateUserAuth(req);
+      if (!authValidation.valid) {
+        UserController.handleAuthError(res, authValidation.message);
+        return;
+      }
+
+      const { email }: EmailUpdateRequest = req.body;
+      const emailValidation = UserController.validateEmailFormat(email);
+
+      if (!emailValidation.valid) {
+        ResponseUtil.badRequest(res, emailValidation.message!);
+        return;
+      }
+
+      const result = await userService.updateUser(req.user!.userId, {
+        email: emailValidation.normalizedEmail!,
+      });
+
+      UserController.handleServiceResponse(res, result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateAvatar(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const authValidation = UserController.validateUserAuth(req);
+      if (!authValidation.valid) {
+        UserController.handleAuthError(res, authValidation.message);
+        return;
+      }
+
+      const { avatarUrl }: AvatarUpdateRequest = req.body;
+      const avatarValidation = UserController.validateAvatarUrl(avatarUrl);
+
+      if (!avatarValidation.valid) {
+        ResponseUtil.badRequest(res, avatarValidation.message!);
+        return;
+      }
+
+      const result = await userService.updateUser(req.user!.userId, {
+        avatarUrl: avatarValidation.normalizedUrl!,
       });
 
       UserController.handleServiceResponse(res, result);
@@ -182,6 +243,59 @@ export class UserController {
       return { valid: false, message: 'Email and code are required' };
     }
     return { valid: true };
+  }
+
+  private static validateEmailFormat(email: any): {
+    valid: boolean;
+    message?: string;
+    normalizedEmail?: string;
+  } {
+    if (!email || typeof email !== 'string' || email.trim() === '') {
+      return {
+        valid: false,
+        message: 'Email is required and cannot be empty',
+      };
+    }
+
+    const trimmedEmail = email.trim().toLowerCase();
+
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      return {
+        valid: false,
+        message: 'Please provide a valid email address',
+      };
+    }
+
+    // Check for reasonable email length
+    if (trimmedEmail.length > 320) {
+      return {
+        valid: false,
+        message: 'Email address is too long',
+      };
+    }
+
+    // Check for some basic reserved patterns
+    const reservedPatterns = [
+      /^admin@/,
+      /^administrator@/,
+      /^root@/,
+      /^system@/,
+      /^noreply@/,
+      /^no-reply@/,
+    ];
+
+    for (const pattern of reservedPatterns) {
+      if (pattern.test(trimmedEmail)) {
+        return {
+          valid: false,
+          message: 'This email address cannot be used',
+        };
+      }
+    }
+
+    return { valid: true, normalizedEmail: trimmedEmail };
   }
 
   private static validateUserAuth(req: AuthRequest): {
@@ -242,6 +356,69 @@ export class UserController {
     return { valid: true, trimmedUsername };
   }
 
+  private static validateAvatarUrl(avatarUrl: any): {
+    valid: boolean;
+    message?: string;
+    normalizedUrl?: string;
+  } {
+    if (
+      !avatarUrl ||
+      typeof avatarUrl !== 'string' ||
+      avatarUrl.trim() === ''
+    ) {
+      return {
+        valid: false,
+        message: 'Avatar URL is required and cannot be empty',
+      };
+    }
+
+    const trimmedUrl = avatarUrl.trim();
+
+    // Basic URL format validation - require https for security
+    const urlRegex = /^https:\/\/.+/;
+    if (!urlRegex.test(trimmedUrl)) {
+      return {
+        valid: false,
+        message: 'Avatar URL must be a valid HTTPS URL',
+      };
+    }
+
+    // Check for reasonable URL length
+    if (trimmedUrl.length > 512) {
+      return {
+        valid: false,
+        message: 'Avatar URL is too long (max 512 characters)',
+      };
+    }
+
+    // Check for common image file extensions or image hosting domains
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+    const imageHosts = [
+      'imgur.com',
+      'cloudinary.com',
+      'gravatar.com',
+      'githubusercontent.com',
+    ];
+
+    const hasImageExtension = imageExtensions.some((ext) =>
+      trimmedUrl.toLowerCase().includes(ext)
+    );
+
+    const hasImageHost = imageHosts.some((host) =>
+      trimmedUrl.toLowerCase().includes(host)
+    );
+
+    if (!hasImageExtension && !hasImageHost) {
+      return {
+        valid: false,
+        message:
+          'Avatar URL should point to an image file (.jpg, .jpeg, .png, .gif, .webp, .svg) or be from a known image hosting service',
+      };
+    }
+
+    return { valid: true, normalizedUrl: trimmedUrl };
+  }
+
   private static setAuthCookie(res: Response, token: string): void {
     res.cookie('auth_token', token, {
       httpOnly: true,
@@ -290,9 +467,9 @@ export class UserController {
       return authValidation;
     }
 
-    const { userId } = req.params;
-    if (!userId) {
-      return { valid: false, message: 'User ID is required' };
+    const { email } = req.body;
+    if (!email) {
+      return { valid: false, message: 'Email is required' };
     }
 
     return { valid: true };
@@ -310,13 +487,13 @@ export class UserController {
   }
 
   private static validateNotSelfBan(
-    currentUserId: string,
-    targetUserId: string
+    currentUserEmail: string,
+    targetUserEmail: string
   ): {
     valid: boolean;
     message?: string;
   } {
-    if (targetUserId === currentUserId) {
+    if (targetUserEmail === currentUserEmail) {
       return { valid: false, message: 'Cannot ban your own account' };
     }
     return { valid: true };
@@ -351,18 +528,37 @@ export class UserController {
         return;
       }
 
-      const targetUserId = req.params.userId;
+      const { email, banReason }: BanUserRequest = req.body;
+
+      if (
+        !banReason ||
+        typeof banReason !== 'string' ||
+        banReason.trim() === ''
+      ) {
+        UserController.handleValidationError(res, 'Ban reason is required');
+        return;
+      }
+
+      // Look up target user by email
+      const targetUser = await userService.getUserByEmail(email);
+      if (!targetUser) {
+        UserController.handleValidationError(res, 'User not found');
+        return;
+      }
+
+      const currentUser = await userService.getUserById(req.user!.userId);
       const selfBanValidation = UserController.validateNotSelfBan(
-        req.user!.userId,
-        targetUserId
+        currentUser!.email,
+        targetUser.email
       );
       if (!selfBanValidation.valid) {
         UserController.handleValidationError(res, selfBanValidation.message!);
         return;
       }
 
-      const result = await userService.updateUser(targetUserId, {
+      const result = await userService.updateUser(targetUser._id!, {
         isBanned: true,
+        banReason: banReason.trim(),
       });
       UserController.handleServiceResponse(res, result);
     } catch (error) {
@@ -390,9 +586,18 @@ export class UserController {
         return;
       }
 
-      const targetUserId = req.params.userId;
-      const result = await userService.updateUser(targetUserId, {
+      const { email }: UnbanUserRequest = req.body;
+
+      // Look up target user by email
+      const targetUser = await userService.getUserByEmail(email);
+      if (!targetUser) {
+        UserController.handleValidationError(res, 'User not found');
+        return;
+      }
+
+      const result = await userService.updateUser(targetUser._id!, {
         isBanned: false,
+        banReason: undefined, // Clear the ban reason when unbanning
       });
       UserController.handleServiceResponse(res, result);
     } catch (error) {

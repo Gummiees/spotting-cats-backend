@@ -19,9 +19,39 @@ export interface LoginRequest {
   code: string;
 }
 
+// General user update request (for admin use - should be used sparingly)
 export interface UserUpdateRequest {
+  email?: string;
+  username?: string;
+  avatarUrl?: string;
   isActive?: boolean;
   isDeleted?: boolean;
   isBanned?: boolean;
-  username?: string;
+  banReason?: string;
 }
+
+// Specific endpoint request body interfaces
+export interface UsernameUpdateRequest {
+  username: string;
+}
+
+export interface EmailUpdateRequest {
+  email: string;
+}
+
+export interface AvatarUpdateRequest {
+  avatarUrl: string;
+}
+
+export interface BanUserRequest {
+  email: string;
+  banReason: string;
+}
+
+export interface UnbanUserRequest {
+  email: string;
+}
+
+export interface DeactivateUserRequest {}
+
+export interface DeleteUserRequest {}

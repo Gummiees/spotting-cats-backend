@@ -61,7 +61,6 @@ erDiagram
         string username
         string avatarUrl
         bool isAdmin
-        bool isProtector
         bool isActive
         bool isBanned
         bool isDeleted
@@ -69,8 +68,8 @@ erDiagram
         DateTime lastLoginAt
         DateTime createdAt
         DateTime updatedAt
-        DateTime updatedEmailAt
-        DateTime updatedUsernameAt
+        DateTime emailUpdatedAt
+        DateTime usernameUpdatedAt
         DateTime deactivatedAt
         DateTime deletedAt
         DateTime bannedAt
@@ -283,12 +282,14 @@ The Swagger UI provides:
 
 #### User Management (Protected)
 - **GET** `/api/v1/users/profile` - Get current user profile
-- **PUT** `/api/v1/users/username` - Update user's username
+- **PUT** `/api/v1/users/username` - Update user's username (90-day limit)
+- **PUT** `/api/v1/users/email` - Update user's email address (90-day limit)
+- **PUT** `/api/v1/users/avatar` - Update user's avatar URL
 - **POST** `/api/v1/users/deactivate` - Deactivate user account
 
 #### Admin Management (Admin Only)
-- **POST** `/api/v1/users/{userId}/ban` - Ban a user
-- **POST** `/api/v1/users/{userId}/unban` - Unban a user
+- **POST** `/api/v1/users/ban` - Ban a user by email
+- **POST** `/api/v1/users/unban` - Unban a user by email
 - **GET** `/api/v1/users/admin/all` - Get all users
 
 #### Cat Management

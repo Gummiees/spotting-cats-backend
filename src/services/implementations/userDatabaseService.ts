@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { connectToMongo } from '@/utils/mongo';
 import { emailService } from '@/services/emailService';
 import { UserServiceInterface } from '@/services/interfaces/userServiceInterface';
-import { User, UserSession } from '@/models/user';
+import { User, UserSession, applyUserBusinessLogic } from '@/models/user';
 import { UserUpdateRequest } from '@/models/requests';
 
 export class UserDatabaseService implements UserServiceInterface {
@@ -143,9 +143,23 @@ export class UserDatabaseService implements UserServiceInterface {
         updateData.usernameUpdatedAt = this.createTimestamp();
       }
 
+      if (this.isValidEmailForUpdate(updates.email)) {
+        const email = updates.email;
+        const emailCheck = await this.handleEmailUpdate(userId, email);
+        if (!emailCheck.success) {
+          return { success: false, message: emailCheck.message! };
+        }
+
+        updateData.email = this.normalizeEmail(email);
+        updateData.emailUpdatedAt = this.createTimestamp();
+      }
+
+      // Apply business logic to ensure data consistency
+      const finalUpdateData = applyUserBusinessLogic(updateData);
+
       const result = await this.usersCollection.updateOne(
         { _id: this.createObjectId(userId) },
-        { $set: updateData }
+        { $set: finalUpdateData }
       );
 
       if (result.matchedCount === 0) {
@@ -288,7 +302,7 @@ export class UserDatabaseService implements UserServiceInterface {
 
   private createUserData(email: string): any {
     const timestamp = this.createTimestamp();
-    return {
+    const userData = {
       email: this.normalizeEmail(email),
       isVerified: true,
       isActive: true,
@@ -297,14 +311,20 @@ export class UserDatabaseService implements UserServiceInterface {
       createdAt: timestamp,
       updatedAt: timestamp,
     };
+
+    // Apply business logic to ensure data consistency
+    return applyUserBusinessLogic(userData);
   }
 
   private createUserUpdateData(): any {
-    return {
+    const updateData = {
       isVerified: true,
       lastLoginAt: this.createTimestamp(),
       updatedAt: this.createTimestamp(),
     };
+
+    // Apply business logic to ensure data consistency
+    return applyUserBusinessLogic(updateData);
   }
 
   private createUserUpdatePayload(updates: UserUpdateRequest): any {
@@ -325,9 +345,22 @@ export class UserDatabaseService implements UserServiceInterface {
     if (updates.isBanned !== undefined) {
       updateData.isBanned = updates.isBanned;
       updateData.bannedAt = updates.isBanned ? this.createTimestamp() : null;
+
+      // Handle ban reason
+      if (updates.isBanned && updates.banReason) {
+        updateData.banReason = updates.banReason;
+      } else if (!updates.isBanned) {
+        updateData.banReason = null; // Clear ban reason when unbanning
+      }
     }
 
-    return updateData;
+    // Handle standalone banReason updates (for cases where only banReason is being updated)
+    if (updates.banReason !== undefined && updates.isBanned !== false) {
+      updateData.banReason = updates.banReason;
+    }
+
+    // Apply business logic to ensure data consistency
+    return applyUserBusinessLogic(updateData);
   }
 
   private async checkUsernameUpdateEligibility(
@@ -354,6 +387,68 @@ export class UserDatabaseService implements UserServiceInterface {
     excludeUserId?: string
   ): Promise<boolean> {
     const query = this.buildUsernameQuery(username, excludeUserId);
+    const existingUser = await this.usersCollection.findOne(query);
+    return !existingUser;
+  }
+
+  private async handleEmailUpdate(
+    userId: string,
+    email: string
+  ): Promise<{ success: boolean; message?: string }> {
+    const currentUser = await this.getUserById(userId);
+    if (!currentUser) {
+      return { success: false, message: 'User not found' };
+    }
+
+    const eligibility = await this.checkEmailUpdateEligibility(currentUser);
+    if (!eligibility.eligible) {
+      return {
+        success: false,
+        message: `Email can only be updated once every 90 days. You can update it again in ${eligibility.daysRemaining} days.`,
+      };
+    }
+
+    const isAvailable = await this.checkEmailAvailability(email, userId);
+    if (!isAvailable) {
+      return { success: false, message: 'Email is already in use' };
+    }
+
+    return { success: true };
+  }
+
+  private async checkEmailUpdateEligibility(
+    user: User
+  ): Promise<{ eligible: boolean; daysRemaining?: number }> {
+    if (!user.emailUpdatedAt) {
+      return { eligible: true };
+    }
+
+    const daysSinceUpdate = this.calculateDaysSince(user.emailUpdatedAt);
+
+    if (daysSinceUpdate >= 90) {
+      return { eligible: true };
+    }
+
+    return {
+      eligible: false,
+      daysRemaining: 90 - daysSinceUpdate,
+    };
+  }
+
+  private async checkEmailAvailability(
+    email: string,
+    excludeUserId?: string
+  ): Promise<boolean> {
+    const normalizedEmail = this.normalizeEmail(email);
+    const query: any = {
+      email: normalizedEmail,
+      isDeleted: false,
+    };
+
+    if (excludeUserId) {
+      query._id = { $ne: this.createObjectId(excludeUserId) };
+    }
+
     const existingUser = await this.usersCollection.findOne(query);
     return !existingUser;
   }
@@ -393,6 +488,10 @@ export class UserDatabaseService implements UserServiceInterface {
       bannedAt: user.bannedAt,
       username: user.username,
       usernameUpdatedAt: user.usernameUpdatedAt,
+      emailUpdatedAt: user.emailUpdatedAt,
+      avatarUrl: user.avatarUrl,
+      isAdmin: user.isAdmin || false,
+      banReason: user.banReason,
     };
   }
 
@@ -409,6 +508,10 @@ export class UserDatabaseService implements UserServiceInterface {
     return (
       username !== undefined && username !== null && username.trim() !== ''
     );
+  }
+
+  private isValidEmailForUpdate(email: string | undefined): email is string {
+    return email !== undefined && email !== null && email.trim() !== '';
   }
 
   private createToken(userId: string, email: string): string {

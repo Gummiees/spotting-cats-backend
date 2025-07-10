@@ -204,6 +204,93 @@ router.put('/username', authMiddleware, UserController.updateUsername);
 
 /**
  * @swagger
+ * /api/v1/users/email:
+ *   put:
+ *     summary: Update user's email address
+ *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "newemail@example.com"
+ *     responses:
+ *       200:
+ *         description: Email updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         description: Invalid email or too soon to update (90-day limit)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized - No valid authentication token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.put('/email', authMiddleware, UserController.updateEmail);
+
+/**
+ * @swagger
+ * /api/v1/users/avatar:
+ *   put:
+ *     summary: Update user's avatar
+ *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - avatarUrl
+ *             properties:
+ *               avatarUrl:
+ *                 type: string
+ *                 format: uri
+ *                 example: "https://example.com/avatar.jpg"
+ *                 description: HTTPS URL pointing to the user's avatar image
+ *     responses:
+ *       200:
+ *         description: Avatar updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         description: Invalid avatar URL format or unsupported image type
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized - No valid authentication token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.put('/avatar', authMiddleware, UserController.updateAvatar);
+
+/**
+ * @swagger
  * /api/v1/users/deactivate:
  *   post:
  *     summary: Deactivate user account
@@ -234,19 +321,31 @@ router.post('/deactivate', authMiddleware, UserController.deactivateAccount);
 
 /**
  * @swagger
- * /api/v1/users/{userId}/ban:
+ * /api/v1/users/ban:
  *   post:
  *     summary: Ban a user (Admin only)
  *     tags: [Admin]
  *     security:
  *       - cookieAuth: []
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         schema:
- *           type: string
- *         description: ID of the user to ban
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - banReason
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "user@example.com"
+ *                 description: Email of the user to ban
+ *               banReason:
+ *                 type: string
+ *                 example: "Violation of community guidelines"
+ *                 description: Reason for banning the user
  *     responses:
  *       200:
  *         description: User banned successfully
@@ -255,7 +354,7 @@ router.post('/deactivate', authMiddleware, UserController.deactivateAccount);
  *             schema:
  *               $ref: '#/components/schemas/SuccessResponse'
  *       400:
- *         description: Invalid request or cannot ban own account
+ *         description: Invalid request, missing email/ban reason, user not found, or cannot ban own account
  *         content:
  *           application/json:
  *             schema:
@@ -273,23 +372,30 @@ router.post('/deactivate', authMiddleware, UserController.deactivateAccount);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/:userId/ban', authMiddleware, UserController.banUser);
+router.post('/ban', authMiddleware, UserController.banUser);
 
 /**
  * @swagger
- * /api/v1/users/{userId}/unban:
+ * /api/v1/users/unban:
  *   post:
  *     summary: Unban a user (Admin only)
  *     tags: [Admin]
  *     security:
  *       - cookieAuth: []
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         schema:
- *           type: string
- *         description: ID of the user to unban
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "user@example.com"
+ *                 description: Email of the user to unban
  *     responses:
  *       200:
  *         description: User unbanned successfully
@@ -298,7 +404,7 @@ router.post('/:userId/ban', authMiddleware, UserController.banUser);
  *             schema:
  *               $ref: '#/components/schemas/SuccessResponse'
  *       400:
- *         description: Invalid request
+ *         description: Invalid request, missing email, or user not found
  *         content:
  *           application/json:
  *             schema:
@@ -316,7 +422,7 @@ router.post('/:userId/ban', authMiddleware, UserController.banUser);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/:userId/unban', authMiddleware, UserController.unbanUser);
+router.post('/unban', authMiddleware, UserController.unbanUser);
 
 /**
  * @swagger
