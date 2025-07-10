@@ -85,6 +85,7 @@ erDiagram
         string description
         string name
         array imageUrls
+        string donationsLink
         array links
         int createdYear
         double xCoordinate

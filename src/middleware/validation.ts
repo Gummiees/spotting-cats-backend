@@ -30,12 +30,14 @@ export const validateObjectId = (paramName: string): ValidationChain => {
 // Cat validation schemas
 export const createCatValidation = [
   body('name')
+    .optional()
     .trim()
     .isLength({ min: 1, max: 100 })
     .withMessage('Name must be between 1 and 100 characters')
     .matches(/^[a-zA-Z0-9\s\-_]+$/)
     .withMessage('Name contains invalid characters'),
   body('age')
+    .optional()
     .isInt({ min: 0, max: 30 })
     .withMessage('Age must be a number between 0 and 30')
     .toInt(),
@@ -47,12 +49,19 @@ export const createCatValidation = [
     .isFloat({ min: -90, max: 90 })
     .withMessage('yCoordinate must be a number between -90 and 90')
     .toFloat(),
-  body('isDomestic').isBoolean().withMessage('isDomestic must be a boolean'),
-  body('isMale').isBoolean().withMessage('isMale must be a boolean'),
+  body('isDomestic')
+    .optional()
+    .isBoolean()
+    .withMessage('isDomestic must be a boolean'),
+  body('isMale').optional().isBoolean().withMessage('isMale must be a boolean'),
   body('isSterilized')
+    .optional()
     .isBoolean()
     .withMessage('isSterilized must be a boolean'),
-  body('isFriendly').isBoolean().withMessage('isFriendly must be a boolean'),
+  body('isFriendly')
+    .optional()
+    .isBoolean()
+    .withMessage('isFriendly must be a boolean'),
   body('protectorId')
     .optional()
     .isMongoId()

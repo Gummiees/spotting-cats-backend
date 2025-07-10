@@ -22,19 +22,18 @@ export class CatDatabaseService implements ICatService {
       // Set defaults for optional fields and ensure required fields are present
       const catWithDefaults = {
         userId: sanitizedCat.userId!,
-        name: sanitizedCat.name!,
-        age: sanitizedCat.age!,
         xCoordinate: sanitizedCat.xCoordinate!,
         yCoordinate: sanitizedCat.yCoordinate!,
-        isDomestic: sanitizedCat.isDomestic!,
-        isMale: sanitizedCat.isMale!,
-        isSterilized: sanitizedCat.isSterilized!,
-        isFriendly: sanitizedCat.isFriendly!,
         totalLikes: sanitizedCat.totalLikes ?? 0,
         imageUrls: sanitizedCat.imageUrls ?? [],
         isUserOwner: sanitizedCat.isUserOwner ?? false,
         createdAt: new Date(),
-        // Optional fields
+        name: sanitizedCat.name,
+        age: sanitizedCat.age,
+        isDomestic: sanitizedCat.isDomestic,
+        isMale: sanitizedCat.isMale,
+        isSterilized: sanitizedCat.isSterilized,
+        isFriendly: sanitizedCat.isFriendly,
         protectorId: sanitizedCat.protectorId,
         colonyId: sanitizedCat.colonyId,
         breed: sanitizedCat.breed,
@@ -303,29 +302,11 @@ export class CatDatabaseService implements ICatService {
     if (!sanitizedCat.userId) {
       return { valid: false, message: 'userId is required' };
     }
-    if (!sanitizedCat.name) {
-      return { valid: false, message: 'Name is required' };
-    }
-    if (sanitizedCat.age === undefined) {
-      return { valid: false, message: 'Age is required' };
-    }
     if (sanitizedCat.xCoordinate === undefined) {
       return { valid: false, message: 'xCoordinate is required' };
     }
     if (sanitizedCat.yCoordinate === undefined) {
       return { valid: false, message: 'yCoordinate is required' };
-    }
-    if (sanitizedCat.isDomestic === undefined) {
-      return { valid: false, message: 'isDomestic is required' };
-    }
-    if (sanitizedCat.isMale === undefined) {
-      return { valid: false, message: 'isMale is required' };
-    }
-    if (sanitizedCat.isSterilized === undefined) {
-      return { valid: false, message: 'isSterilized is required' };
-    }
-    if (sanitizedCat.isFriendly === undefined) {
-      return { valid: false, message: 'isFriendly is required' };
     }
     return { valid: true };
   }

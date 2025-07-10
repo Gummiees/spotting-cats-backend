@@ -277,12 +277,14 @@ const swaggerOptions: Options = {
             },
             name: {
               type: 'string',
+              description: 'Cat name (optional)',
               example: 'Fluffy',
             },
             age: {
               type: 'number',
               minimum: 0,
               maximum: 30,
+              description: 'Cat age in years (optional)',
               example: 3,
             },
             breed: {
@@ -322,22 +324,22 @@ const swaggerOptions: Options = {
             },
             isDomestic: {
               type: 'boolean',
-              description: 'Whether the cat is domestic or feral',
+              description: 'Whether the cat is domestic or feral (optional)',
               example: true,
             },
             isMale: {
               type: 'boolean',
-              description: 'Whether the cat is male',
+              description: 'Whether the cat is male (optional)',
               example: true,
             },
             isSterilized: {
               type: 'boolean',
-              description: 'Whether the cat is sterilized',
+              description: 'Whether the cat is sterilized (optional)',
               example: false,
             },
             isFriendly: {
               type: 'boolean',
-              description: 'Whether the cat is friendly',
+              description: 'Whether the cat is friendly (optional)',
               example: true,
             },
             isUserOwner: {
