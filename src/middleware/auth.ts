@@ -8,6 +8,12 @@ export const authMiddleware = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    // Debug logging
+    console.log('Auth middleware - Cookies received:', req.cookies);
+    console.log('Auth middleware - Auth token:', req.cookies?.auth_token);
+    console.log('Auth middleware - Origin:', req.headers.origin);
+    console.log('Auth middleware - Referer:', req.headers.referer);
+
     // Get token from cookie
     const token = req.cookies?.auth_token;
 
