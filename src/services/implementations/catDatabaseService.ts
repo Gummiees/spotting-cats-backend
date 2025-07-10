@@ -85,6 +85,19 @@ export class CatDatabaseService implements ICatService {
     }
   }
 
+  async getByUserId(userId: string): Promise<Cat[]> {
+    try {
+      const collection = await this.getCollection();
+      const cats = await collection
+        .find({ userId }, { projection: this.createProjection().projection })
+        .toArray();
+
+      return cats.map((cat) => this.mapCatToResponse(cat));
+    } catch (error) {
+      this.handleDatabaseError(error, 'getByUserId');
+    }
+  }
+
   async update(id: string, update: Partial<Cat>): Promise<boolean> {
     try {
       const sanitizedUpdate = this.sanitizeCatData(update);

@@ -27,6 +27,7 @@ http://localhost:3000/api-docs
 - **POST** `/api/v1/users/logout` - Logout user
 
 ### User Management Endpoints
+- **GET** `/api/v1/users/{userId}` - Get user by ID (Public access, excludes email and banReason)
 - **GET** `/api/v1/users/profile` - Get current user profile (Protected)
 - **PUT** `/api/v1/users/username` - Update user's username (Protected)
 - **POST** `/api/v1/users/deactivate` - Deactivate user account (Protected)
@@ -71,17 +72,47 @@ The API uses HTTP-only cookies for authentication. When you authenticate via the
 
 ## Data Models
 
-### User Model
+### User Model (Full)
 ```json
 {
   "_id": "507f1f77bcf86cd799439011",
   "email": "user@example.com",
   "username": "johndoe",
-  "isVerified": true,
+  "avatarUrl": "https://example.com/avatar.jpg",
+  "isAdmin": false,
   "isActive": true,
+  "isBanned": false,
+  "isDeleted": false,
+  "banReason": "Violation of community guidelines",
+  "lastLoginAt": "2024-01-15T10:30:00.000Z",
   "createdAt": "2024-01-01T00:00:00.000Z",
-  "updatedAt": "2024-01-01T00:00:00.000Z",
-  "lastLoginAt": "2024-01-01T00:00:00.000Z"
+  "updatedAt": "2024-01-15T10:30:00.000Z",
+  "emailUpdatedAt": "2024-01-05T12:00:00.000Z",
+  "usernameUpdatedAt": "2024-01-10T15:20:00.000Z",
+  "deactivatedAt": null,
+  "deletedAt": null,
+  "bannedAt": null
+}
+```
+
+### Public User Model (for GET /api/v1/users/{userId})
+```json
+{
+  "_id": "507f1f77bcf86cd799439011",
+  "username": "johndoe",
+  "avatarUrl": "https://example.com/avatar.jpg",
+  "isAdmin": false,
+  "isActive": true,
+  "isBanned": false,
+  "isDeleted": false,
+  "lastLoginAt": "2024-01-15T10:30:00.000Z",
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "updatedAt": "2024-01-15T10:30:00.000Z",
+  "emailUpdatedAt": "2024-01-05T12:00:00.000Z",
+  "usernameUpdatedAt": "2024-01-10T15:20:00.000Z",
+  "deactivatedAt": null,
+  "deletedAt": null,
+  "bannedAt": null
 }
 ```
 

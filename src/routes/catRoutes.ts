@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { CatController } from '@/controllers/catController';
+import { authMiddleware } from '@/middleware/auth';
 import {
   createCatValidation,
   updateCatValidation,
@@ -11,12 +12,17 @@ import {
 
 const router = Router();
 
+// Apply authentication middleware only to write operations
+// GET operations are public for anonymous users
+
 /**
  * @swagger
  * /api/v1/cats:
  *   post:
  *     summary: Create a new cat
  *     tags: [Cats]
+ *     security:
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -24,7 +30,6 @@ const router = Router();
  *           schema:
  *             type: object
  *             required:
- *               - userId
  *               - name
  *               - age
  *               - xCoordinate
@@ -34,10 +39,6 @@ const router = Router();
  *               - isSterilized
  *               - isFriendly
  *             properties:
- *               userId:
- *                 type: string
- *                 description: ID of the user who owns the cat
- *                 example: "507f1f77bcf86cd799439011"
  *               protectorId:
  *                 type: string
  *                 description: ID of the protector (optional)
@@ -122,14 +123,55 @@ const router = Router();
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
-router.post('/', createCatValidation, CatController.create);
+router.post('/', authMiddleware, createCatValidation, CatController.create);
+
+/**
+ * @swagger
+ * /api/v1/cats/my:
+ *   get:
+ *     summary: Get all cats owned by the authenticated user
+ *     tags: [Cats]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: User's cats retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Cat'
+ *                 message:
+ *                   type: string
+ *                   example: "Your cats retrieved successfully"
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/my', authMiddleware, CatController.getMyCats);
 
 /**
  * @swagger
  * /api/v1/cats:
  *   get:
- *     summary: Get all cats with optional filtering
+ *     summary: Get all cats with optional filtering (public endpoint)
  *     tags: [Cats]
  *     parameters:
  *       - in: query
@@ -238,7 +280,7 @@ router.get('/', getCatsQueryValidation, CatController.getAll);
  * @swagger
  * /api/v1/cats/{id}:
  *   get:
- *     summary: Get a cat by ID
+ *     summary: Get a cat by ID (public endpoint)
  *     tags: [Cats]
  *     parameters:
  *       - in: path
@@ -285,6 +327,8 @@ router.get('/:id', getCatByIdValidation, CatController.getById);
  *   put:
  *     summary: Update a cat by ID
  *     tags: [Cats]
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -300,10 +344,6 @@ router.get('/:id', getCatByIdValidation, CatController.getById);
  *           schema:
  *             type: object
  *             properties:
- *               userId:
- *                 type: string
- *                 description: ID of the user who owns the cat
- *                 example: "507f1f77bcf86cd799439011"
  *               protectorId:
  *                 type: string
  *                 description: ID of the protector (optional)
@@ -392,6 +432,18 @@ router.get('/:id', getCatByIdValidation, CatController.getById);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - You can only update your own cats
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       404:
  *         description: Cat not found
  *         content:
@@ -399,7 +451,7 @@ router.get('/:id', getCatByIdValidation, CatController.getById);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.put('/:id', updateCatValidation, CatController.update);
+router.put('/:id', authMiddleware, updateCatValidation, CatController.update);
 
 /**
  * @swagger
@@ -407,6 +459,8 @@ router.put('/:id', updateCatValidation, CatController.update);
  *   delete:
  *     summary: Delete a cat by ID
  *     tags: [Cats]
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -428,6 +482,18 @@ router.put('/:id', updateCatValidation, CatController.update);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - You can only delete your own cats
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       404:
  *         description: Cat not found
  *         content:
@@ -435,7 +501,12 @@ router.put('/:id', updateCatValidation, CatController.update);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.delete('/:id', deleteCatValidation, CatController.delete);
+router.delete(
+  '/:id',
+  authMiddleware,
+  deleteCatValidation,
+  CatController.delete
+);
 
 // Apply query sanitization to all routes
 router.use(sanitizeQueryParams);

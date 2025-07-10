@@ -53,4 +53,8 @@ export class ResponseUtil {
 
     res.status(400).json(response);
   }
+
+  static forbidden(res: Response, message: string = 'Forbidden'): void {
+    this.error(res, message, 'Forbidden', 403);
+  }
 }

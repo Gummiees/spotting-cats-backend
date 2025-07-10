@@ -280,12 +280,13 @@ The Swagger UI provides:
 - **POST** `/api/v1/users/verify-code` - Verify code and authenticate user
 - **POST** `/api/v1/users/logout` - Logout user
 
-#### User Management (Protected)
-- **GET** `/api/v1/users/profile` - Get current user profile
-- **PUT** `/api/v1/users/username` - Update user's username (90-day limit)
-- **PUT** `/api/v1/users/email` - Update user's email address (90-day limit)
-- **PUT** `/api/v1/users/avatar` - Update user's avatar URL
-- **POST** `/api/v1/users/deactivate` - Deactivate user account
+#### User Management
+- **GET** `/api/v1/users/:userId` - Get user by ID (public access, excludes email and banReason)
+- **GET** `/api/v1/users/profile` - Get current user profile (protected)
+- **PUT** `/api/v1/users/username` - Update user's username (90-day limit, protected)
+- **PUT** `/api/v1/users/email` - Update user's email address (90-day limit, protected)
+- **PUT** `/api/v1/users/avatar` - Update user's avatar URL (protected)
+- **POST** `/api/v1/users/deactivate` - Deactivate user account (protected)
 
 #### Admin Management (Admin Only)
 - **POST** `/api/v1/users/ban` - Ban a user by email
@@ -316,6 +317,33 @@ The Swagger UI provides:
 - **GET** `/api/v1/hello/welcome` - Welcome message
 
 ## Example Responses
+
+### User by ID Endpoint (Public)
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "_id": "507f1f77bcf86cd799439011",
+      "username": "johndoe",
+      "avatarUrl": "https://example.com/avatar.jpg",
+      "isAdmin": false,
+      "isActive": true,
+      "isBanned": false,
+      "isDeleted": false,
+      "lastLoginAt": "2024-01-15T10:30:00.000Z",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-15T10:30:00.000Z",
+      "usernameUpdatedAt": "2024-01-10T15:20:00.000Z",
+      "emailUpdatedAt": "2024-01-05T12:00:00.000Z",
+      "deactivatedAt": null,
+      "deletedAt": null,
+      "bannedAt": null
+    }
+  },
+  "message": "User retrieved successfully"
+}
+```
 
 ### Cat List Endpoint
 ```json

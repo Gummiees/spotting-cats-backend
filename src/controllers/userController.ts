@@ -1,4 +1,4 @@
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { userService } from '@/services/userService';
 import { ResponseUtil } from '@/utils/response';
 import {
@@ -632,6 +632,39 @@ export class UserController {
         'Not Implemented',
         'getAllUsers method not implemented yet',
         501
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getUserById(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { userId } = req.params;
+
+      if (!userId) {
+        ResponseUtil.badRequest(res, 'User ID is required');
+        return;
+      }
+
+      const user = await userService.getUserById(userId);
+
+      if (!user) {
+        ResponseUtil.notFound(res, 'User not found');
+        return;
+      }
+
+      // Filter out sensitive fields (email and banReason)
+      const { email, banReason, ...publicUser } = user;
+
+      ResponseUtil.success(
+        res,
+        { user: publicUser },
+        'User retrieved successfully'
       );
     } catch (error) {
       next(error);

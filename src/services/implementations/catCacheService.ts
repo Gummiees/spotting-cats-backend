@@ -52,6 +52,19 @@ export class CatCacheService implements ICatService {
     return result;
   }
 
+  async getByUserId(userId: string): Promise<Cat[]> {
+    const cacheKey = `cats:user:${userId}`;
+    const cached = await CacheService.get<Cat[]>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const result = await this.dbService.getByUserId(userId);
+    await CacheService.set(cacheKey, result, CACHE_TTL);
+
+    return result;
+  }
+
   async update(id: string, update: Partial<Cat>): Promise<boolean> {
     // Get the current cat to understand what needs to be invalidated
     const currentCat = await this.dbService.getById(id);
@@ -209,6 +222,9 @@ export class CatCacheService implements ICatService {
   }
 
   private async invalidateUserCaches(userId: string): Promise<void> {
+    // Delete the specific user cache
+    await CacheService.delete(`cats:user:${userId}`);
+
     // Delete all cache keys that contain this userId
     const userPattern = `cats:filtered:*userId*${userId}*`;
     await this.deleteCachePattern(userPattern);

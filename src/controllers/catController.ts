@@ -2,13 +2,20 @@ import { Request, Response, NextFunction } from 'express';
 import { CatService } from '@/services/catService';
 import { CatFilters } from '@/services/interfaces/catServiceInterface';
 import { ResponseUtil } from '@/utils/response';
+import { AuthRequest } from '@/models/requests';
 
 const catService = new CatService();
 
 export class CatController {
-  static async create(req: Request, res: Response, next: NextFunction) {
+  static async create(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const cat = await catService.create(req.body);
+      // Automatically set userId from authenticated user
+      const catData = {
+        ...req.body,
+        userId: req.user!.userId,
+      };
+
+      const cat = await catService.create(catData);
       ResponseUtil.success(res, cat, 'Cat created', 201);
     } catch (err) {
       next(err);
@@ -56,6 +63,15 @@ export class CatController {
     }
   }
 
+  static async getMyCats(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const cats = await catService.getByUserId(req.user!.userId);
+      ResponseUtil.success(res, cats, 'Your cats retrieved');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   static async getById(req: Request, res: Response, next: NextFunction) {
     try {
       const cat = await catService.getById(req.params.id);
@@ -66,8 +82,16 @@ export class CatController {
     }
   }
 
-  static async update(req: Request, res: Response, next: NextFunction) {
+  static async update(req: AuthRequest, res: Response, next: NextFunction) {
     try {
+      // Check if user owns the cat
+      const cat = await catService.getById(req.params.id);
+      if (!cat) return ResponseUtil.notFound(res, 'Cat not found');
+
+      if (cat.userId !== req.user!.userId) {
+        return ResponseUtil.forbidden(res, 'You can only update your own cats');
+      }
+
       const updated = await catService.update(req.params.id, req.body);
       if (!updated) return ResponseUtil.notFound(res, 'Cat not found');
       ResponseUtil.success(res, null, 'Cat updated');
@@ -76,8 +100,16 @@ export class CatController {
     }
   }
 
-  static async delete(req: Request, res: Response, next: NextFunction) {
+  static async delete(req: AuthRequest, res: Response, next: NextFunction) {
     try {
+      // Check if user owns the cat
+      const cat = await catService.getById(req.params.id);
+      if (!cat) return ResponseUtil.notFound(res, 'Cat not found');
+
+      if (cat.userId !== req.user!.userId) {
+        return ResponseUtil.forbidden(res, 'You can only delete your own cats');
+      }
+
       const deleted = await catService.delete(req.params.id);
       if (!deleted) return ResponseUtil.notFound(res, 'Cat not found');
       ResponseUtil.success(res, null, 'Cat deleted');

@@ -29,7 +29,6 @@ export const validateObjectId = (paramName: string): ValidationChain => {
 
 // Cat validation schemas
 export const createCatValidation = [
-  body('userId').isMongoId().withMessage('Valid userId is required'),
   body('name')
     .trim()
     .isLength({ min: 1, max: 100 })
