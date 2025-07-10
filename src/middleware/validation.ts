@@ -28,6 +28,7 @@ export const validateObjectId = (paramName: string): ValidationChain => {
 
 // Cat validation schemas
 export const createCatValidation = [
+  body('userId').isMongoId().withMessage('Valid userId is required'),
   body('name')
     .trim()
     .isLength({ min: 1, max: 100 })
@@ -38,6 +39,28 @@ export const createCatValidation = [
     .isInt({ min: 0, max: 30 })
     .withMessage('Age must be a number between 0 and 30')
     .toInt(),
+  body('xCoordinate')
+    .isFloat({ min: -180, max: 180 })
+    .withMessage('xCoordinate must be a number between -180 and 180')
+    .toFloat(),
+  body('yCoordinate')
+    .isFloat({ min: -90, max: 90 })
+    .withMessage('yCoordinate must be a number between -90 and 90')
+    .toFloat(),
+  body('isDomestic').isBoolean().withMessage('isDomestic must be a boolean'),
+  body('isMale').isBoolean().withMessage('isMale must be a boolean'),
+  body('isSterilized')
+    .isBoolean()
+    .withMessage('isSterilized must be a boolean'),
+  body('isFriendly').isBoolean().withMessage('isFriendly must be a boolean'),
+  body('protectorId')
+    .optional()
+    .isMongoId()
+    .withMessage('protectorId must be a valid MongoDB ID'),
+  body('colonyId')
+    .optional()
+    .isMongoId()
+    .withMessage('colonyId must be a valid MongoDB ID'),
   body('breed')
     .optional()
     .trim()
@@ -45,11 +68,32 @@ export const createCatValidation = [
     .withMessage('Breed must be less than 100 characters')
     .matches(/^[a-zA-Z0-9\s\-_]+$/)
     .withMessage('Breed contains invalid characters'),
+  body('imageUrls')
+    .optional()
+    .isArray()
+    .withMessage('imageUrls must be an array'),
+  body('imageUrls.*')
+    .optional()
+    .isURL()
+    .withMessage('Each imageUrl must be a valid URL'),
+  body('extraInfo')
+    .optional()
+    .trim()
+    .isLength({ max: 1000 })
+    .withMessage('extraInfo must be less than 1000 characters'),
+  body('isUserOwner')
+    .optional()
+    .isBoolean()
+    .withMessage('isUserOwner must be a boolean'),
   handleValidationErrors,
 ];
 
 export const updateCatValidation = [
   validateObjectId('id'),
+  body('userId')
+    .optional()
+    .isMongoId()
+    .withMessage('userId must be a valid MongoDB ID'),
   body('name')
     .optional()
     .trim()
@@ -62,6 +106,37 @@ export const updateCatValidation = [
     .isInt({ min: 0, max: 30 })
     .withMessage('Age must be a number between 0 and 30')
     .toInt(),
+  body('xCoordinate')
+    .optional()
+    .isFloat({ min: -180, max: 180 })
+    .withMessage('xCoordinate must be a number between -180 and 180')
+    .toFloat(),
+  body('yCoordinate')
+    .optional()
+    .isFloat({ min: -90, max: 90 })
+    .withMessage('yCoordinate must be a number between -90 and 90')
+    .toFloat(),
+  body('isDomestic')
+    .optional()
+    .isBoolean()
+    .withMessage('isDomestic must be a boolean'),
+  body('isMale').optional().isBoolean().withMessage('isMale must be a boolean'),
+  body('isSterilized')
+    .optional()
+    .isBoolean()
+    .withMessage('isSterilized must be a boolean'),
+  body('isFriendly')
+    .optional()
+    .isBoolean()
+    .withMessage('isFriendly must be a boolean'),
+  body('protectorId')
+    .optional()
+    .isMongoId()
+    .withMessage('protectorId must be a valid MongoDB ID'),
+  body('colonyId')
+    .optional()
+    .isMongoId()
+    .withMessage('colonyId must be a valid MongoDB ID'),
   body('breed')
     .optional()
     .trim()
@@ -69,6 +144,28 @@ export const updateCatValidation = [
     .withMessage('Breed must be less than 100 characters')
     .matches(/^[a-zA-Z0-9\s\-_]+$/)
     .withMessage('Breed contains invalid characters'),
+  body('imageUrls')
+    .optional()
+    .isArray()
+    .withMessage('imageUrls must be an array'),
+  body('imageUrls.*')
+    .optional()
+    .isURL()
+    .withMessage('Each imageUrl must be a valid URL'),
+  body('extraInfo')
+    .optional()
+    .trim()
+    .isLength({ max: 1000 })
+    .withMessage('extraInfo must be less than 1000 characters'),
+  body('isUserOwner')
+    .optional()
+    .isBoolean()
+    .withMessage('isUserOwner must be a boolean'),
+  body('totalLikes')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('totalLikes must be a non-negative integer')
+    .toInt(),
   handleValidationErrors,
 ];
 

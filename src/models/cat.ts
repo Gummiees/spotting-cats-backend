@@ -1,6 +1,22 @@
 export interface Cat {
-  _id?: string; // MongoDB will use ObjectId, but string is fine for TS
+  _id?: string;
+  userId: string;
+  protectorId?: string;
+  colonyId?: string;
+  totalLikes: number;
   name: string;
   age: number;
   breed?: string;
+  imageUrls: string[];
+  xCoordinate: number;
+  yCoordinate: number;
+  extraInfo?: string;
+  isDomestic: boolean;
+  isMale: boolean;
+  isSterilized: boolean;
+  isFriendly: boolean;
+  isUserOwner: boolean;
+  createdAt: Date;
+  updatedAt?: Date;
+  confirmedOwnerAt?: Date;
 }

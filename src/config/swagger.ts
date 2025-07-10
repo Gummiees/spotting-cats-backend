@@ -139,29 +139,95 @@ const swaggerOptions: Options = {
               type: 'string',
               example: '507f1f77bcf86cd799439011',
             },
+            userId: {
+              type: 'string',
+              description: 'ID of the user who owns the cat',
+              example: '507f1f77bcf86cd799439011',
+            },
+            protectorId: {
+              type: 'string',
+              description: 'ID of the protector (optional)',
+              example: '507f1f77bcf86cd799439012',
+            },
+            colonyId: {
+              type: 'string',
+              description: 'ID of the colony (optional)',
+              example: '507f1f77bcf86cd799439013',
+            },
+            totalLikes: {
+              type: 'number',
+              description: 'Total number of likes',
+              example: 0,
+            },
             name: {
               type: 'string',
               example: 'Fluffy',
             },
-            breed: {
-              type: 'string',
-              example: 'Persian',
-            },
             age: {
               type: 'number',
+              minimum: 0,
+              maximum: 30,
               example: 3,
             },
-            color: {
+            breed: {
               type: 'string',
-              example: 'White',
+              description: 'Cat breed (optional)',
+              example: 'Persian',
             },
-            weight: {
+            imageUrls: {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+              description: 'Array of image URLs',
+              example: [
+                'https://example.com/cat1.jpg',
+                'https://example.com/cat2.jpg',
+              ],
+            },
+            xCoordinate: {
               type: 'number',
-              example: 4.5,
+              minimum: -180,
+              maximum: 180,
+              description: 'Longitude coordinate',
+              example: -73.935242,
             },
-            isVaccinated: {
+            yCoordinate: {
+              type: 'number',
+              minimum: -90,
+              maximum: 90,
+              description: 'Latitude coordinate',
+              example: 40.73061,
+            },
+            extraInfo: {
+              type: 'string',
+              description: 'Additional information about the cat (optional)',
+              example: 'Very friendly cat, loves children',
+            },
+            isDomestic: {
               type: 'boolean',
+              description: 'Whether the cat is domestic or feral',
               example: true,
+            },
+            isMale: {
+              type: 'boolean',
+              description: 'Whether the cat is male',
+              example: true,
+            },
+            isSterilized: {
+              type: 'boolean',
+              description: 'Whether the cat is sterilized',
+              example: false,
+            },
+            isFriendly: {
+              type: 'boolean',
+              description: 'Whether the cat is friendly',
+              example: true,
+            },
+            isUserOwner: {
+              type: 'boolean',
+              description: 'Whether the user is the owner',
+              example: false,
             },
             createdAt: {
               type: 'string',
@@ -170,6 +236,11 @@ const swaggerOptions: Options = {
             updatedAt: {
               type: 'string',
               format: 'date-time',
+            },
+            confirmedOwnerAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'When the owner was confirmed (optional)',
             },
           },
         },

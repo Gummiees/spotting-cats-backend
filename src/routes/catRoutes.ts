@@ -23,27 +23,82 @@ const router = Router();
  *           schema:
  *             type: object
  *             required:
+ *               - userId
  *               - name
- *               - breed
+ *               - age
+ *               - xCoordinate
+ *               - yCoordinate
+ *               - isDomestic
+ *               - isMale
+ *               - isSterilized
+ *               - isFriendly
  *             properties:
+ *               userId:
+ *                 type: string
+ *                 description: ID of the user who owns the cat
+ *                 example: "507f1f77bcf86cd799439011"
+ *               protectorId:
+ *                 type: string
+ *                 description: ID of the protector (optional)
+ *                 example: "507f1f77bcf86cd799439012"
+ *               colonyId:
+ *                 type: string
+ *                 description: ID of the colony (optional)
+ *                 example: "507f1f77bcf86cd799439013"
  *               name:
  *                 type: string
  *                 example: "Fluffy"
- *               breed:
- *                 type: string
- *                 example: "Persian"
  *               age:
  *                 type: number
+ *                 minimum: 0
+ *                 maximum: 30
  *                 example: 3
- *               color:
+ *               breed:
  *                 type: string
- *                 example: "White"
- *               weight:
+ *                 description: Cat breed (optional)
+ *                 example: "Persian"
+ *               imageUrls:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of image URLs (optional)
+ *                 example: ["https://example.com/cat1.jpg", "https://example.com/cat2.jpg"]
+ *               xCoordinate:
  *                 type: number
- *                 example: 4.5
- *               isVaccinated:
+ *                 minimum: -180
+ *                 maximum: 180
+ *                 description: Longitude coordinate
+ *                 example: -73.935242
+ *               yCoordinate:
+ *                 type: number
+ *                 minimum: -90
+ *                 maximum: 90
+ *                 description: Latitude coordinate
+ *                 example: 40.730610
+ *               extraInfo:
+ *                 type: string
+ *                 description: Additional information about the cat (optional)
+ *                 example: "Very friendly cat, loves children"
+ *               isDomestic:
  *                 type: boolean
+ *                 description: Whether the cat is domestic or feral
  *                 example: true
+ *               isMale:
+ *                 type: boolean
+ *                 description: Whether the cat is male
+ *                 example: true
+ *               isSterilized:
+ *                 type: boolean
+ *                 description: Whether the cat is sterilized
+ *                 example: false
+ *               isFriendly:
+ *                 type: boolean
+ *                 description: Whether the cat is friendly
+ *                 example: true
+ *               isUserOwner:
+ *                 type: boolean
+ *                 description: Whether the user is the owner (default: false)
+ *                 example: false
  *     responses:
  *       201:
  *         description: Cat created successfully
@@ -77,6 +132,24 @@ router.post('/', createCatValidation, CatController.create);
  *     tags: [Cats]
  *     parameters:
  *       - in: query
+ *         name: userId
+ *         schema:
+ *           type: string
+ *         description: Filter by user ID
+ *         example: "507f1f77bcf86cd799439011"
+ *       - in: query
+ *         name: protectorId
+ *         schema:
+ *           type: string
+ *         description: Filter by protector ID
+ *         example: "507f1f77bcf86cd799439012"
+ *       - in: query
+ *         name: colonyId
+ *         schema:
+ *           type: string
+ *         description: Filter by colony ID
+ *         example: "507f1f77bcf86cd799439013"
+ *       - in: query
  *         name: breed
  *         schema:
  *           type: string
@@ -89,17 +162,35 @@ router.post('/', createCatValidation, CatController.create);
  *         description: Filter by age
  *         example: 3
  *       - in: query
- *         name: color
- *         schema:
- *           type: string
- *         description: Filter by color
- *         example: "White"
- *       - in: query
- *         name: isVaccinated
+ *         name: isDomestic
  *         schema:
  *           type: boolean
- *         description: Filter by vaccination status
+ *         description: Filter by domestic status
  *         example: true
+ *       - in: query
+ *         name: isMale
+ *         schema:
+ *           type: boolean
+ *         description: Filter by gender
+ *         example: true
+ *       - in: query
+ *         name: isSterilized
+ *         schema:
+ *           type: boolean
+ *         description: Filter by sterilization status
+ *         example: false
+ *       - in: query
+ *         name: isFriendly
+ *         schema:
+ *           type: boolean
+ *         description: Filter by friendliness
+ *         example: true
+ *       - in: query
+ *         name: isUserOwner
+ *         schema:
+ *           type: boolean
+ *         description: Filter by user ownership
+ *         example: false
  *       - in: query
  *         name: limit
  *         schema:
@@ -214,24 +305,76 @@ router.get('/:id', getCatByIdValidation, CatController.getById);
  *           schema:
  *             type: object
  *             properties:
+ *               userId:
+ *                 type: string
+ *                 description: ID of the user who owns the cat
+ *                 example: "507f1f77bcf86cd799439011"
+ *               protectorId:
+ *                 type: string
+ *                 description: ID of the protector (optional)
+ *                 example: "507f1f77bcf86cd799439012"
+ *               colonyId:
+ *                 type: string
+ *                 description: ID of the colony (optional)
+ *                 example: "507f1f77bcf86cd799439013"
  *               name:
  *                 type: string
  *                 example: "Fluffy"
- *               breed:
- *                 type: string
- *                 example: "Persian"
  *               age:
  *                 type: number
+ *                 minimum: 0
+ *                 maximum: 30
  *                 example: 3
- *               color:
+ *               breed:
  *                 type: string
- *                 example: "White"
- *               weight:
+ *                 description: Cat breed (optional)
+ *                 example: "Persian"
+ *               imageUrls:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of image URLs (optional)
+ *                 example: ["https://example.com/cat1.jpg", "https://example.com/cat2.jpg"]
+ *               xCoordinate:
  *                 type: number
- *                 example: 4.5
- *               isVaccinated:
+ *                 minimum: -180
+ *                 maximum: 180
+ *                 description: Longitude coordinate
+ *                 example: -73.935242
+ *               yCoordinate:
+ *                 type: number
+ *                 minimum: -90
+ *                 maximum: 90
+ *                 description: Latitude coordinate
+ *                 example: 40.730610
+ *               extraInfo:
+ *                 type: string
+ *                 description: Additional information about the cat (optional)
+ *                 example: "Very friendly cat, loves children"
+ *               isDomestic:
  *                 type: boolean
+ *                 description: Whether the cat is domestic or feral
  *                 example: true
+ *               isMale:
+ *                 type: boolean
+ *                 description: Whether the cat is male
+ *                 example: true
+ *               isSterilized:
+ *                 type: boolean
+ *                 description: Whether the cat is sterilized
+ *                 example: false
+ *               isFriendly:
+ *                 type: boolean
+ *                 description: Whether the cat is friendly
+ *                 example: true
+ *               isUserOwner:
+ *                 type: boolean
+ *                 description: Whether the user is the owner (optional)
+ *                 example: false
+ *               totalLikes:
+ *                 type: number
+ *                 description: Total number of likes (optional)
+ *                 example: 0
  *     responses:
  *       200:
  *         description: Cat updated successfully

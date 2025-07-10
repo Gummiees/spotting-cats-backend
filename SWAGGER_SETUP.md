@@ -89,14 +89,25 @@ The API uses HTTP-only cookies for authentication. When you authenticate via the
 ```json
 {
   "_id": "507f1f77bcf86cd799439011",
+  "userId": "507f1f77bcf86cd799439011",
+  "protectorId": "507f1f77bcf86cd799439012",
+  "colonyId": "507f1f77bcf86cd799439013",
+  "totalLikes": 0,
   "name": "Fluffy",
-  "breed": "Persian",
   "age": 3,
-  "color": "White",
-  "weight": 4.5,
-  "isVaccinated": true,
+  "breed": "Persian",
+  "imageUrls": ["https://example.com/cat1.jpg", "https://example.com/cat2.jpg"],
+  "xCoordinate": -73.935242,
+  "yCoordinate": 40.730610,
+  "extraInfo": "Very friendly cat, loves children",
+  "isDomestic": true,
+  "isMale": true,
+  "isSterilized": false,
+  "isFriendly": true,
+  "isUserOwner": false,
   "createdAt": "2024-01-01T00:00:00.000Z",
-  "updatedAt": "2024-01-01T00:00:00.000Z"
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "confirmedOwnerAt": "2024-01-01T00:00:00.000Z"
 }
 ```
 
