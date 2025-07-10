@@ -58,8 +58,7 @@ export interface UserSession {
   exp: number;
 }
 
-export interface PublicUser {
-  id: string;
+export interface PublicUserByUsername {
   username?: string;
   avatarUrl?: string;
   isAdmin: boolean;

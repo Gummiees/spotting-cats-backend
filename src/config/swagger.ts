@@ -201,6 +201,51 @@ const swaggerOptions: Options = {
             },
           },
         },
+        PublicUserByUsername: {
+          type: 'object',
+          description:
+            'Public user information returned by getUserByUsername endpoint (no ID included)',
+          properties: {
+            username: {
+              type: 'string',
+              description: 'User username (optional)',
+              example: 'johndoe',
+            },
+            avatarUrl: {
+              type: 'string',
+              description: 'User avatar URL (optional)',
+              example: 'https://example.com/avatar.jpg',
+            },
+            isAdmin: {
+              type: 'boolean',
+              description: 'Whether the user is an admin',
+              example: false,
+            },
+            isInactive: {
+              type: 'boolean',
+              description: 'True if user is not active or banned or deleted',
+              example: false,
+            },
+            isBanned: {
+              type: 'boolean',
+              description: 'Whether the user is banned',
+              example: false,
+            },
+            lastLoginAt: {
+              type: 'string',
+              format: 'date-time',
+              description:
+                'Last login timestamp (set to creation time for new users)',
+              example: '2024-01-15T10:30:00.000Z',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Account creation timestamp',
+              example: '2024-01-01T00:00:00.000Z',
+            },
+          },
+        },
         Cat: {
           type: 'object',
           properties: {

@@ -21,6 +21,7 @@ export interface UserServiceInterface {
   // User management methods
   getUserById(userId: string): Promise<User | null>;
   getUserByEmail(email: string): Promise<User | null>;
+  getUserByUsername(username: string): Promise<User | null>;
   updateUser(
     userId: string,
     updates: UserUpdateRequest

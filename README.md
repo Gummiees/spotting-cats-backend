@@ -282,7 +282,7 @@ The Swagger UI provides:
 - **POST** `/api/v1/users/logout` - Logout user
 
 #### User Management
-- **GET** `/api/v1/users/:userId` - Get user by ID (public access, returns limited user fields)
+- **GET** `/api/v1/users/:username` - Get user by username (public access, returns limited user fields)
 - **GET** `/api/v1/users/profile` - Get current user profile (protected)
 - **PUT** `/api/v1/users/username` - Update user's username (90-day limit, protected)
 - **PUT** `/api/v1/users/email` - Update user's email address (90-day limit, protected)
@@ -319,13 +319,12 @@ The Swagger UI provides:
 
 ## Example Responses
 
-### User by ID Endpoint (Public)
+### User by Username Endpoint (Public)
 ```json
 {
   "success": true,
   "data": {
     "user": {
-      "id": "507f1f77bcf86cd799439011",
       "username": "johndoe",
       "avatarUrl": "https://example.com/avatar.jpg",
       "isAdmin": false,

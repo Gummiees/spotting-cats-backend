@@ -94,6 +94,18 @@ export class UserCacheService implements UserServiceInterface {
     }
   }
 
+  async getUserByUsername(username: string): Promise<User | null> {
+    try {
+      // For username lookups, we'll go directly to the database service
+      // since usernames are not cached in the same way as emails
+      return await this.userService.getUserByUsername(username);
+    } catch (error) {
+      console.error('Error getting user by username from cache:', error);
+      // Fallback to database service
+      return this.userService.getUserByUsername(username);
+    }
+  }
+
   async updateUser(
     userId: string,
     updates: UserUpdateRequest

@@ -11,7 +11,7 @@ import {
   BanUserRequest,
   UnbanUserRequest,
 } from '@/models/requests';
-import { PublicUser } from '@/models/user';
+import { PublicUserByUsername } from '@/models/user';
 
 export class UserController {
   static async sendVerificationCode(
@@ -639,28 +639,27 @@ export class UserController {
     }
   }
 
-  static async getUserById(
+  static async getUserByUsername(
     req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     try {
-      const { userId } = req.params;
+      const { username } = req.params;
 
-      if (!userId) {
-        ResponseUtil.badRequest(res, 'User ID is required');
+      if (!username) {
+        ResponseUtil.badRequest(res, 'Username is required');
         return;
       }
 
-      const user = await userService.getUserById(userId);
+      const user = await userService.getUserByUsername(username);
 
       if (!user) {
         ResponseUtil.notFound(res, 'User not found');
         return;
       }
 
-      const publicUser: PublicUser = {
-        id: user.id!,
+      const publicUser: PublicUserByUsername = {
         username: user.username,
         avatarUrl: user.avatarUrl,
         isAdmin: user.isAdmin,

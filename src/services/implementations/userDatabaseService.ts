@@ -125,6 +125,21 @@ export class UserDatabaseService implements UserServiceInterface {
     }
   }
 
+  async getUserByUsername(username: string): Promise<User | null> {
+    try {
+      const user = await this.usersCollection.findOne({
+        username: username,
+        isDeleted: false,
+      });
+
+      if (!user) return null;
+      return this.mapUserToResponse(user);
+    } catch (error) {
+      console.error('Error getting user by username:', error);
+      return null;
+    }
+  }
+
   async updateUser(
     userId: string,
     updates: UserUpdateRequest

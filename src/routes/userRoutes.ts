@@ -162,19 +162,19 @@ router.get('/profile', authMiddleware, UserController.getCurrentUser);
 
 /**
  * @swagger
- * /api/v1/users/{userId}:
+ * /api/v1/users/{username}:
  *   get:
- *     summary: Get user by ID (public access)
- *     description: Retrieve public user information by ID. Returns a limited set of user fields suitable for public display.
+ *     summary: Get user by username (public access)
+ *     description: Retrieve public user information by username. Returns a limited set of user fields suitable for public display.
  *     tags: [Users]
  *     parameters:
  *       - in: path
- *         name: userId
+ *         name: username
  *         required: true
  *         schema:
  *           type: string
- *         description: The user ID to retrieve
- *         example: "507f1f77bcf86cd799439011"
+ *         description: The username to retrieve
+ *         example: "johndoe"
  *     responses:
  *       200:
  *         description: User retrieved successfully
@@ -190,12 +190,12 @@ router.get('/profile', authMiddleware, UserController.getCurrentUser);
  *                   type: object
  *                   properties:
  *                     user:
- *                       $ref: '#/components/schemas/PublicUser'
+ *                       $ref: '#/components/schemas/PublicUserByUsername'
  *                 message:
  *                   type: string
  *                   example: "User retrieved successfully"
  *       400:
- *         description: Invalid user ID format
+ *         description: Username is required
  *         content:
  *           application/json:
  *             schema:
@@ -207,7 +207,7 @@ router.get('/profile', authMiddleware, UserController.getCurrentUser);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/:userId', UserController.getUserById);
+router.get('/:username', UserController.getUserByUsername);
 
 /**
  * @swagger
