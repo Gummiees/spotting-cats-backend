@@ -5,6 +5,7 @@ import {
   updateCatValidation,
   getCatByIdValidation,
   deleteCatValidation,
+  getCatsQueryValidation,
   sanitizeQueryParams,
 } from '@/middleware/validation';
 
@@ -150,12 +151,6 @@ router.post('/', createCatValidation, CatController.create);
  *         description: Filter by colony ID
  *         example: "507f1f77bcf86cd799439013"
  *       - in: query
- *         name: breed
- *         schema:
- *           type: string
- *         description: Filter by breed
- *         example: "Persian"
- *       - in: query
  *         name: age
  *         schema:
  *           type: number
@@ -237,7 +232,7 @@ router.post('/', createCatValidation, CatController.create);
  *                   type: string
  *                   example: "Cats retrieved successfully"
  */
-router.get('/', CatController.getAll);
+router.get('/', getCatsQueryValidation, CatController.getAll);
 
 /**
  * @swagger

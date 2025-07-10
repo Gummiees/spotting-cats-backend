@@ -1,7 +1,10 @@
 import { Cat } from '@/models/cat';
 import { connectToMongo } from '@/utils/mongo';
 import { DatabaseService } from '@/services/databaseService';
-import { ICatService } from '@/services/interfaces/catServiceInterface';
+import {
+  ICatService,
+  CatFilters,
+} from '@/services/interfaces/catServiceInterface';
 import { ObjectId } from 'mongodb';
 
 const COLLECTION = 'cats';
@@ -54,10 +57,18 @@ export class CatDatabaseService implements ICatService {
     }
   }
 
-  async getAll(): Promise<Cat[]> {
+  async getAll(filters?: CatFilters): Promise<Cat[]> {
     try {
       const collection = await this.getCollection();
-      const cats = await collection.find({}, this.createProjection()).toArray();
+      const query = this.buildFilterQuery(filters);
+      const options = this.buildQueryOptions(filters);
+
+      const cats = await collection
+        .find(query, { projection: this.createProjection().projection })
+        .limit(options.limit)
+        .skip(options.skip)
+        .toArray();
+
       return cats.map((cat) => this.mapCatToResponse(cat));
     } catch (error) {
       this.handleDatabaseError(error, 'getAll');
@@ -104,6 +115,60 @@ export class CatDatabaseService implements ICatService {
     } catch (error) {
       this.handleDatabaseError(error, 'delete');
     }
+  }
+
+  private buildFilterQuery(filters?: CatFilters): any {
+    if (!filters) return {};
+
+    const query: any = {};
+
+    // String filters
+    if (filters.userId) {
+      query.userId = filters.userId;
+    }
+    if (filters.protectorId) {
+      query.protectorId = filters.protectorId;
+    }
+    if (filters.colonyId) {
+      query.colonyId = filters.colonyId;
+    }
+
+    // Number filters
+    if (filters.age !== undefined) {
+      query.age = filters.age;
+    }
+
+    // Boolean filters
+    if (filters.isDomestic !== undefined) {
+      query.isDomestic = filters.isDomestic;
+    }
+    if (filters.isMale !== undefined) {
+      query.isMale = filters.isMale;
+    }
+    if (filters.isSterilized !== undefined) {
+      query.isSterilized = filters.isSterilized;
+    }
+    if (filters.isFriendly !== undefined) {
+      query.isFriendly = filters.isFriendly;
+    }
+    if (filters.isUserOwner !== undefined) {
+      query.isUserOwner = filters.isUserOwner;
+    }
+
+    return query;
+  }
+
+  private buildQueryOptions(filters?: CatFilters): {
+    limit: number;
+    skip: number;
+  } {
+    const limit = filters?.limit
+      ? Math.min(Math.max(filters.limit, 1), 100)
+      : 10; // Default 10, max 100
+    const page = filters?.page ? Math.max(filters.page, 1) : 1; // Default page 1
+    const skip = (page - 1) * limit;
+
+    return { limit, skip };
   }
 
   private async insertCat(catData: any): Promise<ObjectId> {

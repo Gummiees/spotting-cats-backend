@@ -1,6 +1,7 @@
 import {
   body,
   check,
+  query,
   validationResult,
   ValidationChain,
 } from 'express-validator';
@@ -176,6 +177,63 @@ export const getCatByIdValidation = [
 
 export const deleteCatValidation = [
   validateObjectId('id'),
+  handleValidationErrors,
+];
+
+// Query parameter validation for filtering
+export const getCatsQueryValidation = [
+  query('userId')
+    .optional()
+    .isMongoId()
+    .withMessage('userId must be a valid MongoDB ID'),
+  query('protectorId')
+    .optional()
+    .isMongoId()
+    .withMessage('protectorId must be a valid MongoDB ID'),
+  query('colonyId')
+    .optional()
+    .isMongoId()
+    .withMessage('colonyId must be a valid MongoDB ID'),
+  query('age')
+    .optional()
+    .isInt({ min: 0, max: 30 })
+    .withMessage('Age must be a number between 0 and 30')
+    .toInt(),
+  query('isDomestic')
+    .optional()
+    .isBoolean()
+    .withMessage('isDomestic must be a boolean')
+    .toBoolean(),
+  query('isMale')
+    .optional()
+    .isBoolean()
+    .withMessage('isMale must be a boolean')
+    .toBoolean(),
+  query('isSterilized')
+    .optional()
+    .isBoolean()
+    .withMessage('isSterilized must be a boolean')
+    .toBoolean(),
+  query('isFriendly')
+    .optional()
+    .isBoolean()
+    .withMessage('isFriendly must be a boolean')
+    .toBoolean(),
+  query('isUserOwner')
+    .optional()
+    .isBoolean()
+    .withMessage('isUserOwner must be a boolean')
+    .toBoolean(),
+  query('limit')
+    .optional()
+    .isInt({ min: 1, max: 100 })
+    .withMessage('Limit must be between 1 and 100')
+    .toInt(),
+  query('page')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Page must be a positive integer')
+    .toInt(),
   handleValidationErrors,
 ];
 
