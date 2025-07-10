@@ -236,6 +236,9 @@ SMTP_PORT=587
 SMTP_USER=your-email@gmail.com
 SMTP_PASS=your-app-password
 SMTP_FROM=your-email@gmail.com
+
+# Admin Configuration
+ADMIN_EMAIL_WHITELIST=admin@example.com,superuser@example.com
 ```
 
 ## Development

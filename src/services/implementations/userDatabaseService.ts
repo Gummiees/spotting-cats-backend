@@ -11,6 +11,7 @@ import { UserServiceInterface } from '@/services/interfaces/userServiceInterface
 import { User, UserSession, applyUserBusinessLogic } from '@/models/user';
 import { UserUpdateRequest } from '@/models/requests';
 import { generateAvatarForUsername } from '@/utils/avatar';
+import { config } from '@/config';
 
 export class UserDatabaseService implements UserServiceInterface {
   private usersCollection: Collection<any>;
@@ -407,12 +408,16 @@ export class UserDatabaseService implements UserServiceInterface {
     const timestamp = this.createTimestamp();
     const username = await this.generateUniqueUsername();
     const avatarUrl = generateAvatarForUsername(username);
+    const normalizedEmail = this.normalizeEmail(email);
+
+    // Check if email is in admin whitelist
+    const isAdmin = config.admin.emailWhitelist.includes(normalizedEmail);
 
     const userData = {
-      email: this.normalizeEmail(email),
+      email: normalizedEmail,
       username,
       avatarUrl,
-
+      isAdmin,
       isVerified: true,
       isActive: true,
       isDeleted: false,

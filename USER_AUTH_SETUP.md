@@ -12,6 +12,7 @@ This project now includes a secure user authentication system using email-based 
 - **User banning**: Admins can ban/unban users (banned users cannot authenticate)
 - **Email verification**: Automatic email sending for verification codes
 - **Admin controls**: Admin-only endpoints for user management
+- **Admin email whitelist**: Users with emails in the whitelist automatically become admins
 
 ## Environment Variables Required
 
@@ -41,6 +42,9 @@ SMTP_FROM=your-email@gmail.com
 
 # CORS Configuration
 CORS_ORIGINS=http://localhost:3000,http://localhost:3001
+
+# Admin Configuration
+ADMIN_EMAIL_WHITELIST=admin@example.com,superuser@example.com
 ```
 
 ## API Endpoints

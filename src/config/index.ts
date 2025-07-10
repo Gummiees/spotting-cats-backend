@@ -6,10 +6,20 @@ const allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim())
   : [];
 
+// Parse admin email whitelist from environment variable
+const adminEmailWhitelist = process.env.ADMIN_EMAIL_WHITELIST
+  ? process.env.ADMIN_EMAIL_WHITELIST.split(',').map((email) =>
+      email.trim().toLowerCase()
+    )
+  : [];
+
 export const config = {
   port: process.env.PORT || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
   version: process.env.npm_package_version || '1.0.0',
+  admin: {
+    emailWhitelist: adminEmailWhitelist,
+  },
   cors: {
     origin: function (
       origin: string | undefined,
