@@ -69,7 +69,7 @@ export const config = {
   security: {
     rateLimit: {
       windowMs: 15 * 60 * 1000, // 15 minutes
-      max: process.env.NODE_ENV === 'production' ? 100 : 1000, // limit each IP to 100 requests per windowMs in production
+      max: 100, // limit each IP to 100 requests per windowMs (only used in production)
       message: 'Too many requests from this IP, please try again later.',
       standardHeaders: true,
       legacyHeaders: false,
@@ -77,7 +77,7 @@ export const config = {
     slowDown: {
       windowMs: 15 * 60 * 1000, // 15 minutes
       delayAfter: 50, // allow 50 requests per 15 minutes, then...
-      delayMs: () => 500, // begin adding 500ms of delay per request above 50
+      delayMs: () => 500, // begin adding 500ms of delay per request above 50 (only used in production)
     },
     requestSizeLimit: '10mb',
     trustProxy:

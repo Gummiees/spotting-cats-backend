@@ -31,11 +31,13 @@ export const configureSecurityMiddleware = (app: Express): void => {
   // Prevent HTTP Parameter Pollution
   app.use(hpp());
 
-  // Rate limiting
-  app.use(rateLimit(config.security.rateLimit));
+  // Rate limiting - only in production
+  if (config.nodeEnv === 'production') {
+    app.use(rateLimit(config.security.rateLimit));
 
-  // Slow down requests after rate limit
-  app.use(slowDown(config.security.slowDown));
+    // Slow down requests after rate limit - only in production
+    app.use(slowDown(config.security.slowDown));
+  }
 
   // Trust proxy in production (if behind reverse proxy)
   if (config.security.trustProxy) {
@@ -65,18 +67,24 @@ export const configureSecurityMiddleware = (app: Express): void => {
 };
 
 // Additional security middleware for specific routes
-export const strictRateLimit = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 10, // limit each IP to 10 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+export const strictRateLimit =
+  config.nodeEnv === 'production'
+    ? rateLimit({
+        windowMs: 5 * 60 * 1000, // 5 minutes
+        max: 10, // limit each IP to 10 requests per windowMs
+        message: 'Too many requests from this IP, please try again later.',
+        standardHeaders: true,
+        legacyHeaders: false,
+      })
+    : (req: Request, res: Response, next: NextFunction) => next(); // No-op in non-production
 
-export const authRateLimit = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 requests per windowMs
-  message: 'Too many authentication attempts, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+export const authRateLimit =
+  config.nodeEnv === 'production'
+    ? rateLimit({
+        windowMs: 15 * 60 * 1000, // 15 minutes
+        max: 5, // limit each IP to 5 requests per windowMs
+        message: 'Too many authentication attempts, please try again later.',
+        standardHeaders: true,
+        legacyHeaders: false,
+      })
+    : (req: Request, res: Response, next: NextFunction) => next(); // No-op in non-production

@@ -12,10 +12,10 @@ This document outlines the security measures implemented in the backend project 
 - **Type Validation**: Strict type checking for all input parameters
 
 ### 2. Rate Limiting & DDoS Protection
-- **Express Rate Limit**: Global rate limiting (100 requests per 15 minutes in production)
-- **Express Slow Down**: Progressive delays for excessive requests
+- **Express Rate Limit**: Global rate limiting (100 requests per 15 minutes, **only active in production**)
+- **Express Slow Down**: Progressive delays for excessive requests (**only active in production**)
 - **IP-based Limiting**: Rate limits are applied per IP address
-- **Configurable Limits**: Different limits for development vs production
+- **Environment-based**: Rate limiting is disabled in development/staging for easier testing
 
 ### 3. Security Headers (Helmet)
 - **Content Security Policy (CSP)**: Prevents XSS attacks

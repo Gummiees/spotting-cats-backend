@@ -1,7 +1,8 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { UserController } from '@/controllers/userController';
 import { authRateLimit } from '@/middleware/security';
 import { authMiddleware } from '@/middleware/auth';
+import { AuthRequest } from '@/models/requests';
 
 const router = Router();
 
@@ -401,6 +402,69 @@ router.post('/deactivate', authMiddleware, UserController.deactivateAccount);
  *               $ref: '#/components/schemas/Error'
  */
 router.delete('/delete', authMiddleware, UserController.deleteAccount);
+
+/**
+ * @swagger
+ * /api/v1/users/test-auth:
+ *   post:
+ *     summary: Test authentication endpoint
+ *     description: Simple endpoint to test if authentication is working
+ *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Authentication successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       401:
+ *         description: Unauthorized - No valid authentication token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/test-auth', authMiddleware, (req: AuthRequest, res: Response) => {
+  res.json({
+    success: true,
+    message: 'Authentication working correctly',
+    data: {
+      userId: req.user?.userId,
+      email: req.user?.email,
+      username: req.user?.username,
+    },
+  });
+});
+
+/**
+ * @swagger
+ * /api/v1/users/debug-cookies:
+ *   get:
+ *     summary: Debug cookies endpoint
+ *     description: Debug endpoint to see what cookies are being received
+ *     tags: [Debug]
+ *     responses:
+ *       200:
+ *         description: Cookie debug information
+ */
+router.get('/debug-cookies', (req: Request, res: Response) => {
+  res.json({
+    success: true,
+    message: 'Cookie debug information',
+    data: {
+      allCookies: req.cookies,
+      authToken: req.cookies?.auth_token,
+      hasAuthToken: !!req.cookies?.auth_token,
+      headers: {
+        cookie: req.headers.cookie,
+        origin: req.headers.origin,
+        referer: req.headers.referer,
+      },
+    },
+  });
+});
 
 /**
  * @swagger

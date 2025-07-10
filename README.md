@@ -18,7 +18,7 @@ A modern Node.js backend API with Express.js, TypeScript, MongoDB, Redis cache, 
 - **Graceful Shutdown**: Proper server shutdown handling
 - **Swagger Documentation**: Interactive API documentation with OpenAPI 3.0
 - **User Authentication**: Email-based authentication with JWT cookies
-- **Rate Limiting**: Protection against brute force attacks
+- **Rate Limiting**: Protection against brute force attacks (production only)
 
 ## Project Structure
 

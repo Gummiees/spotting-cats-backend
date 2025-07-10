@@ -7,7 +7,7 @@ This project now includes a secure user authentication system using email-based 
 - **Email-based authentication**: Users receive verification codes via email
 - **Secure HTTP-only cookies**: JWT tokens stored in secure cookies
 - **Account management**: Users can deactivate their accounts
-- **Rate limiting**: Protection against brute force attacks
+- **Rate limiting**: Protection against brute force attacks (production only)
 - **Account deactivation**: Users can be deactivated but not deleted
 - **Account deletion**: Users can permanently delete their accounts
 - **User banning**: Admins can ban/unban users (banned users cannot authenticate)
@@ -115,7 +115,7 @@ GET /api/v1/users/admin/all
 ## Security Features
 
 1. **HTTP-only Cookies**: JWT tokens are stored in secure HTTP-only cookies
-2. **Rate Limiting**: Authentication endpoints are rate-limited to prevent brute force attacks
+2. **Rate Limiting**: Authentication endpoints are rate-limited to prevent brute force attacks (production only)
 3. **Email Validation**: Proper email format validation
 4. **Code Expiration**: Verification codes expire after 10 minutes
 5. **Account Status Tracking**: Users can be active, deactivated, or banned
