@@ -373,6 +373,37 @@ router.post('/deactivate', authMiddleware, UserController.deactivateAccount);
 
 /**
  * @swagger
+ * /api/v1/users/delete:
+ *   delete:
+ *     summary: Delete user account permanently
+ *     description: Permanently delete the current user's account. This action cannot be undone.
+ *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Account deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       401:
+ *         description: Unauthorized - No valid authentication token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       400:
+ *         description: Failed to delete account
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.delete('/delete', authMiddleware, UserController.deleteAccount);
+
+/**
+ * @swagger
  * /api/v1/users/ban:
  *   post:
  *     summary: Ban a user (Admin only)

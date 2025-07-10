@@ -31,6 +31,7 @@ http://localhost:3000/api-docs
 - **GET** `/api/v1/users/profile` - Get current user profile (Protected)
 - **PUT** `/api/v1/users/username` - Update user's username (Protected)
 - **POST** `/api/v1/users/deactivate` - Deactivate user account (Protected)
+- **DELETE** `/api/v1/users/delete` - Permanently delete user account (Protected)
 
 ### Admin Management Endpoints
 - **POST** `/api/v1/users/{userId}/ban` - Ban a user (Admin Only)

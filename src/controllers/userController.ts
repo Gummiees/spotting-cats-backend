@@ -137,6 +137,31 @@ export class UserController {
     }
   }
 
+  static async deleteAccount(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const authValidation = UserController.validateUserAuth(req);
+      if (!authValidation.valid) {
+        UserController.handleAuthError(res, authValidation.message);
+        return;
+      }
+
+      const result = await userService.deleteUser(req.user!.userId);
+
+      if (result.success) {
+        UserController.clearAuthCookie(res);
+        ResponseUtil.success(res, null, result.message);
+      } else {
+        ResponseUtil.badRequest(res, result.message);
+      }
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async updateUsername(
     req: AuthRequest,
     res: Response,

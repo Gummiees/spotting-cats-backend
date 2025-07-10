@@ -292,6 +292,7 @@ The Swagger UI provides:
 - **PUT** `/api/v1/users/email` - Update user's email address (90-day limit, protected)
 - **PUT** `/api/v1/users/avatar` - Update user's avatar URL (30-day limit, protected)
 - **POST** `/api/v1/users/deactivate` - Deactivate user account (protected)
+- **DELETE** `/api/v1/users/delete` - Permanently delete user account (protected)
 
 #### Admin Management (Admin Only)
 - **POST** `/api/v1/users/ban` - Ban a user by email

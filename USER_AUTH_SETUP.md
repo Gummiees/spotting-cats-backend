@@ -9,6 +9,7 @@ This project now includes a secure user authentication system using email-based 
 - **Account management**: Users can deactivate their accounts
 - **Rate limiting**: Protection against brute force attacks
 - **Account deactivation**: Users can be deactivated but not deleted
+- **Account deletion**: Users can permanently delete their accounts
 - **User banning**: Admins can ban/unban users (banned users cannot authenticate)
 - **Email verification**: Automatic email sending for verification codes
 - **Admin controls**: Admin-only endpoints for user management
@@ -89,6 +90,11 @@ GET /api/v1/users/profile
 POST /api/v1/users/deactivate
 ```
 
+#### Delete Account
+```
+POST /api/v1/users/delete
+```
+
 ### Admin Endpoints (Admin Authentication Required)
 
 #### Ban User
@@ -114,10 +120,11 @@ GET /api/v1/users/admin/all
 4. **Code Expiration**: Verification codes expire after 10 minutes
 5. **Account Status Tracking**: Users can be active, deactivated, or banned
 6. **Account Deactivation**: Deactivated users are marked as inactive but not physically removed
-7. **User Banning**: Banned users cannot authenticate or access protected endpoints
-8. **Admin Controls**: Admin-only endpoints for user management with proper authorization
-9. **Secure Headers**: Helmet.js provides security headers
-10. **CORS Protection**: Configurable CORS settings
+7. **Account Deletion**: Users can permanently delete their accounts (marked as deleted)
+8. **User Banning**: Banned users cannot authenticate or access protected endpoints
+9. **Admin Controls**: Admin-only endpoints for user management with proper authorization
+10. **Secure Headers**: Helmet.js provides security headers
+11. **CORS Protection**: Configurable CORS settings
 
 ## Database Collections
 
