@@ -454,8 +454,8 @@ export class UserController {
   private static setAuthCookie(res: Response, token: string): void {
     res.cookie('auth_token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: true,
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'none',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       path: '/',
     });
@@ -464,8 +464,8 @@ export class UserController {
   private static clearAuthCookie(res: Response): void {
     res.clearCookie('auth_token', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: true,
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'none',
       path: '/',
     });
   }
