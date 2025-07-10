@@ -8,12 +8,6 @@ export const authMiddleware = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    // Debug logging
-    console.log('Auth middleware - Cookies received:', req.cookies);
-    console.log('Auth middleware - Auth token:', req.cookies?.auth_token);
-    console.log('Auth middleware - Origin:', req.headers.origin);
-    console.log('Auth middleware - Referer:', req.headers.referer);
-
     // Get token from cookie
     const token = req.cookies?.auth_token;
 
@@ -29,10 +23,7 @@ export const authMiddleware = async (
 
     // Verify token
     const decoded = userService.verifyToken(token);
-    console.log('Auth middleware - Token verification result:', decoded);
-
     if (!decoded) {
-      console.log('Auth middleware - Token verification failed');
       res.status(401).json({
         success: false,
         error: 'Unauthorized',
@@ -43,19 +34,8 @@ export const authMiddleware = async (
     }
 
     // Check if user still exists and is active
-    console.log('Auth middleware - Looking up user with ID:', decoded.userId);
     const user = await userService.getUserById(decoded.userId);
-    console.log(
-      'Auth middleware - User lookup result:',
-      user ? 'User found' : 'User not found'
-    );
-
     if (!user || user.isDeleted || user.isBanned) {
-      console.log('Auth middleware - User validation failed:', {
-        userExists: !!user,
-        isDeleted: user?.isDeleted,
-        isBanned: user?.isBanned,
-      });
       res.status(401).json({
         success: false,
         error: 'Unauthorized',
