@@ -46,10 +46,10 @@ const router = Router();
 router.get('/', HelloController.getWelcome);
 
 // API routes
-router.use(`${config.api.prefix}/health`, healthRoutes);
-router.use(`${config.api.prefix}/hello`, helloRoutes);
-router.use(`${config.api.prefix}/cats`, catRoutes);
-router.use(`${config.api.prefix}/cache`, cacheRoutes);
-router.use(`${config.api.prefix}/users`, userRoutes);
+router.use(`${config.api.prefix}/${config.api.version}/health`, healthRoutes);
+router.use(`${config.api.prefix}/${config.api.version}/hello`, helloRoutes);
+router.use(`${config.api.prefix}/${config.api.version}/cats`, catRoutes);
+router.use(`${config.api.prefix}/${config.api.version}/cache`, cacheRoutes);
+router.use(`${config.api.prefix}/${config.api.version}/users`, userRoutes);
 
 export default router;
