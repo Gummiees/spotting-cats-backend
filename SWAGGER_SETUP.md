@@ -31,6 +31,11 @@ http://localhost:3000/api-docs
 - **PUT** `/api/v1/users/username` - Update user's username (Protected)
 - **POST** `/api/v1/users/deactivate` - Deactivate user account (Protected)
 
+### Admin Management Endpoints
+- **POST** `/api/v1/users/{userId}/ban` - Ban a user (Admin Only)
+- **POST** `/api/v1/users/{userId}/unban` - Unban a user (Admin Only)
+- **GET** `/api/v1/users/admin/all` - Get all users (Admin Only)
+
 ### Cat Management Endpoints
 - **POST** `/api/v1/cats` - Create a new cat
 - **GET** `/api/v1/cats` - Get all cats with filtering and pagination
@@ -192,4 +197,4 @@ The Swagger configuration is located in `src/config/swagger.ts`. You can customi
 ### Missing Endpoints
 - Ensure JSDoc comments are properly formatted
 - Check that the file paths in `swaggerOptions.apis` are correct
-- Restart the server after adding new documentation 
+- Restart the server after adding new documentation

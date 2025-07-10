@@ -22,5 +22,6 @@ export interface LoginRequest {
 export interface UserUpdateRequest {
   isActive?: boolean;
   isDeleted?: boolean;
+  isBanned?: boolean;
   username?: string;
 }

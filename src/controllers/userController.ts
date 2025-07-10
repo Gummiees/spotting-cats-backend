@@ -279,4 +279,157 @@ export class UserController {
   ): void {
     ResponseUtil.error(res, message, message, 401);
   }
+
+  // Admin validation methods
+  private static validateBanUserRequest(req: AuthRequest): {
+    valid: boolean;
+    message?: string;
+  } {
+    const authValidation = UserController.validateUserAuth(req);
+    if (!authValidation.valid) {
+      return authValidation;
+    }
+
+    const { userId } = req.params;
+    if (!userId) {
+      return { valid: false, message: 'User ID is required' };
+    }
+
+    return { valid: true };
+  }
+
+  private static async validateAdminAccess(userId: string): Promise<{
+    valid: boolean;
+    message?: string;
+  }> {
+    const currentUser = await userService.getUserById(userId);
+    if (!currentUser?.isAdmin) {
+      return { valid: false, message: 'Admin access required' };
+    }
+    return { valid: true };
+  }
+
+  private static validateNotSelfBan(
+    currentUserId: string,
+    targetUserId: string
+  ): {
+    valid: boolean;
+    message?: string;
+  } {
+    if (targetUserId === currentUserId) {
+      return { valid: false, message: 'Cannot ban your own account' };
+    }
+    return { valid: true };
+  }
+
+  private static handleValidationError(res: Response, message: string): void {
+    ResponseUtil.badRequest(res, message);
+  }
+
+  private static handleAdminError(res: Response, message: string): void {
+    ResponseUtil.error(res, 'Forbidden', message, 403);
+  }
+
+  // Admin methods for user management
+  static async banUser(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const validationResult = UserController.validateBanUserRequest(req);
+      if (!validationResult.valid) {
+        UserController.handleValidationError(res, validationResult.message!);
+        return;
+      }
+
+      const adminValidation = await UserController.validateAdminAccess(
+        req.user!.userId
+      );
+      if (!adminValidation.valid) {
+        UserController.handleAdminError(res, adminValidation.message!);
+        return;
+      }
+
+      const targetUserId = req.params.userId;
+      const selfBanValidation = UserController.validateNotSelfBan(
+        req.user!.userId,
+        targetUserId
+      );
+      if (!selfBanValidation.valid) {
+        UserController.handleValidationError(res, selfBanValidation.message!);
+        return;
+      }
+
+      const result = await userService.updateUser(targetUserId, {
+        isBanned: true,
+      });
+      UserController.handleServiceResponse(res, result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async unbanUser(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const validationResult = UserController.validateBanUserRequest(req);
+      if (!validationResult.valid) {
+        UserController.handleValidationError(res, validationResult.message!);
+        return;
+      }
+
+      const adminValidation = await UserController.validateAdminAccess(
+        req.user!.userId
+      );
+      if (!adminValidation.valid) {
+        UserController.handleAdminError(res, adminValidation.message!);
+        return;
+      }
+
+      const targetUserId = req.params.userId;
+      const result = await userService.updateUser(targetUserId, {
+        isBanned: false,
+      });
+      UserController.handleServiceResponse(res, result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getAllUsers(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const authValidation = UserController.validateUserAuth(req);
+      if (!authValidation.valid) {
+        UserController.handleAuthError(res, authValidation.message);
+        return;
+      }
+
+      const adminValidation = await UserController.validateAdminAccess(
+        req.user!.userId
+      );
+      if (!adminValidation.valid) {
+        UserController.handleAdminError(res, adminValidation.message!);
+        return;
+      }
+
+      // This would need to be implemented in the user service
+      // For now, we'll return an error indicating it's not implemented
+      ResponseUtil.error(
+        res,
+        'Not Implemented',
+        'getAllUsers method not implemented yet',
+        501
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
 }

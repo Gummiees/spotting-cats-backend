@@ -293,6 +293,7 @@ export class UserDatabaseService implements UserServiceInterface {
       isVerified: true,
       isActive: true,
       isDeleted: false,
+      isBanned: false,
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -319,6 +320,11 @@ export class UserDatabaseService implements UserServiceInterface {
     if (updates.isDeleted !== undefined) {
       updateData.isDeleted = updates.isDeleted;
       updateData.deletedAt = updates.isDeleted ? this.createTimestamp() : null;
+    }
+
+    if (updates.isBanned !== undefined) {
+      updateData.isBanned = updates.isBanned;
+      updateData.bannedAt = updates.isBanned ? this.createTimestamp() : null;
     }
 
     return updateData;
@@ -378,11 +384,13 @@ export class UserDatabaseService implements UserServiceInterface {
       email: user.email,
       isActive: user.isActive,
       isDeleted: user.isDeleted,
+      isBanned: user.isBanned || false,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
       lastLoginAt: user.lastLoginAt,
       deactivatedAt: user.deactivatedAt,
       deletedAt: user.deletedAt,
+      bannedAt: user.bannedAt,
       username: user.username,
       usernameUpdatedAt: user.usernameUpdatedAt,
     };

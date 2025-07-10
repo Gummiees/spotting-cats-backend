@@ -9,11 +9,13 @@ export interface User {
   isAdmin?: boolean;
   isActive: boolean;
   isDeleted: boolean;
+  isBanned: boolean;
   createdAt: Date;
   updatedAt: Date;
   lastLoginAt?: Date;
   deactivatedAt?: Date;
   deletedAt?: Date;
+  bannedAt?: Date;
 }
 
 // User with ObjectId for MongoDB operations

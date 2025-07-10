@@ -121,6 +121,11 @@ The Swagger UI provides:
 - **PUT** `/api/v1/users/username` - Update user's username
 - **POST** `/api/v1/users/deactivate` - Deactivate user account
 
+#### Admin Management (Admin Only)
+- **POST** `/api/v1/users/{userId}/ban` - Ban a user
+- **POST** `/api/v1/users/{userId}/unban` - Unban a user
+- **GET** `/api/v1/users/admin/all` - Get all users
+
 #### Cat Management
 - **POST** `/api/v1/cats` - Create a new cat
 - **GET** `/api/v1/cats` - List all cats with filtering and pagination
@@ -297,4 +302,4 @@ For detailed information about the Swagger setup, see [SWAGGER_SETUP.md](./SWAGG
 | `SMTP_PORT` | `587` | SMTP server port |
 | `SMTP_USER` | - | SMTP username/email |
 | `SMTP_PASS` | - | SMTP password/app password |
-| `SMTP_FROM` | `SMTP_USER` | Sender email address | 
+| `SMTP_FROM` | `SMTP_USER` | Sender email address |

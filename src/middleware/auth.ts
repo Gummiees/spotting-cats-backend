@@ -35,11 +35,13 @@ export const authMiddleware = async (
 
     // Check if user still exists and is active
     const user = await userService.getUserById(decoded.userId);
-    if (!user || !user.isActive || user.isDeleted) {
+    if (!user || user.isDeleted || user.isBanned) {
       res.status(401).json({
         success: false,
         error: 'Unauthorized',
-        message: 'User account is not active or has been deleted',
+        message: user?.isBanned
+          ? 'User account has been banned'
+          : 'User account has been deleted',
         timestamp: new Date().toISOString(),
       });
       return;

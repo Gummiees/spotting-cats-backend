@@ -9,7 +9,9 @@ This project now includes a secure user authentication system using email-based 
 - **Account management**: Users can deactivate their accounts
 - **Rate limiting**: Protection against brute force attacks
 - **Account deactivation**: Users can be deactivated but not deleted
+- **User banning**: Admins can ban/unban users (banned users cannot authenticate)
 - **Email verification**: Automatic email sending for verification codes
+- **Admin controls**: Admin-only endpoints for user management
 
 ## Environment Variables Required
 
@@ -83,7 +85,22 @@ GET /api/v1/users/profile
 POST /api/v1/users/deactivate
 ```
 
+### Admin Endpoints (Admin Authentication Required)
 
+#### Ban User
+```
+POST /api/v1/users/{userId}/ban
+```
+
+#### Unban User
+```
+POST /api/v1/users/{userId}/unban
+```
+
+#### Get All Users
+```
+GET /api/v1/users/admin/all
+```
 
 ## Security Features
 
@@ -91,10 +108,12 @@ POST /api/v1/users/deactivate
 2. **Rate Limiting**: Authentication endpoints are rate-limited to prevent brute force attacks
 3. **Email Validation**: Proper email format validation
 4. **Code Expiration**: Verification codes expire after 10 minutes
-5. **Account Status Tracking**: Users can be active or deactivated
+5. **Account Status Tracking**: Users can be active, deactivated, or banned
 6. **Account Deactivation**: Deactivated users are marked as inactive but not physically removed
-7. **Secure Headers**: Helmet.js provides security headers
-8. **CORS Protection**: Configurable CORS settings
+7. **User Banning**: Banned users cannot authenticate or access protected endpoints
+8. **Admin Controls**: Admin-only endpoints for user management with proper authorization
+9. **Secure Headers**: Helmet.js provides security headers
+10. **CORS Protection**: Configurable CORS settings
 
 ## Database Collections
 
@@ -103,14 +122,19 @@ POST /api/v1/users/deactivate
 {
   _id: ObjectId,
   email: String (unique, lowercase),
+  username: String (optional),
+  usernameUpdatedAt: Date (optional),
+  isAdmin: Boolean (default: false),
   isVerified: Boolean,
   isActive: Boolean,
   isDeleted: Boolean,
+  isBanned: Boolean (default: false),
   createdAt: Date,
   updatedAt: Date,
   lastLoginAt: Date,
-  deactivatedAt: Date,
-  deletedAt: Date
+  deactivatedAt: Date (optional),
+  deletedAt: Date (optional),
+  bannedAt: Date (optional)
 }
 ```
 

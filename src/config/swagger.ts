@@ -86,13 +86,25 @@ const swaggerOptions: Options = {
               type: 'string',
               example: 'johndoe',
             },
-            isVerified: {
+            usernameUpdatedAt: {
+              type: 'string',
+              format: 'date-time',
+            },
+            isAdmin: {
               type: 'boolean',
-              example: true,
+              example: false,
             },
             isActive: {
               type: 'boolean',
               example: true,
+            },
+            isDeleted: {
+              type: 'boolean',
+              example: false,
+            },
+            isBanned: {
+              type: 'boolean',
+              example: false,
             },
             createdAt: {
               type: 'string',
@@ -103,6 +115,18 @@ const swaggerOptions: Options = {
               format: 'date-time',
             },
             lastLoginAt: {
+              type: 'string',
+              format: 'date-time',
+            },
+            deactivatedAt: {
+              type: 'string',
+              format: 'date-time',
+            },
+            deletedAt: {
+              type: 'string',
+              format: 'date-time',
+            },
+            bannedAt: {
               type: 'string',
               format: 'date-time',
             },
@@ -214,6 +238,10 @@ const swaggerOptions: Options = {
       {
         name: 'Users',
         description: 'User management endpoints',
+      },
+      {
+        name: 'Admin',
+        description: 'Admin-only user management endpoints',
       },
       {
         name: 'Cats',
