@@ -85,11 +85,14 @@ export class UserDatabaseService implements UserServiceInterface {
         return { success: false, message: userResult.message! };
       }
 
-      // Step 3: Generate authentication token
+      // Step 3: Map user to response format
+      const mappedUser = this.mapUserToResponse(userResult.user!);
+
+      // Step 4: Generate authentication token
       const token = this.createToken(
-        userResult.user!.id!,
-        userResult.user!.email,
-        userResult.user!.username
+        mappedUser.id!,
+        mappedUser.email,
+        mappedUser.username
       );
 
       return {
@@ -98,7 +101,7 @@ export class UserDatabaseService implements UserServiceInterface {
           ? 'Account created successfully'
           : 'Login successful',
         token,
-        user: this.mapUserToResponse(userResult.user!),
+        user: mappedUser,
         isNewUser: userResult.isNewUser,
       };
     } catch (error) {
