@@ -405,41 +405,6 @@ router.delete('/delete', authMiddleware, UserController.deleteAccount);
 
 /**
  * @swagger
- * /api/v1/users/test-auth:
- *   post:
- *     summary: Test authentication endpoint
- *     description: Simple endpoint to test if authentication is working
- *     tags: [Users]
- *     security:
- *       - cookieAuth: []
- *     responses:
- *       200:
- *         description: Authentication successful
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/SuccessResponse'
- *       401:
- *         description: Unauthorized - No valid authentication token
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-router.post('/test-auth', authMiddleware, (req: AuthRequest, res: Response) => {
-  res.json({
-    success: true,
-    message: 'Authentication working correctly',
-    data: {
-      userId: req.user?.userId,
-      email: req.user?.email,
-      username: req.user?.username,
-    },
-  });
-});
-
-/**
- * @swagger
  * /api/v1/users/debug-cookies:
  *   get:
  *     summary: Debug cookies endpoint

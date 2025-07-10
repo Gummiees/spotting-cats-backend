@@ -29,7 +29,10 @@ export const authMiddleware = async (
 
     // Verify token
     const decoded = userService.verifyToken(token);
+    console.log('Auth middleware - Token verification result:', decoded);
+
     if (!decoded) {
+      console.log('Auth middleware - Token verification failed');
       res.status(401).json({
         success: false,
         error: 'Unauthorized',
@@ -40,8 +43,19 @@ export const authMiddleware = async (
     }
 
     // Check if user still exists and is active
+    console.log('Auth middleware - Looking up user with ID:', decoded.userId);
     const user = await userService.getUserById(decoded.userId);
+    console.log(
+      'Auth middleware - User lookup result:',
+      user ? 'User found' : 'User not found'
+    );
+
     if (!user || user.isDeleted || user.isBanned) {
+      console.log('Auth middleware - User validation failed:', {
+        userExists: !!user,
+        isDeleted: user?.isDeleted,
+        isBanned: user?.isBanned,
+      });
       res.status(401).json({
         success: false,
         error: 'Unauthorized',
