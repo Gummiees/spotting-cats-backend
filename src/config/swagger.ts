@@ -85,6 +85,8 @@ const swaggerOptions: Options = {
             username: {
               type: 'string',
               example: 'johndoe',
+              description:
+                'User username (mandatory, auto-generated for new users)',
             },
             avatarUrl: {
               type: 'string',
@@ -163,7 +165,7 @@ const swaggerOptions: Options = {
             },
             username: {
               type: 'string',
-              description: 'User username (optional)',
+              description: 'User username (mandatory)',
               example: 'johndoe',
             },
             avatarUrl: {
@@ -208,7 +210,7 @@ const swaggerOptions: Options = {
           properties: {
             username: {
               type: 'string',
-              description: 'User username (optional)',
+              description: 'User username (mandatory)',
               example: 'johndoe',
             },
             avatarUrl: {

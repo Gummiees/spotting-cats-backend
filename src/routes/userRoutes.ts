@@ -47,6 +47,7 @@ router.post('/send-code', authRateLimit, UserController.sendVerificationCode);
  * /api/v1/users/verify-code:
  *   post:
  *     summary: Verify code and authenticate user
+ *     description: Verify email code and authenticate user. New users will have a unique username auto-generated for them.
  *     tags: [Authentication]
  *     requestBody:
  *       required: true
@@ -214,6 +215,7 @@ router.get('/:username', UserController.getUserByUsername);
  * /api/v1/users/username:
  *   put:
  *     summary: Update user's username
+ *     description: Update user's username. Can only be changed once every 30 days. New users get auto-generated usernames that don't count towards this limit.
  *     tags: [Users]
  *     security:
  *       - cookieAuth: []
@@ -229,6 +231,7 @@ router.get('/:username', UserController.getUserByUsername);
  *               username:
  *                 type: string
  *                 example: "newusername"
+ *                 description: New username (must be unique)
  *     responses:
  *       200:
  *         description: Username updated successfully
@@ -237,7 +240,7 @@ router.get('/:username', UserController.getUserByUsername);
  *             schema:
  *               $ref: '#/components/schemas/SuccessResponse'
  *       400:
- *         description: Invalid username
+ *         description: Invalid username, username already taken, or too soon to update (30-day limit)
  *         content:
  *           application/json:
  *             schema:

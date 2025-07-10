@@ -3,7 +3,7 @@ import { ObjectId } from 'mongodb';
 export interface User {
   id?: string;
   email: string;
-  username?: string;
+  username: string;
   avatarUrl?: string;
   isAdmin: boolean;
   isActive: boolean;
@@ -23,7 +23,7 @@ export interface User {
 
 export interface CreateUser {
   email: string;
-  username?: string;
+  username: string;
   avatarUrl?: string;
   isAdmin?: boolean;
   isActive?: boolean;
@@ -52,14 +52,14 @@ export interface UserDocument extends Omit<User, 'id'> {
 export interface UserSession {
   userId: string;
   email: string;
-  username?: string;
+  username: string;
   isAdmin: boolean;
   iat: number;
   exp: number;
 }
 
 export interface PublicUserByUsername {
-  username?: string;
+  username: string;
   avatarUrl?: string;
   isAdmin: boolean;
   isInactive: boolean;
@@ -85,6 +85,7 @@ export function createUserWithDefaults(
   return {
     ...userData,
     email: userData.email!,
+    username: userData.username!, // Username should be provided when calling this function
     isAdmin: userData.isAdmin ?? false,
     isActive: userData.isActive ?? false,
     isBanned: userData.isBanned ?? false,

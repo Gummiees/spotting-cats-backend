@@ -284,9 +284,9 @@ The Swagger UI provides:
 #### User Management
 - **GET** `/api/v1/users/:username` - Get user by username (public access, returns limited user fields)
 - **GET** `/api/v1/users/profile` - Get current user profile (protected)
-- **PUT** `/api/v1/users/username` - Update user's username (90-day limit, protected)
+- **PUT** `/api/v1/users/username` - Update user's username (30-day limit, protected)
 - **PUT** `/api/v1/users/email` - Update user's email address (90-day limit, protected)
-- **PUT** `/api/v1/users/avatar` - Update user's avatar URL (protected)
+- **PUT** `/api/v1/users/avatar` - Update user's avatar URL (30-day limit, protected)
 - **POST** `/api/v1/users/deactivate` - Deactivate user account (protected)
 
 #### Admin Management (Admin Only)
@@ -325,7 +325,7 @@ The Swagger UI provides:
   "success": true,
   "data": {
     "user": {
-      "username": "johndoe",
+      "username": "happycat",
       "avatarUrl": "https://example.com/avatar.jpg",
       "isAdmin": false,
       "isInactive": false,
@@ -398,6 +398,7 @@ The Swagger UI provides:
 - `bcryptjs`: Password hashing
 - `cookie-parser`: Cookie parsing
 - `express-rate-limit`: Rate limiting
+- `unique-username-generator`: Automatic username generation
 - `helmet`: Security headers
 
 ### Development

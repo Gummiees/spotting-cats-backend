@@ -1,5 +1,10 @@
 import { Collection, ObjectId } from 'mongodb';
 import jwt from 'jsonwebtoken';
+import {
+  uniqueUsernameGenerator,
+  adjectives,
+  nouns,
+} from 'unique-username-generator';
 import { connectToMongo } from '@/utils/mongo';
 import { emailService } from '@/services/emailService';
 import { UserServiceInterface } from '@/services/interfaces/userServiceInterface';
@@ -81,7 +86,8 @@ export class UserDatabaseService implements UserServiceInterface {
       // Step 3: Generate authentication token
       const token = this.createToken(
         userResult.user!.id!,
-        userResult.user!.email
+        userResult.user!.email,
+        userResult.user!.username
       );
 
       return {
@@ -149,13 +155,17 @@ export class UserDatabaseService implements UserServiceInterface {
 
       if (this.isValidUsername(updates.username)) {
         const username = updates.username;
-        const usernameCheck = await this.handleUsernameUpdate(userId, username);
+        const usernameCheck = await this.handleUsernameUpdate(
+          userId,
+          username,
+          true
+        ); // Manual update
         if (!usernameCheck.success) {
           return { success: false, message: usernameCheck.message! };
         }
 
         updateData.username = username;
-        updateData.usernameUpdatedAt = this.createTimestamp();
+        updateData.usernameUpdatedAt = this.createTimestamp(); // Always set for manual updates
       }
 
       if (this.isValidEmailForUpdate(updates.email)) {
@@ -253,7 +263,7 @@ export class UserDatabaseService implements UserServiceInterface {
   }
 
   private async createNewUser(email: string): Promise<any> {
-    const newUser = this.createUserData(email);
+    const newUser = await this.createUserData(email);
     const result = await this.usersCollection.insertOne(newUser);
     return { ...newUser, _id: result.insertedId };
   }
@@ -272,19 +282,25 @@ export class UserDatabaseService implements UserServiceInterface {
 
   private async handleUsernameUpdate(
     userId: string,
-    username: string
+    username: string,
+    isManualUpdate: boolean = true
   ): Promise<{ success: boolean; message?: string }> {
     const currentUser = await this.getUserById(userId);
     if (!currentUser) {
       return { success: false, message: 'User not found' };
     }
 
-    const eligibility = await this.checkUsernameUpdateEligibility(currentUser);
-    if (!eligibility.eligible) {
-      return {
-        success: false,
-        message: `Username can only be updated once every 90 days. You can update it again in ${eligibility.daysRemaining} days.`,
-      };
+    // Only check eligibility for manual updates, not for generated usernames
+    if (isManualUpdate) {
+      const eligibility = await this.checkUsernameUpdateEligibility(
+        currentUser
+      );
+      if (!eligibility.eligible) {
+        return {
+          success: false,
+          message: `Username can only be updated once every 30 days. You can update it again in ${eligibility.daysRemaining} days.`,
+        };
+      }
     }
 
     const isAvailable = await this.checkUsernameAvailability(username, userId);
@@ -326,10 +342,14 @@ export class UserDatabaseService implements UserServiceInterface {
     );
   }
 
-  private createUserData(email: string): any {
+  private async createUserData(email: string): Promise<any> {
     const timestamp = this.createTimestamp();
+    const username = await this.generateUniqueUsername();
+
     const userData = {
       email: this.normalizeEmail(email),
+      username,
+
       isVerified: true,
       isActive: true,
       isDeleted: false,
@@ -399,13 +419,13 @@ export class UserDatabaseService implements UserServiceInterface {
 
     const daysSinceUpdate = this.calculateDaysSince(user.usernameUpdatedAt);
 
-    if (daysSinceUpdate >= 90) {
+    if (daysSinceUpdate >= 30) {
       return { eligible: true };
     }
 
     return {
       eligible: false,
-      daysRemaining: 90 - daysSinceUpdate,
+      daysRemaining: 30 - daysSinceUpdate,
     };
   }
 
@@ -587,10 +607,11 @@ export class UserDatabaseService implements UserServiceInterface {
     );
   }
 
-  private createToken(userId: string, email: string): string {
+  private createToken(userId: string, email: string, username: string): string {
     const payload = {
       userId,
       email,
+      username,
       iat: Math.floor(Date.now() / 1000),
     };
     return jwt.sign(payload, this.JWT_SECRET, {
@@ -717,6 +738,41 @@ export class UserDatabaseService implements UserServiceInterface {
           error instanceof Error ? error.message : 'Internal server error',
       };
     }
+  }
+
+  /**
+   * Generates a unique username using the unique-username-generator library
+   */
+  private async generateUniqueUsername(): Promise<string> {
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    while (attempts < maxAttempts) {
+      const username = uniqueUsernameGenerator({
+        dictionaries: [adjectives, nouns],
+        separator: '',
+        length: 12,
+        style: 'lowerCase',
+      });
+
+      // Check if username is available
+      const isAvailable = await this.checkUsernameAvailability(username);
+      if (isAvailable) {
+        return username;
+      }
+
+      attempts++;
+    }
+
+    // If we can't find a unique username after max attempts, add a random number
+    const baseUsername = uniqueUsernameGenerator({
+      dictionaries: [adjectives, nouns],
+      separator: '',
+      length: 8,
+      style: 'lowerCase',
+    });
+    const randomSuffix = Math.floor(Math.random() * 10000);
+    return `${baseUsername}${randomSuffix}`;
   }
 
   private async initializeCollections(): Promise<void> {
