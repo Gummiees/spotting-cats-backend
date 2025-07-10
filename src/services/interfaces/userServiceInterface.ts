@@ -36,4 +36,9 @@ export interface UserServiceInterface {
 
   // Utility methods
   cleanupExpiredCodes(): Promise<void>;
+  ensureAllUsersHaveAvatars(): Promise<{
+    success: boolean;
+    message: string;
+    updatedCount?: number;
+  }>;
 }

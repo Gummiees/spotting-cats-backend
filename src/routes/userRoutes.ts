@@ -523,4 +523,59 @@ router.post('/unban', authMiddleware, UserController.unbanUser);
  */
 router.get('/admin/all', authMiddleware, UserController.getAllUsers);
 
+/**
+ * @swagger
+ * /api/v1/users/admin/ensure-avatars:
+ *   post:
+ *     summary: Ensure all users have avatars (Admin only)
+ *     description: Generate random avatars for any users that don't have them using DiceBear API
+ *     tags: [Admin]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Avatar migration completed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     updatedCount:
+ *                       type: number
+ *                       example: 5
+ *                       description: Number of users that were updated with new avatars
+ *                 message:
+ *                   type: string
+ *                   example: "Successfully updated avatars for 5 users"
+ *       401:
+ *         description: Unauthorized - No valid authentication token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - Admin access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Migration failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post(
+  '/admin/ensure-avatars',
+  authMiddleware,
+  UserController.ensureAllUsersHaveAvatars
+);
+
 export { router as userRoutes };

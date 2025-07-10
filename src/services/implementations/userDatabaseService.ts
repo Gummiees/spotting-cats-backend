@@ -10,6 +10,7 @@ import { emailService } from '@/services/emailService';
 import { UserServiceInterface } from '@/services/interfaces/userServiceInterface';
 import { User, UserSession, applyUserBusinessLogic } from '@/models/user';
 import { UserUpdateRequest } from '@/models/requests';
+import { generateAvatarForUsername } from '@/utils/avatar';
 
 export class UserDatabaseService implements UserServiceInterface {
   private usersCollection: Collection<any>;
@@ -237,6 +238,66 @@ export class UserDatabaseService implements UserServiceInterface {
     }
   }
 
+  async ensureAllUsersHaveAvatars(): Promise<{
+    success: boolean;
+    message: string;
+    updatedCount?: number;
+  }> {
+    try {
+      // Find all users without avatars
+      const usersWithoutAvatars = await this.usersCollection
+        .find({
+          $or: [
+            { avatarUrl: { $exists: false } },
+            { avatarUrl: null },
+            { avatarUrl: '' },
+          ],
+          isDeleted: false,
+        })
+        .toArray();
+
+      if (usersWithoutAvatars.length === 0) {
+        return {
+          success: true,
+          message: 'All users already have avatars',
+          updatedCount: 0,
+        };
+      }
+
+      let updatedCount = 0;
+      for (const user of usersWithoutAvatars) {
+        try {
+          const avatarUrl = generateAvatarForUsername(user.username);
+          await this.usersCollection.updateOne(
+            { _id: user._id },
+            {
+              $set: {
+                avatarUrl,
+                avatarUpdatedAt: this.createTimestamp(),
+                updatedAt: this.createTimestamp(),
+              },
+            }
+          );
+          updatedCount++;
+        } catch (error) {
+          console.error(`Failed to update avatar for user ${user._id}:`, error);
+        }
+      }
+
+      return {
+        success: true,
+        message: `Successfully updated avatars for ${updatedCount} users`,
+        updatedCount,
+      };
+    } catch (error) {
+      console.error('Error ensuring all users have avatars:', error);
+      return {
+        success: false,
+        message: 'Failed to update user avatars',
+      };
+    }
+  }
+
   public verifyToken(token: string): UserSession | null {
     try {
       return jwt.verify(token, this.JWT_SECRET) as UserSession;
@@ -345,10 +406,12 @@ export class UserDatabaseService implements UserServiceInterface {
   private async createUserData(email: string): Promise<any> {
     const timestamp = this.createTimestamp();
     const username = await this.generateUniqueUsername();
+    const avatarUrl = generateAvatarForUsername(username);
 
     const userData = {
       email: this.normalizeEmail(email),
       username,
+      avatarUrl,
 
       isVerified: true,
       isActive: true,

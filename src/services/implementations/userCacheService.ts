@@ -160,6 +160,21 @@ export class UserCacheService implements UserServiceInterface {
     return this.userService.cleanupExpiredCodes();
   }
 
+  async ensureAllUsersHaveAvatars(): Promise<{
+    success: boolean;
+    message: string;
+    updatedCount?: number;
+  }> {
+    const result = await this.userService.ensureAllUsersHaveAvatars();
+
+    // If avatars were updated, invalidate all user caches
+    if (result.success && result.updatedCount && result.updatedCount > 0) {
+      await this.invalidateAllUserCaches();
+    }
+
+    return result;
+  }
+
   // Cache management methods
   private async cacheUserData(user: User): Promise<void> {
     try {
@@ -220,6 +235,28 @@ export class UserCacheService implements UserServiceInterface {
       }
     } catch (error) {
       console.error('Error invalidating user cache:', error);
+    }
+  }
+
+  private async invalidateAllUserCaches(): Promise<void> {
+    try {
+      const redisClient = getRedisClient();
+
+      // Get all keys matching the user cache patterns
+      const userKeys = await redisClient.keys(`${this.USER_CACHE_PREFIX}*`);
+      const emailKeys = await redisClient.keys(
+        `${this.USER_EMAIL_CACHE_PREFIX}*`
+      );
+
+      // Delete all user-related cache entries
+      if (userKeys.length > 0) {
+        await redisClient.del(userKeys as any);
+      }
+      if (emailKeys.length > 0) {
+        await redisClient.del(emailKeys as any);
+      }
+    } catch (error) {
+      console.error('Error invalidating all user caches:', error);
     }
   }
 }

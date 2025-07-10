@@ -12,6 +12,7 @@ import {
   UnbanUserRequest,
 } from '@/models/requests';
 import { PublicUserByUsername } from '@/models/user';
+import { isValidDiceBearUrl } from '@/utils/avatar';
 
 export class UserController {
   static async sendVerificationCode(
@@ -392,6 +393,11 @@ export class UserController {
       };
     }
 
+    // Check if it's a valid DiceBear URL
+    if (isValidDiceBearUrl(trimmedUrl)) {
+      return { valid: true, normalizedUrl: trimmedUrl };
+    }
+
     // Check for common image file extensions or image hosting domains
     const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
     const imageHosts = [
@@ -413,7 +419,7 @@ export class UserController {
       return {
         valid: false,
         message:
-          'Avatar URL should point to an image file (.jpg, .jpeg, .png, .gif, .webp, .svg) or be from a known image hosting service',
+          'Avatar URL should point to an image file (.jpg, .jpeg, .png, .gif, .webp, .svg), be from a known image hosting service, or be a valid DiceBear avatar URL',
       };
     }
 
@@ -634,6 +640,42 @@ export class UserController {
         'getAllUsers method not implemented yet',
         501
       );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async ensureAllUsersHaveAvatars(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const authValidation = UserController.validateUserAuth(req);
+      if (!authValidation.valid) {
+        UserController.handleAuthError(res, authValidation.message);
+        return;
+      }
+
+      const adminValidation = await UserController.validateAdminAccess(
+        req.user!.userId
+      );
+      if (!adminValidation.valid) {
+        UserController.handleAdminError(res, adminValidation.message!);
+        return;
+      }
+
+      const result = await userService.ensureAllUsersHaveAvatars();
+
+      if (result.success) {
+        ResponseUtil.success(
+          res,
+          { updatedCount: result.updatedCount },
+          result.message
+        );
+      } else {
+        ResponseUtil.error(res, 'Migration Failed', result.message, 500);
+      }
     } catch (error) {
       next(error);
     }

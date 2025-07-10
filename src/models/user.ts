@@ -4,7 +4,7 @@ export interface User {
   id?: string;
   email: string;
   username: string;
-  avatarUrl?: string;
+  avatarUrl: string;
   isAdmin: boolean;
   isActive: boolean;
   isBanned: boolean;
@@ -24,7 +24,7 @@ export interface User {
 export interface CreateUser {
   email: string;
   username: string;
-  avatarUrl?: string;
+  avatarUrl: string;
   isAdmin?: boolean;
   isActive?: boolean;
   isBanned?: boolean;
@@ -60,7 +60,7 @@ export interface UserSession {
 
 export interface PublicUserByUsername {
   username: string;
-  avatarUrl?: string;
+  avatarUrl: string;
   isAdmin: boolean;
   isInactive: boolean;
   isBanned: boolean;
@@ -85,7 +85,8 @@ export function createUserWithDefaults(
   return {
     ...userData,
     email: userData.email!,
-    username: userData.username!, // Username should be provided when calling this function
+    username: userData.username!,
+    avatarUrl: userData.avatarUrl!,
     isAdmin: userData.isAdmin ?? false,
     isActive: userData.isActive ?? false,
     isBanned: userData.isBanned ?? false,
