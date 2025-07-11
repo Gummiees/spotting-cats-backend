@@ -160,6 +160,21 @@ export class UserCacheService implements UserServiceInterface {
     return this.userService.cleanupExpiredCodes();
   }
 
+  async cleanupOldDeactivatedUsers(retentionDays: number): Promise<{
+    success: boolean;
+    deletedCount: number;
+    message: string;
+  }> {
+    return this.userService.cleanupOldDeactivatedUsers(retentionDays);
+  }
+
+  async getDeactivatedUserStats(retentionDays: number): Promise<{
+    totalDeactivated: number;
+    oldDeactivated: number;
+  }> {
+    return this.userService.getDeactivatedUserStats(retentionDays);
+  }
+
   async ensureAllUsersHaveAvatars(): Promise<{
     success: boolean;
     message: string;

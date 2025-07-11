@@ -100,10 +100,6 @@ const swaggerOptions: Options = {
               type: 'boolean',
               example: true,
             },
-            isDeleted: {
-              type: 'boolean',
-              example: false,
-            },
             isBanned: {
               type: 'boolean',
               example: false,

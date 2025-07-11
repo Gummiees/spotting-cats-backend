@@ -267,6 +267,55 @@ export class UserDatabaseService implements UserServiceInterface {
     }
   }
 
+  async cleanupOldDeactivatedUsers(retentionDays: number): Promise<{
+    success: boolean;
+    deletedCount: number;
+    message: string;
+  }> {
+    try {
+      const cutoffDate = this.getCutoffDate(retentionDays);
+      const usersToDelete = await this.findDeactivatedUsersBefore(cutoffDate);
+      await this.orphanUserDataForUsers(usersToDelete);
+      const deletedCount = await this.deleteDeactivatedUsersBefore(cutoffDate);
+      return {
+        success: true,
+        deletedCount,
+        message: `Successfully deleted ${deletedCount} deactivated users older than ${retentionDays} days`,
+      };
+    } catch (error) {
+      console.error('Error cleaning up old deactivated users:', error);
+      return {
+        success: false,
+        deletedCount: 0,
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to cleanup old deactivated users',
+      };
+    }
+  }
+
+  async getDeactivatedUserStats(retentionDays: number): Promise<{
+    totalDeactivated: number;
+    oldDeactivated: number;
+  }> {
+    try {
+      const cutoffDate = this.getCutoffDate(retentionDays);
+      const totalDeactivated = await this.countDeactivatedUsers();
+      const oldDeactivated = await this.countOldDeactivatedUsers(cutoffDate);
+      return {
+        totalDeactivated,
+        oldDeactivated,
+      };
+    } catch (error) {
+      console.error('Error getting deactivated user stats:', error);
+      return {
+        totalDeactivated: 0,
+        oldDeactivated: 0,
+      };
+    }
+  }
+
   private async orphanUserData(userId: string): Promise<void> {
     try {
       // Orphan all cats belonging to this user
@@ -884,5 +933,51 @@ export class UserDatabaseService implements UserServiceInterface {
     } catch (error) {
       console.error('Failed to initialize collections:', error);
     }
+  }
+
+  private getCutoffDate(retentionDays: number): Date {
+    return new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
+  }
+
+  private async findDeactivatedUsersBefore(cutoffDate: Date): Promise<any[]> {
+    return this.usersCollection
+      .find({
+        isActive: false,
+        deactivatedAt: { $lt: cutoffDate },
+        isBanned: false,
+      })
+      .toArray();
+  }
+
+  private async orphanUserDataForUsers(users: any[]): Promise<void> {
+    for (const user of users) {
+      await this.orphanUserData(user._id.toString());
+    }
+  }
+
+  private async deleteDeactivatedUsersBefore(
+    cutoffDate: Date
+  ): Promise<number> {
+    const result = await this.usersCollection.deleteMany({
+      isActive: false,
+      deactivatedAt: { $lt: cutoffDate },
+      isBanned: false,
+    });
+    return result.deletedCount;
+  }
+
+  private async countDeactivatedUsers(): Promise<number> {
+    return this.usersCollection.countDocuments({
+      isActive: false,
+      isBanned: false,
+    });
+  }
+
+  private async countOldDeactivatedUsers(cutoffDate: Date): Promise<number> {
+    return this.usersCollection.countDocuments({
+      isActive: false,
+      deactivatedAt: { $lt: cutoffDate },
+      isBanned: false,
+    });
   }
 }

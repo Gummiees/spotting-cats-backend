@@ -745,4 +745,58 @@ export class UserController {
       next(error);
     }
   }
+
+  static async triggerCleanup(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const authValidation = UserController.validateUserAuth(req);
+      if (!authValidation.valid) {
+        UserController.handleAuthError(res, authValidation.message);
+        return;
+      }
+
+      const adminValidation = await UserController.validateAdminAccess(
+        req.user!.userId
+      );
+      if (!adminValidation.valid) {
+        UserController.handleAdminError(res, adminValidation.message!);
+        return;
+      }
+
+      // Get retention days from query params, default to 30
+      const retentionDays = parseInt(req.query.days as string) || 30;
+
+      // Validate retention days (between 1 and 365 days)
+      if (retentionDays < 1 || retentionDays > 365) {
+        ResponseUtil.badRequest(
+          res,
+          'Retention days must be between 1 and 365'
+        );
+        return;
+      }
+
+      // Import cleanup service
+      const { cleanupService } = await import('@/services/cleanupService');
+
+      const result = await cleanupService.manualCleanup(retentionDays);
+
+      if (result.success) {
+        ResponseUtil.success(
+          res,
+          {
+            deletedCount: result.deletedCount,
+            retentionDays: retentionDays,
+          },
+          result.message
+        );
+      } else {
+        ResponseUtil.error(res, 'Cleanup Failed', result.message, 500);
+      }
+    } catch (error) {
+      next(error);
+    }
+  }
 }

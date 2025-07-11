@@ -41,4 +41,15 @@ export interface UserServiceInterface {
     message: string;
     updatedCount?: number;
   }>;
+
+  // Cleanup methods for deactivated users
+  cleanupOldDeactivatedUsers(retentionDays: number): Promise<{
+    success: boolean;
+    deletedCount: number;
+    message: string;
+  }>;
+  getDeactivatedUserStats(retentionDays: number): Promise<{
+    totalDeactivated: number;
+    oldDeactivated: number;
+  }>;
 }

@@ -10,6 +10,8 @@ This project now includes comprehensive Swagger/OpenAPI documentation for all AP
 - **Schema Definitions**: Complete data models for all entities
 - **Error Handling**: Documented error responses and status codes
 - **Rate Limiting**: Documented rate limiting for authentication endpoints
+- **Automatic Cleanup**: Scheduled cleanup of deactivated users and expired codes
+- **Admin Controls**: Comprehensive admin endpoints for user management
 
 ## Accessing the Documentation
 
@@ -37,6 +39,7 @@ http://localhost:3000/api-docs
 - **POST** `/api/v1/users/{userId}/ban` - Ban a user (Admin Only)
 - **POST** `/api/v1/users/{userId}/unban` - Unban a user (Admin Only)
 - **GET** `/api/v1/users/admin/all` - Get all users (Admin Only)
+- **POST** `/api/v1/users/admin/cleanup` - Manually trigger cleanup of old deactivated users (Admin Only, Rate Limited)
 
 ### Cat Management Endpoints
 - **POST** `/api/v1/cats` - Create a new cat
@@ -83,7 +86,6 @@ The API uses HTTP-only cookies for authentication. When you authenticate via the
   "isAdmin": false,
   "isActive": true,
   "isBanned": false,
-  "isDeleted": false,
   "banReason": "Violation of community guidelines",
   "lastLoginAt": "2024-01-15T10:30:00.000Z",
   "createdAt": "2024-01-01T00:00:00.000Z",

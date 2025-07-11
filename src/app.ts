@@ -8,8 +8,12 @@ import swaggerMiddleware from '@/middleware/swagger';
 import cors from 'cors';
 import express from 'express';
 import cookieParser from 'cookie-parser';
+import { cleanupService } from '@/services/cleanupService';
 
 const app = express();
+
+// Initialize cleanup service (cron jobs)
+cleanupService.initialize();
 
 // Security middleware (must be first)
 configureSecurityMiddleware(app);

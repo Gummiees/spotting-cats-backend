@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { UserController } from '@/controllers/userController';
-import { authRateLimit } from '@/middleware/security';
+import { authRateLimit, cleanupRateLimit } from '@/middleware/security';
 import { authMiddleware } from '@/middleware/auth';
 import { AuthRequest } from '@/models/requests';
 
@@ -636,6 +636,88 @@ router.post(
   '/admin/ensure-avatars',
   authMiddleware,
   UserController.ensureAllUsersHaveAvatars
+);
+
+/**
+ * @swagger
+ * /api/v1/users/admin/cleanup:
+ *   post:
+ *     summary: Manually trigger cleanup of old deactivated users (Admin Only)
+ *     description: Manually trigger the cleanup process to delete deactivated users older than specified days. Rate limited to 3 requests per hour.
+ *     tags: [Admin]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: days
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 365
+ *           default: 30
+ *         description: Number of days to retain deactivated users (default 30)
+ *         example: 30
+ *     responses:
+ *       200:
+ *         description: Cleanup completed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     deletedCount:
+ *                       type: integer
+ *                       description: Number of users deleted
+ *                       example: 5
+ *                     retentionDays:
+ *                       type: integer
+ *                       description: Retention period used
+ *                       example: 30
+ *                 message:
+ *                   type: string
+ *                   example: "Successfully deleted 5 deactivated users older than 30 days"
+ *       400:
+ *         description: Invalid retention days parameter
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized - No valid authentication token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - Admin access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       429:
+ *         description: Rate limit exceeded
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Cleanup process failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post(
+  '/admin/cleanup',
+  cleanupRateLimit,
+  authMiddleware,
+  UserController.triggerCleanup
 );
 
 export { router as userRoutes };

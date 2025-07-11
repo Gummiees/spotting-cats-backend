@@ -10,6 +10,7 @@ This project now includes a secure user authentication system using email-based 
 - **Rate limiting**: Protection against brute force attacks (production only)
 - **Account deactivation**: Users can be deactivated but not deleted
 - **Account deletion**: Users can permanently delete their accounts
+- **Automatic cleanup**: Deactivated accounts are automatically deleted after 30 days
 - **User banning**: Admins can ban/unban users (banned users cannot authenticate)
 - **Email verification**: Automatic email sending for verification codes
 - **Admin controls**: Admin-only endpoints for user management
@@ -112,6 +113,12 @@ POST /api/v1/users/{userId}/unban
 GET /api/v1/users/admin/all
 ```
 
+#### Manual Cleanup
+```
+POST /api/v1/users/admin/cleanup?days=30
+```
+*Rate limited to 3 requests per hour. Deletes deactivated users older than specified days (default 30).*
+
 ## Security Features
 
 1. **HTTP-only Cookies**: JWT tokens are stored in secure HTTP-only cookies
@@ -121,10 +128,11 @@ GET /api/v1/users/admin/all
 5. **Account Status Tracking**: Users can be active, deactivated, or banned
 6. **Account Deactivation**: Deactivated users are marked as inactive but not physically removed
 7. **Account Deletion**: Users can permanently delete their accounts (marked as deleted)
-8. **User Banning**: Banned users cannot authenticate or access protected endpoints
-9. **Admin Controls**: Admin-only endpoints for user management with proper authorization
-10. **Secure Headers**: Helmet.js provides security headers
-11. **CORS Protection**: Configurable CORS settings
+8. **Automatic Cleanup**: Deactivated accounts are automatically deleted after 30 days via scheduled cron job
+9. **User Banning**: Banned users cannot authenticate or access protected endpoints
+10. **Admin Controls**: Admin-only endpoints for user management with proper authorization
+11. **Secure Headers**: Helmet.js provides security headers
+12. **CORS Protection**: Configurable CORS settings
 
 ## Database Collections
 
@@ -150,6 +158,40 @@ GET /api/v1/users/admin/all
   bannedAt: Date (optional)
 }
 ```
+
+## Cleanup System
+
+### Automatic Cleanup
+The system includes an automatic cleanup process that runs daily at 2:00 AM UTC:
+
+- **Deactivated User Cleanup**: Automatically deletes user accounts that have been deactivated for more than 30 days
+- **Expired Code Cleanup**: Removes expired verification codes every hour
+- **Data Orphaning**: Before deleting users, related data (cats, etc.) is properly orphaned to maintain data integrity
+
+### Manual Cleanup
+Admins can manually trigger the cleanup process using the admin endpoint:
+
+```bash
+# Default cleanup (30 days retention)
+POST /api/v1/users/admin/cleanup
+
+# Custom retention period
+POST /api/v1/users/admin/cleanup?days=7
+```
+
+**Rate Limiting**: Manual cleanup is rate-limited to 3 requests per hour per IP address in production.
+
+### Cleanup Process Details
+1. **User Identification**: Finds users with `isActive: false` and `deactivatedAt` older than retention period
+2. **Data Orphaning**: Removes user references from related collections (cats, etc.)
+3. **User Deletion**: Permanently removes user records from the database
+4. **Banned Users**: Banned users are excluded from cleanup to prevent accidental deletion
+5. **Logging**: All cleanup operations are logged for audit purposes
+
+### Configuration
+- **Retention Period**: 30 days (configurable via manual endpoint)
+- **Schedule**: Daily at 2:00 AM UTC
+- **Timezone**: UTC (configurable in cleanup service)
 
 ### Auth Codes Collection
 ```javascript

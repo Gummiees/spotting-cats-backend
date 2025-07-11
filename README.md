@@ -63,7 +63,6 @@ erDiagram
         bool isAdmin
         bool isActive
         bool isBanned
-        bool isDeleted
         string banReason
         DateTime lastLoginAt
         DateTime createdAt
@@ -298,6 +297,7 @@ The Swagger UI provides:
 - **POST** `/api/v1/users/ban` - Ban a user by email
 - **POST** `/api/v1/users/unban` - Unban a user by email
 - **GET** `/api/v1/users/admin/all` - Get all users
+- **POST** `/api/v1/users/admin/cleanup` - Manually trigger cleanup of old deactivated users (rate limited)
 
 #### Cat Management
 - **POST** `/api/v1/cats` - Create a new cat

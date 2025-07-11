@@ -88,3 +88,14 @@ export const authRateLimit =
         legacyHeaders: false,
       })
     : (req: Request, res: Response, next: NextFunction) => next(); // No-op in non-production
+
+export const cleanupRateLimit =
+  config.nodeEnv === 'production'
+    ? rateLimit({
+        windowMs: 60 * 60 * 1000, // 1 hour
+        max: 3, // limit each IP to 3 requests per hour
+        message: 'Too many cleanup operations, please try again later.',
+        standardHeaders: true,
+        legacyHeaders: false,
+      })
+    : (req: Request, res: Response, next: NextFunction) => next(); // No-op in non-production
