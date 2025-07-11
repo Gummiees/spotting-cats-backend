@@ -423,28 +423,16 @@ export class UserController {
       return { valid: true, normalizedUrl: trimmedUrl };
     }
 
-    // Check for common image file extensions or image hosting domains
-    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
-    const imageHosts = [
-      'imgur.com',
-      'cloudinary.com',
-      'gravatar.com',
-      'githubusercontent.com',
-    ];
-
-    const hasImageExtension = imageExtensions.some((ext) =>
-      trimmedUrl.toLowerCase().includes(ext)
-    );
+    const imageHosts = ['dicebear.com'];
 
     const hasImageHost = imageHosts.some((host) =>
       trimmedUrl.toLowerCase().includes(host)
     );
 
-    if (!hasImageExtension && !hasImageHost) {
+    if (!hasImageHost) {
       return {
         valid: false,
-        message:
-          'Avatar URL should point to an image file (.jpg, .jpeg, .png, .gif, .webp, .svg), be from a known image hosting service, or be a valid DiceBear avatar URL',
+        message: 'Avatar URL should be a valid DiceBear avatar URL',
       };
     }
 
