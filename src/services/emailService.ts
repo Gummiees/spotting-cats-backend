@@ -73,7 +73,7 @@ export class EmailService {
       const mailOptions: EmailOptions = {
         from: this.fromEmail,
         to: email,
-        subject: 'Welcome to Our Service',
+        subject: 'Welcome to SpottingCats!',
         html,
       };
 
