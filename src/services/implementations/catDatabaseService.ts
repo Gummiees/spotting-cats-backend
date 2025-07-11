@@ -21,7 +21,7 @@ export class CatDatabaseService implements ICatService {
 
       // Set defaults for optional fields and ensure required fields are present
       const catWithDefaults = {
-        userId: sanitizedCat.userId!,
+        userId: sanitizedCat.userId,
         xCoordinate: sanitizedCat.xCoordinate!,
         yCoordinate: sanitizedCat.yCoordinate!,
         totalLikes: sanitizedCat.totalLikes ?? 0,
@@ -299,9 +299,6 @@ export class CatDatabaseService implements ICatService {
     valid: boolean;
     message?: string;
   } {
-    if (!sanitizedCat.userId) {
-      return { valid: false, message: 'userId is required' };
-    }
     if (sanitizedCat.xCoordinate === undefined) {
       return { valid: false, message: 'xCoordinate is required' };
     }

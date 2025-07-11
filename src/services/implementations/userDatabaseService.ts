@@ -124,7 +124,6 @@ export class UserDatabaseService implements UserServiceInterface {
     try {
       const user = await this.usersCollection.findOne({
         _id: this.createObjectId(userId),
-        isDeleted: false,
       });
 
       if (!user) return null;
@@ -138,7 +137,7 @@ export class UserDatabaseService implements UserServiceInterface {
   async getUserByEmail(email: string): Promise<User | null> {
     try {
       const user = await this.findUserByEmail(email);
-      if (!user || user.isDeleted) return null;
+      if (!user || user.isBanned) return null;
       return this.mapUserToResponse(user);
     } catch (error) {
       console.error('Error getting user by email:', error);
@@ -150,7 +149,6 @@ export class UserDatabaseService implements UserServiceInterface {
     try {
       const user = await this.usersCollection.findOne({
         username: username,
-        isDeleted: false,
       });
 
       if (!user) return null;
@@ -239,7 +237,24 @@ export class UserDatabaseService implements UserServiceInterface {
   async deleteUser(
     userId: string
   ): Promise<{ success: boolean; message: string }> {
-    return this.updateUser(userId, { isDeleted: true });
+    try {
+      // First, orphan all related data (cats, etc.)
+      await this.orphanUserData(userId);
+
+      // Then hard delete the user
+      const result = await this.usersCollection.deleteOne({
+        _id: this.createObjectId(userId),
+      });
+
+      if (result.deletedCount === 0) {
+        return { success: false, message: 'User not found' };
+      }
+
+      return { success: true, message: 'User deleted successfully' };
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      return { success: false, message: 'Failed to delete user' };
+    }
   }
 
   async cleanupExpiredCodes(): Promise<void> {
@@ -249,6 +264,19 @@ export class UserDatabaseService implements UserServiceInterface {
       });
     } catch (error) {
       console.error('Error cleaning up expired codes:', error);
+    }
+  }
+
+  private async orphanUserData(userId: string): Promise<void> {
+    try {
+      // Orphan all cats belonging to this user
+      const { connectToMongo } = await import('@/utils/mongo');
+      const db = await connectToMongo();
+      const catsCollection = db.collection('cats');
+
+      await catsCollection.updateMany({ userId }, { $unset: { userId: '' } });
+    } catch (error) {
+      console.error('Error orphaning user data:', error);
     }
   }
 
@@ -266,7 +294,7 @@ export class UserDatabaseService implements UserServiceInterface {
             { avatarUrl: null },
             { avatarUrl: '' },
           ],
-          isDeleted: false,
+          isBanned: false,
         })
         .toArray();
 
@@ -433,7 +461,6 @@ export class UserDatabaseService implements UserServiceInterface {
       isAdmin,
       isVerified: true,
       isActive: true,
-      isDeleted: false,
       isBanned: false,
       lastLoginAt: timestamp,
       createdAt: timestamp,
@@ -463,11 +490,6 @@ export class UserDatabaseService implements UserServiceInterface {
       updateData.deactivatedAt = updates.isActive
         ? null
         : this.createTimestamp();
-    }
-
-    if (updates.isDeleted !== undefined) {
-      updateData.isDeleted = updates.isDeleted;
-      updateData.deletedAt = updates.isDeleted ? this.createTimestamp() : null;
     }
 
     if (updates.isBanned !== undefined) {
@@ -609,7 +631,6 @@ export class UserDatabaseService implements UserServiceInterface {
     const normalizedEmail = this.normalizeEmail(email);
     const query: any = {
       email: normalizedEmail,
-      isDeleted: false,
     };
 
     if (excludeUserId) {
@@ -645,7 +666,6 @@ export class UserDatabaseService implements UserServiceInterface {
       id: user._id.toString(),
       email: user.email,
       isActive: user.isActive,
-      isDeleted: user.isDeleted,
       isBanned: user.isBanned || false,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
@@ -703,7 +723,7 @@ export class UserDatabaseService implements UserServiceInterface {
   private buildUsernameQuery(username: string, excludeUserId?: string): any {
     const query: any = {
       username,
-      isDeleted: false,
+      isBanned: false,
     };
 
     if (excludeUserId) {
@@ -791,13 +811,6 @@ export class UserDatabaseService implements UserServiceInterface {
     user?: any;
   }> {
     try {
-      // Check if user is deleted
-      if (user.isDeleted) {
-        throw new Error(
-          'Account has been permanently deleted and cannot be restored'
-        );
-      }
-
       // Check if user is banned
       if (user.isBanned) {
         throw new Error(

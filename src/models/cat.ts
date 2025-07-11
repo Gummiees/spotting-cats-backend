@@ -1,6 +1,6 @@
 export interface Cat {
   id?: string;
-  userId: string;
+  userId?: string;
   protectorId?: string;
   colonyId?: string;
   totalLikes: number;

@@ -25,7 +25,6 @@ export interface UserUpdateRequest {
   username?: string;
   avatarUrl?: string;
   isActive?: boolean;
-  isDeleted?: boolean;
   isBanned?: boolean;
   banReason?: string;
 }

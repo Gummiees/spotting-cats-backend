@@ -730,7 +730,7 @@ export class UserController {
         username: user.username,
         avatarUrl: user.avatarUrl,
         isAdmin: user.isAdmin,
-        isInactive: !user.isActive || user.isBanned || user.isDeleted,
+        isInactive: !user.isActive || user.isBanned,
         isBanned: user.isBanned,
         lastLoginAt: user.lastLoginAt,
         createdAt: user.createdAt,

@@ -8,7 +8,6 @@ export interface User {
   isAdmin: boolean;
   isActive: boolean;
   isBanned: boolean;
-  isDeleted: boolean;
   banReason?: string;
   lastLoginAt: Date;
   createdAt: Date;
@@ -28,7 +27,6 @@ export interface CreateUser {
   isAdmin?: boolean;
   isActive?: boolean;
   isBanned?: boolean;
-  isDeleted?: boolean;
   banReason?: string;
   lastLoginAt?: Date;
   createdAt: Date;
@@ -71,7 +69,7 @@ export interface PublicUserByUsername {
 export function applyUserBusinessLogic(user: Partial<User>): Partial<User> {
   const updatedUser = { ...user };
 
-  if (updatedUser.isBanned || updatedUser.isDeleted) {
+  if (updatedUser.isBanned) {
     updatedUser.isActive = false;
   }
 
@@ -90,7 +88,6 @@ export function createUserWithDefaults(
     isAdmin: userData.isAdmin ?? false,
     isActive: userData.isActive ?? false,
     isBanned: userData.isBanned ?? false,
-    isDeleted: userData.isDeleted ?? false,
     createdAt,
     lastLoginAt: userData.lastLoginAt ?? createdAt,
   };
