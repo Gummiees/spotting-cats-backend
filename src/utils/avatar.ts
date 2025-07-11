@@ -3,89 +3,11 @@
  */
 
 export interface AvatarOptions {
-  style?: 'bottts';
+  style?: string;
   seed?: string;
   backgroundColor?: string;
   radius?: number;
   size?: number;
-}
-
-/**
- * Generate a random seed for avatar generation
- * @returns string - A random seed string
- */
-function generateRandomSeed(): string {
-  const adjectives = [
-    'happy',
-    'brave',
-    'clever',
-    'swift',
-    'bright',
-    'calm',
-    'eager',
-    'gentle',
-    'kind',
-    'lively',
-    'mighty',
-    'noble',
-    'quick',
-    'radiant',
-    'strong',
-    'wise',
-    'adventurous',
-    'creative',
-    'energetic',
-    'friendly',
-    'graceful',
-    'honest',
-    'imaginative',
-    'joyful',
-    'peaceful',
-    'reliable',
-    'sincere',
-    'thoughtful',
-  ];
-
-  const nouns = [
-    'dragon',
-    'phoenix',
-    'wolf',
-    'eagle',
-    'lion',
-    'tiger',
-    'bear',
-    'fox',
-    'owl',
-    'hawk',
-    'dolphin',
-    'whale',
-    'shark',
-    'turtle',
-    'butterfly',
-    'bee',
-    'star',
-    'moon',
-    'sun',
-    'cloud',
-    'rainbow',
-    'ocean',
-    'mountain',
-    'forest',
-    'river',
-    'crystal',
-    'gem',
-    'diamond',
-    'emerald',
-    'ruby',
-    'sapphire',
-  ];
-
-  const randomAdjective =
-    adjectives[Math.floor(Math.random() * adjectives.length)];
-  const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
-  const randomNumber = Math.floor(Math.random() * 1000);
-
-  return `${randomAdjective}-${randomNoun}-${randomNumber}`;
 }
 
 /**
@@ -99,7 +21,7 @@ export function generateAvatarForUsername(
   options: AvatarOptions = {}
 ): string {
   const {
-    style = 'adventurer',
+    style = 'bottts',
     backgroundColor = 'b6e3f4',
     radius = 50,
     size = 200,
