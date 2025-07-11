@@ -120,8 +120,10 @@ export class CatCacheService implements ICatService {
     // Invalidate general list cache
     invalidationPromises.push(CacheService.delete('cats:all'));
 
-    // Invalidate user-specific caches
-    invalidationPromises.push(this.invalidateUserCaches(newCat.userId));
+    // Invalidate user-specific caches (only if userId exists)
+    if (newCat.userId) {
+      invalidationPromises.push(this.invalidateUserCaches(newCat.userId));
+    }
 
     // Invalidate protector-specific caches if applicable
     if (newCat.protectorId) {
@@ -153,8 +155,10 @@ export class CatCacheService implements ICatService {
     // Invalidate general list cache
     invalidationPromises.push(CacheService.delete('cats:all'));
 
-    // Invalidate current user caches
-    invalidationPromises.push(this.invalidateUserCaches(currentCat.userId));
+    // Invalidate current user caches (only if userId exists)
+    if (currentCat.userId) {
+      invalidationPromises.push(this.invalidateUserCaches(currentCat.userId));
+    }
 
     // If userId is being changed, invalidate new user caches too
     if (update.userId && update.userId !== currentCat.userId) {
@@ -198,8 +202,10 @@ export class CatCacheService implements ICatService {
     // Invalidate general list cache
     invalidationPromises.push(CacheService.delete('cats:all'));
 
-    // Invalidate user-specific caches
-    invalidationPromises.push(this.invalidateUserCaches(deletedCat.userId));
+    // Invalidate user-specific caches (only if userId exists)
+    if (deletedCat.userId) {
+      invalidationPromises.push(this.invalidateUserCaches(deletedCat.userId));
+    }
 
     // Invalidate protector-specific caches if applicable
     if (deletedCat.protectorId) {
