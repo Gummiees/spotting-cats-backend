@@ -27,7 +27,7 @@ export function generateAvatarForUsername(
     size = 200,
   } = options;
 
-  const baseUrl = 'https://api.dicebear.com/7.x';
+  const baseUrl = 'https://api.dicebear.com/9.x';
   const url = `${baseUrl}/${style}/svg?seed=${username}&backgroundColor=${backgroundColor}&radius=${radius}&size=${size}`;
 
   return url;
