@@ -40,6 +40,16 @@ export class UserDatabaseService implements UserServiceInterface {
       }
 
       const existingUser = await this.findUserByEmail(email);
+
+      // Check if existing user is banned
+      if (existingUser && existingUser.isBanned) {
+        return {
+          success: false,
+          message:
+            'This account has been banned and cannot receive verification codes',
+        };
+      }
+
       const code = this.generateVerificationCode();
 
       await this.invalidatePreviousCodes(email);
@@ -785,6 +795,13 @@ export class UserDatabaseService implements UserServiceInterface {
       if (user.isDeleted) {
         throw new Error(
           'Account has been permanently deleted and cannot be restored'
+        );
+      }
+
+      // Check if user is banned
+      if (user.isBanned) {
+        throw new Error(
+          'This account has been banned and cannot be used for authentication'
         );
       }
 
