@@ -26,7 +26,7 @@ export interface UserServiceInterface {
   verifyEmailChange(
     userId: string,
     code: string
-  ): Promise<{ success: boolean; message: string }>;
+  ): Promise<{ success: boolean; message: string; token?: string }>;
 
   // User management methods
   getUserById(userId: string): Promise<User | null>;

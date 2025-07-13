@@ -200,7 +200,7 @@ export class UserCacheService implements UserServiceInterface {
   async verifyEmailChange(
     userId: string,
     code: string
-  ): Promise<{ success: boolean; message: string }> {
+  ): Promise<{ success: boolean; message: string; token?: string }> {
     const result = await this.userService.verifyEmailChange(userId, code);
 
     if (result.success) {

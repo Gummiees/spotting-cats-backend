@@ -248,7 +248,12 @@ export class UserController {
         code
       );
 
-      UserController.handleServiceResponse(res, result);
+      if (result.success && result.token) {
+        UserController.setAuthCookie(res, result.token);
+        ResponseUtil.success(res, null, result.message);
+      } else {
+        ResponseUtil.badRequest(res, result.message);
+      }
     } catch (error) {
       next(error);
     }

@@ -305,7 +305,7 @@ router.put('/email', authMiddleware, UserController.updateEmail);
  * /api/v1/users/email/verify:
  *   post:
  *     summary: Verify email change with verification code
- *     description: Complete the email change process by providing the verification code sent to the new email address.
+ *     description: Complete the email change process by providing the verification code sent to the new email address. The user's session will be maintained with an updated authentication token.
  *     tags: [Users]
  *     security:
  *       - cookieAuth: []
@@ -324,11 +324,17 @@ router.put('/email', authMiddleware, UserController.updateEmail);
  *                 description: Verification code sent to the new email address
  *     responses:
  *       200:
- *         description: Email changed successfully
+ *         description: Email changed successfully. Authentication cookie updated with new token.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/SuccessResponse'
+ *         headers:
+ *           Set-Cookie:
+ *             description: Updated authentication cookie with new token
+ *             schema:
+ *               type: string
+ *               example: "auth_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; HttpOnly; Secure; SameSite=Strict"
  *       400:
  *         description: Invalid verification code or too soon to update (90-day limit)
  *         content:

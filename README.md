@@ -292,6 +292,7 @@ The application implements a secure two-step email change process:
    - User provides verification code from new email
    - System validates code against stored request
    - Email address is updated if verification succeeds
+   - User's session is maintained with updated authentication token
    - Email change request is cleaned up
 
 **Security Features:**

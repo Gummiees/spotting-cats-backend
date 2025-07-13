@@ -177,7 +177,9 @@ The application implements a secure two-step email change process to prevent una
   1. User provides verification code from new email
   2. System validates code against stored request
   3. Email address is updated if verification succeeds
-  4. Email change request is cleaned up
+  4. New JWT token is generated with updated email address
+  5. Authentication cookie is updated to maintain user session
+  6. Email change request is cleaned up
 
 ### Security Features
 - **Verification Codes**: 6-digit codes sent to new email address

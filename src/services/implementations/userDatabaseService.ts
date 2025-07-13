@@ -487,15 +487,13 @@ export class UserDatabaseService implements UserServiceInterface {
   async verifyEmailChange(
     userId: string,
     code: string
-  ): Promise<{ success: boolean; message: string }> {
+  ): Promise<{ success: boolean; message: string; token?: string }> {
     try {
-      // Validate the verification code for this specific email change request
       const codeValidation = await this.validateEmailChangeCode(userId, code);
       if (!codeValidation.valid) {
         return { success: false, message: codeValidation.message! };
       }
 
-      // Get the stored email change request to get the new email
       const emailChangeRequest = await this.findEmailChangeRequest(
         userId,
         code
@@ -504,7 +502,11 @@ export class UserDatabaseService implements UserServiceInterface {
         return { success: false, message: 'Email change request not found' };
       }
 
-      // Update the user's email
+      const currentUser = await this.getUserById(userId);
+      if (!currentUser) {
+        return { success: false, message: 'User not found' };
+      }
+
       const normalizedEmail = this.normalizeEmail(emailChangeRequest.newEmail);
       const result = await this.usersCollection.updateOne(
         { _id: this.createObjectId(userId) },
@@ -521,10 +523,19 @@ export class UserDatabaseService implements UserServiceInterface {
         return { success: false, message: 'User not found' };
       }
 
-      // Clean up the email change request
+      const newToken = this.createToken(
+        userId,
+        normalizedEmail,
+        currentUser.username
+      );
+
       await this.cleanupEmailChangeRequest(userId);
 
-      return { success: true, message: 'Email updated successfully' };
+      return {
+        success: true,
+        message: 'Email updated successfully',
+        token: newToken,
+      };
     } catch (error) {
       console.error('Error verifying email change:', error);
       return { success: false, message: 'Internal server error' };
