@@ -548,14 +548,13 @@ router.get('/debug-cookies', (req: Request, res: Response) => {
  *           schema:
  *             type: object
  *             required:
- *               - email
+ *               - username
  *               - banReason
  *             properties:
- *               email:
+ *               username:
  *                 type: string
- *                 format: email
- *                 example: "user@example.com"
- *                 description: Email of the user to ban
+ *                 example: "johndoe"
+ *                 description: Username of the user to ban
  *               banReason:
  *                 type: string
  *                 example: "Violation of community guidelines"
@@ -568,7 +567,7 @@ router.get('/debug-cookies', (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/SuccessResponse'
  *       400:
- *         description: Invalid request, missing email/ban reason, user not found, or cannot ban own account
+ *         description: Invalid request, missing username/ban reason, user not found, or cannot ban own account
  *         content:
  *           application/json:
  *             schema:
@@ -603,13 +602,12 @@ router.post('/ban', authMiddleware, UserController.banUser);
  *           schema:
  *             type: object
  *             required:
- *               - email
+ *               - username
  *             properties:
- *               email:
+ *               username:
  *                 type: string
- *                 format: email
- *                 example: "user@example.com"
- *                 description: Email of the user to unban
+ *                 example: "johndoe"
+ *                 description: Username of the user to unban
  *     responses:
  *       200:
  *         description: User unbanned successfully
@@ -618,7 +616,7 @@ router.post('/ban', authMiddleware, UserController.banUser);
  *             schema:
  *               $ref: '#/components/schemas/SuccessResponse'
  *       400:
- *         description: Invalid request, missing email, or user not found
+ *         description: Invalid request, missing username, or user not found
  *         content:
  *           application/json:
  *             schema:

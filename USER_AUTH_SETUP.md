@@ -137,12 +137,14 @@ POST /api/v1/users/delete
 
 #### Ban User
 ```
-POST /api/v1/users/{userId}/ban
+POST /api/v1/users/ban
+Body: { "username": "string", "banReason": "string" }
 ```
 
 #### Unban User
 ```
-POST /api/v1/users/{userId}/unban
+POST /api/v1/users/unban
+Body: { "username": "string" }
 ```
 
 #### Get All Users

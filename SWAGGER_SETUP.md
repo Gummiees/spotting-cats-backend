@@ -38,8 +38,8 @@ http://localhost:3000/api-docs
 - **DELETE** `/api/v1/users/delete` - Permanently delete user account (Protected)
 
 ### Admin Management Endpoints
-- **POST** `/api/v1/users/{userId}/ban` - Ban a user (Admin Only)
-- **POST** `/api/v1/users/{userId}/unban` - Unban a user (Admin Only)
+- **POST** `/api/v1/users/ban` - Ban a user by username (Admin Only)
+- **POST** `/api/v1/users/unban` - Unban a user by username (Admin Only)
 - **GET** `/api/v1/users/admin/all` - Get all users (Admin Only)
 - **POST** `/api/v1/users/admin/cleanup` - Manually trigger cleanup of old deactivated users (Admin Only, Rate Limited)
 

@@ -564,9 +564,15 @@ export class UserController {
       return authValidation;
     }
 
-    const { email } = req.body;
-    if (!email) {
-      return { valid: false, message: 'Email is required' };
+    const { username } = req.body;
+    if (!username) {
+      return { valid: false, message: 'Username is required' };
+    }
+
+    // Add username format validation
+    const usernameValidation = UserController.validateUsername(username);
+    if (!usernameValidation.valid) {
+      return { valid: false, message: usernameValidation.message };
     }
 
     return { valid: true };
@@ -584,13 +590,13 @@ export class UserController {
   }
 
   private static validateNotSelfBan(
-    currentUserEmail: string,
-    targetUserEmail: string
+    currentUserUsername: string,
+    targetUserUsername: string
   ): {
     valid: boolean;
     message?: string;
   } {
-    if (targetUserEmail === currentUserEmail) {
+    if (targetUserUsername === currentUserUsername) {
       return { valid: false, message: 'Cannot ban your own account' };
     }
     return { valid: true };
@@ -625,7 +631,7 @@ export class UserController {
         return;
       }
 
-      const { email, banReason }: BanUserRequest = req.body;
+      const { username, banReason }: BanUserRequest = req.body;
 
       if (
         !banReason ||
@@ -636,8 +642,8 @@ export class UserController {
         return;
       }
 
-      // Look up target user by email
-      const targetUser = await userService.getUserByEmail(email);
+      // Look up target user by username
+      const targetUser = await userService.getUserByUsername(username);
       if (!targetUser) {
         UserController.handleValidationError(res, 'User not found');
         return;
@@ -645,8 +651,8 @@ export class UserController {
 
       const currentUser = await userService.getUserById(req.user!.userId);
       const selfBanValidation = UserController.validateNotSelfBan(
-        currentUser!.email,
-        targetUser.email
+        currentUser!.username,
+        targetUser.username
       );
       if (!selfBanValidation.valid) {
         UserController.handleValidationError(res, selfBanValidation.message!);
@@ -683,10 +689,10 @@ export class UserController {
         return;
       }
 
-      const { email }: UnbanUserRequest = req.body;
+      const { username }: UnbanUserRequest = req.body;
 
-      // Look up target user by email
-      const targetUser = await userService.getUserByEmail(email);
+      // Look up target user by username
+      const targetUser = await userService.getUserByUsername(username);
       if (!targetUser) {
         UserController.handleValidationError(res, 'User not found');
         return;

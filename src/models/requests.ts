@@ -47,12 +47,12 @@ export interface AvatarUpdateRequest {
 }
 
 export interface BanUserRequest {
-  email: string;
+  username: string;
   banReason: string;
 }
 
 export interface UnbanUserRequest {
-  email: string;
+  username: string;
 }
 
 export interface DeactivateUserRequest {}

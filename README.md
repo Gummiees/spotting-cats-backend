@@ -320,8 +320,8 @@ The application implements a secure two-step email change process:
 - **DELETE** `/api/v1/users/delete` - Permanently delete user account (protected)
 
 #### Admin Management (Admin Only)
-- **POST** `/api/v1/users/ban` - Ban a user by email
-- **POST** `/api/v1/users/unban` - Unban a user by email
+- **POST** `/api/v1/users/ban` - Ban a user by username
+- **POST** `/api/v1/users/unban` - Unban a user by username
 - **GET** `/api/v1/users/admin/all` - Get all users
 - **POST** `/api/v1/users/admin/cleanup` - Manually trigger cleanup of old deactivated users (rate limited)
 
