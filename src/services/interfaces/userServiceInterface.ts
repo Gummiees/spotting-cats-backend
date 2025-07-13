@@ -17,6 +17,9 @@ export interface UserServiceInterface {
     isNewUser?: boolean;
   }>;
   verifyToken(token: string): UserSession | null;
+  refreshTokenIfNeeded(
+    token: string
+  ): Promise<{ shouldRefresh: boolean; newToken?: string }>;
 
   // Email change methods
   initiateEmailChange(

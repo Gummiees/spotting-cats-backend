@@ -624,6 +624,55 @@ export class UserDatabaseService implements UserServiceInterface {
     }
   }
 
+  /**
+   * Checks if a token needs to be refreshed and generates a new one if needed
+   * Tokens are refreshed if they expire within the next 24 hours
+   */
+  public async refreshTokenIfNeeded(
+    token: string
+  ): Promise<{ shouldRefresh: boolean; newToken?: string }> {
+    try {
+      const decoded = this.verifyToken(token);
+      if (!decoded) {
+        return { shouldRefresh: false };
+      }
+
+      // Check if token expires within the next 24 hours (86400 seconds)
+      const now = Math.floor(Date.now() / 1000);
+      const timeUntilExpiry = decoded.exp - now;
+      const REFRESH_THRESHOLD = this.getRefreshThreshold();
+
+      if (timeUntilExpiry <= REFRESH_THRESHOLD) {
+        // Token is close to expiring, generate a new one
+        const user = await this.getUserById(decoded.userId);
+        if (!user) {
+          return { shouldRefresh: false };
+        }
+
+        const newToken = this.generateTokenForUser(user);
+        return { shouldRefresh: true, newToken };
+      }
+
+      return { shouldRefresh: false };
+    } catch (error) {
+      console.error('Error checking token refresh:', error);
+      return { shouldRefresh: false };
+    }
+  }
+
+  /**
+   * Get the refresh threshold in seconds
+   * Default is 24 hours, but can be overridden for testing
+   */
+  private getRefreshThreshold(): number {
+    // Allow override via environment variable for testing
+    const envThreshold = process.env.TOKEN_REFRESH_THRESHOLD;
+    if (envThreshold) {
+      return parseInt(envThreshold, 10);
+    }
+    return 24 * 60 * 60; // 24 hours in seconds
+  }
+
   private async findUserByEmail(email: string): Promise<any> {
     const normalizedEmail = this.normalizeEmail(email);
     return await this.usersCollection.findOne({

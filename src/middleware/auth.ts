@@ -47,6 +47,19 @@ export const authMiddleware = async (
       return;
     }
 
+    // Proactively refresh token if it's close to expiring
+    const refreshResult = await userService.refreshTokenIfNeeded(token);
+    if (refreshResult.shouldRefresh && refreshResult.newToken) {
+      // Set the new token as a secure cookie
+      res.cookie('auth_token', refreshResult.newToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'none',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        path: '/',
+      });
+    }
+
     // Add user info to request
     req.user = decoded;
     next();

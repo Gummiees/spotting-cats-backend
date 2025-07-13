@@ -122,6 +122,50 @@ router.post('/logout', UserController.logout);
 
 /**
  * @swagger
+ * /api/v1/users/refresh-token:
+ *   post:
+ *     summary: Refresh authentication token
+ *     description: Check if the current token needs refreshing and generate a new one if it expires within 24 hours. This endpoint is useful for clients that want to proactively refresh tokens.
+ *     tags: [Authentication]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Token refresh completed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Token refreshed successfully"
+ *         headers:
+ *           Set-Cookie:
+ *             description: Updated authentication cookie (only if token was refreshed)
+ *             schema:
+ *               type: string
+ *               example: "auth_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; HttpOnly; Secure; SameSite=Strict"
+ *       400:
+ *         description: No authentication token found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized - No valid authentication token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/refresh-token', authMiddleware, UserController.refreshToken);
+
+/**
+ * @swagger
  * /api/v1/users/profile:
  *   get:
  *     summary: Get current user profile

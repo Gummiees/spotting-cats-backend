@@ -80,6 +80,12 @@ Content-Type: application/json
 POST /api/v1/users/logout
 ```
 
+#### Refresh Token
+```
+POST /api/v1/users/refresh-token
+```
+*Automatically refreshes the authentication token if it expires within 24 hours. Useful for maintaining long-term sessions.*
+
 ### Protected Endpoints (Authentication Required)
 
 #### Get Current User Profile
@@ -187,6 +193,7 @@ The application uses JWT tokens for authentication with the following payload st
 - **Admin Status**: Includes admin privileges to avoid additional database queries
 - **7-day Expiration**: Tokens expire after 7 days for security
 - **Automatic Refresh**: Email and username changes automatically update the token to maintain session continuity
+- **Proactive Refresh**: Tokens are automatically refreshed when they expire within 24 hours, maintaining seamless user sessions
 
 ## Secure Email Change Flow
 
@@ -235,6 +242,21 @@ The application supports secure username updates with automatic token regenerati
 - **Reserved Names**: Certain usernames (admin, root, etc.) are reserved
 - **Automatic Token Update**: JWT token is automatically updated with new username
 - **Session Continuity**: User session is maintained without requiring re-authentication
+
+## Proactive Token Refresh
+
+The application implements a proactive token refresh mechanism to maintain seamless user sessions:
+
+### How It Works
+- **24-Hour Threshold**: Tokens are automatically refreshed when they expire within the next 24 hours
+- **Automatic Detection**: The auth middleware checks token expiration on every authenticated request
+- **Seamless Experience**: Users don't need to manually re-authenticate when tokens are close to expiring
+- **Cookie Update**: New tokens are automatically set as secure HTTP-only cookies
+
+### Refresh Scenarios
+1. **Automatic Refresh**: Happens transparently during normal API calls
+2. **Explicit Refresh**: Clients can call `/api/v1/users/refresh-token` to proactively refresh tokens
+3. **No Refresh Needed**: If token is still valid for more than 24 hours, no action is taken
 
 ### Security Features
 - **Verification Codes**: 6-digit codes sent to new email address

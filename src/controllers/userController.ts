@@ -113,6 +113,41 @@ export class UserController {
     }
   }
 
+  static async refreshToken(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const authValidation = UserController.validateUserAuth(req);
+      if (!authValidation.valid) {
+        UserController.handleAuthError(res, authValidation.message);
+        return;
+      }
+
+      const token = req.cookies?.auth_token;
+      if (!token) {
+        ResponseUtil.badRequest(res, 'No authentication token found');
+        return;
+      }
+
+      const refreshResult = await userService.refreshTokenIfNeeded(token);
+
+      if (refreshResult.shouldRefresh && refreshResult.newToken) {
+        UserController.setAuthCookie(res, refreshResult.newToken);
+        ResponseUtil.success(res, null, 'Token refreshed successfully');
+      } else {
+        ResponseUtil.success(
+          res,
+          null,
+          'Token is still valid, no refresh needed'
+        );
+      }
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async deactivateAccount(
     req: AuthRequest,
     res: Response,

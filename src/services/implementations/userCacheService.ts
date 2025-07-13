@@ -49,6 +49,12 @@ export class UserCacheService implements UserServiceInterface {
     return this.userService.verifyToken(token);
   }
 
+  async refreshTokenIfNeeded(
+    token: string
+  ): Promise<{ shouldRefresh: boolean; newToken?: string }> {
+    return this.userService.refreshTokenIfNeeded(token);
+  }
+
   // User management methods - with caching
   async getUserById(userId: string): Promise<User | null> {
     try {
