@@ -208,6 +208,83 @@ router.get('/profile', authMiddleware, UserController.getCurrentUser);
 
 /**
  * @swagger
+ * /api/v1/users/check-username:
+ *   get:
+ *     summary: Check if username is available
+ *     description: Check if a username is available for registration or update. Optionally exclude a specific user ID when checking availability for updates.
+ *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: username
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The username to check
+ *         example: "johndoe"
+ *       - in: query
+ *         name: excludeUserId
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: User ID to exclude from the check (useful when updating own username)
+ *         example: "507f1f77bcf86cd799439011"
+ *     responses:
+ *       200:
+ *         description: Username availability checked successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UsernameAvailabilityResponse'
+ *       400:
+ *         description: Username parameter is required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/check-username', UserController.checkUsernameAvailability);
+
+/**
+ * @swagger
+ * /api/v1/users/check-email:
+ *   get:
+ *     summary: Check if email is available
+ *     description: Check if an email is available for registration or update. Optionally exclude a specific user ID when checking availability for updates.
+ *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: email
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: email
+ *         description: The email to check
+ *         example: "user@example.com"
+ *       - in: query
+ *         name: excludeUserId
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: User ID to exclude from the check (useful when updating own email)
+ *         example: "507f1f77bcf86cd799439011"
+ *     responses:
+ *       200:
+ *         description: Email availability checked successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/EmailAvailabilityResponse'
+ *       400:
+ *         description: Email parameter is required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/check-email', UserController.checkEmailAvailability);
+
+/**
+ * @swagger
  * /api/v1/users/{username}:
  *   get:
  *     summary: Get user by username (public access)

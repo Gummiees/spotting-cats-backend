@@ -55,6 +55,16 @@ export interface UserServiceInterface {
     updatedCount?: number;
   }>;
 
+  // Validation methods
+  checkUsernameAvailability(
+    username: string,
+    excludeUserId?: string
+  ): Promise<{ available: boolean; message: string }>;
+  checkEmailAvailability(
+    email: string,
+    excludeUserId?: string
+  ): Promise<{ available: boolean; message: string }>;
+
   // Cleanup methods for deactivated users
   cleanupOldDeactivatedUsers(retentionDays: number): Promise<{
     success: boolean;

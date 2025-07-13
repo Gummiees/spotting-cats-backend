@@ -785,12 +785,12 @@ export class UserController {
     try {
       const { username } = req.params;
 
-      if (!username) {
+      if (!username || username.trim() === '') {
         ResponseUtil.badRequest(res, 'Username is required');
         return;
       }
 
-      const user = await userService.getUserByUsername(username);
+      const user = await userService.getUserByUsername(username.trim());
 
       if (!user) {
         ResponseUtil.notFound(res, 'User not found');
@@ -811,6 +811,70 @@ export class UserController {
         res,
         { user: publicUser },
         'User retrieved successfully'
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async checkUsernameAvailability(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { username } = req.query;
+      const excludeUserId = req.query.excludeUserId as string;
+
+      if (!username || typeof username !== 'string') {
+        ResponseUtil.badRequest(res, 'Username parameter is required');
+        return;
+      }
+
+      const result = await userService.checkUsernameAvailability(
+        username,
+        excludeUserId
+      );
+
+      ResponseUtil.success(
+        res,
+        {
+          available: result.available,
+          message: result.message,
+        },
+        result.message
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async checkEmailAvailability(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { email } = req.query;
+      const excludeUserId = req.query.excludeUserId as string;
+
+      if (!email || typeof email !== 'string') {
+        ResponseUtil.badRequest(res, 'Email parameter is required');
+        return;
+      }
+
+      const result = await userService.checkEmailAvailability(
+        email,
+        excludeUserId
+      );
+
+      ResponseUtil.success(
+        res,
+        {
+          available: result.available,
+          message: result.message,
+        },
+        result.message
       );
     } catch (error) {
       next(error);

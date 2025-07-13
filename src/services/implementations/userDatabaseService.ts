@@ -329,9 +329,10 @@ export class UserDatabaseService implements UserServiceInterface {
     oldDeactivated: number;
   }> {
     try {
-      const cutoffDate = this.getCutoffDate(retentionDays);
       const totalDeactivated = await this.countDeactivatedUsers();
+      const cutoffDate = this.getCutoffDate(retentionDays);
       const oldDeactivated = await this.countOldDeactivatedUsers(cutoffDate);
+
       return {
         totalDeactivated,
         oldDeactivated,
@@ -341,6 +342,92 @@ export class UserDatabaseService implements UserServiceInterface {
       return {
         totalDeactivated: 0,
         oldDeactivated: 0,
+      };
+    }
+  }
+
+  async checkUsernameAvailability(
+    username: string,
+    excludeUserId?: string
+  ): Promise<{ available: boolean; message: string }> {
+    try {
+      if (!this.isValidUsername(username)) {
+        return {
+          available: false,
+          message: 'Username is required and cannot be empty',
+        };
+      }
+
+      const trimmedUsername = username.trim();
+      if (trimmedUsername.length < 3) {
+        return {
+          available: false,
+          message: 'Username must be at least 3 characters long',
+        };
+      }
+
+      if (trimmedUsername.length > 20) {
+        return {
+          available: false,
+          message: 'Username must be no more than 20 characters long',
+        };
+      }
+
+      if (!/^[a-zA-Z0-9_-]+$/.test(trimmedUsername)) {
+        return {
+          available: false,
+          message:
+            'Username can only contain letters, numbers, underscores, and hyphens',
+        };
+      }
+
+      const isAvailable = await this.isUsernameAvailable(
+        trimmedUsername,
+        excludeUserId
+      );
+
+      return {
+        available: isAvailable,
+        message: isAvailable
+          ? 'Username is available'
+          : 'Username is already taken',
+      };
+    } catch (error) {
+      console.error('Error checking username availability:', error);
+      return {
+        available: false,
+        message: 'Error checking username availability',
+      };
+    }
+  }
+
+  async checkEmailAvailability(
+    email: string,
+    excludeUserId?: string
+  ): Promise<{ available: boolean; message: string }> {
+    try {
+      if (!this.isValidEmail(email)) {
+        return {
+          available: false,
+          message: 'Invalid email format',
+        };
+      }
+
+      const normalizedEmail = this.normalizeEmail(email);
+      const isAvailable = await this.isEmailAvailable(
+        normalizedEmail,
+        excludeUserId
+      );
+
+      return {
+        available: isAvailable,
+        message: isAvailable ? 'Email is available' : 'Email is already in use',
+      };
+    } catch (error) {
+      console.error('Error checking email availability:', error);
+      return {
+        available: false,
+        message: 'Error checking email availability',
       };
     }
   }
@@ -447,7 +534,7 @@ export class UserDatabaseService implements UserServiceInterface {
         };
       }
 
-      const isAvailable = await this.checkEmailAvailability(newEmail, userId);
+      const isAvailable = await this.isEmailAvailable(newEmail, userId);
       if (!isAvailable) {
         return { success: false, message: 'Email is already in use' };
       }
@@ -731,7 +818,7 @@ export class UserDatabaseService implements UserServiceInterface {
       }
     }
 
-    const isAvailable = await this.checkUsernameAvailability(username, userId);
+    const isAvailable = await this.isUsernameAvailable(username, userId);
     if (!isAvailable) {
       return { success: false, message: 'Username is already taken' };
     }
@@ -857,7 +944,7 @@ export class UserDatabaseService implements UserServiceInterface {
     };
   }
 
-  private async checkUsernameAvailability(
+  private async isUsernameAvailable(
     username: string,
     excludeUserId?: string
   ): Promise<boolean> {
@@ -883,7 +970,7 @@ export class UserDatabaseService implements UserServiceInterface {
       };
     }
 
-    const isAvailable = await this.checkEmailAvailability(email, userId);
+    const isAvailable = await this.isEmailAvailable(email, userId);
     if (!isAvailable) {
       return { success: false, message: 'Email is already in use' };
     }
@@ -949,7 +1036,7 @@ export class UserDatabaseService implements UserServiceInterface {
     };
   }
 
-  private async checkEmailAvailability(
+  private async isEmailAvailable(
     email: string,
     excludeUserId?: string
   ): Promise<boolean> {

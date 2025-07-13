@@ -244,6 +244,72 @@ const swaggerOptions: Options = {
             },
           },
         },
+        UsernameAvailabilityResponse: {
+          type: 'object',
+          description: 'Response for username availability check',
+          properties: {
+            success: {
+              type: 'boolean',
+              example: true,
+            },
+            data: {
+              type: 'object',
+              properties: {
+                available: {
+                  type: 'boolean',
+                  description: 'Whether the username is available',
+                  example: true,
+                },
+                message: {
+                  type: 'string',
+                  description: 'Human-readable message about availability',
+                  example: 'Username is available',
+                },
+              },
+            },
+            message: {
+              type: 'string',
+              example: 'Username is available',
+            },
+            timestamp: {
+              type: 'string',
+              format: 'date-time',
+            },
+          },
+        },
+        EmailAvailabilityResponse: {
+          type: 'object',
+          description: 'Response for email availability check',
+          properties: {
+            success: {
+              type: 'boolean',
+              example: true,
+            },
+            data: {
+              type: 'object',
+              properties: {
+                available: {
+                  type: 'boolean',
+                  description: 'Whether the email is available',
+                  example: true,
+                },
+                message: {
+                  type: 'string',
+                  description: 'Human-readable message about availability',
+                  example: 'Email is available',
+                },
+              },
+            },
+            message: {
+              type: 'string',
+              example: 'Email is available',
+            },
+            timestamp: {
+              type: 'string',
+              format: 'date-time',
+            },
+          },
+        },
         EmailChangeVerificationRequest: {
           type: 'object',
           description: 'Request body for email change verification',
