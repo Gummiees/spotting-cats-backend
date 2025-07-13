@@ -1,6 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { UserController } from '@/controllers/userController';
-import { authRateLimit, cleanupRateLimit } from '@/middleware/security';
+import {
+  authRateLimit,
+  cleanupRateLimit,
+  whitelistRoleUpdateRateLimit,
+} from '@/middleware/security';
 import { authMiddleware } from '@/middleware/auth';
 import { AuthRequest } from '@/models/requests';
 
@@ -768,6 +772,39 @@ router.post('/unban', authMiddleware, UserController.unbanUser);
  *               $ref: '#/components/schemas/Error'
  */
 router.put('/role', authMiddleware, UserController.updateUserRole);
+
+/**
+ * @swagger
+ * /api/v1/users/role/whitelist:
+ *   post:
+ *     summary: Update user roles based on admin/superadmin whitelists (Open endpoint)
+ *     description: Automatically updates all users whose emails are in the admin or superadmin whitelists to have the correct roles. Only processes whitelisted emails for efficiency. Rate limited to 1 request per 15 minutes.
+ *     tags: [Admin]
+ *     responses:
+ *       200:
+ *         description: User roles updated successfully based on whitelists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/WhitelistRoleUpdateResponse'
+ *       429:
+ *         description: Rate limit exceeded - too many requests
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post(
+  '/role/whitelist',
+  whitelistRoleUpdateRateLimit,
+  UserController.updateUserRoleByWhitelist
+);
 
 /**
  * @swagger

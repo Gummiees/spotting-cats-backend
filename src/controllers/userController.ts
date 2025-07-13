@@ -16,6 +16,7 @@ import {
 } from '@/models/requests';
 import { PublicUserByUsername } from '@/models/user';
 import { isValidDiceBearUrl } from '@/utils/avatar';
+import { config } from '@/config';
 
 export class UserController {
   static async sendVerificationCode(
@@ -994,6 +995,133 @@ export class UserController {
       } else {
         ResponseUtil.error(res, 'Cleanup Failed', result.message, 500);
       }
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateUserRoleByWhitelist(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const updates: Array<{
+        email: string;
+        previousRole: string;
+        newRole: string;
+        updated: boolean;
+        userFound: boolean;
+      }> = [];
+
+      // Process superadmin whitelist
+      for (const email of config.admin.superadminEmailWhitelist) {
+        const user = await userService.getUserByEmail(email);
+
+        if (user) {
+          if (user.role !== 'superadmin') {
+            // Update user to superadmin
+            const result = await userService.updateUserRole(
+              user.id!,
+              'superadmin',
+              'system-whitelist-update'
+            );
+
+            updates.push({
+              email: email,
+              previousRole: user.role,
+              newRole: 'superadmin',
+              updated: result.success,
+              userFound: true,
+            });
+          } else {
+            updates.push({
+              email: email,
+              previousRole: user.role,
+              newRole: 'superadmin',
+              updated: false, // Already correct role
+              userFound: true,
+            });
+          }
+        } else {
+          updates.push({
+            email: email,
+            previousRole: 'N/A',
+            newRole: 'superadmin',
+            updated: false,
+            userFound: false,
+          });
+        }
+      }
+
+      // Process admin whitelist (excluding emails already in superadmin list)
+      for (const email of config.admin.emailWhitelist) {
+        // Skip if email is already in superadmin whitelist
+        if (config.admin.superadminEmailWhitelist.includes(email)) {
+          continue;
+        }
+
+        const user = await userService.getUserByEmail(email);
+
+        if (user) {
+          if (user.role !== 'admin') {
+            // Update user to admin
+            const result = await userService.updateUserRole(
+              user.id!,
+              'admin',
+              'system-whitelist-update'
+            );
+
+            updates.push({
+              email: email,
+              previousRole: user.role,
+              newRole: 'admin',
+              updated: result.success,
+              userFound: true,
+            });
+          } else {
+            updates.push({
+              email: email,
+              previousRole: user.role,
+              newRole: 'admin',
+              updated: false, // Already correct role
+              userFound: true,
+            });
+          }
+        } else {
+          updates.push({
+            email: email,
+            previousRole: 'N/A',
+            newRole: 'admin',
+            updated: false,
+            userFound: false,
+          });
+        }
+      }
+
+      // Count updates
+      const totalWhitelistedEmails =
+        config.admin.superadminEmailWhitelist.length +
+        config.admin.emailWhitelist.filter(
+          (email) => !config.admin.superadminEmailWhitelist.includes(email)
+        ).length;
+      const updatedCount = updates.filter((u) => u.updated).length;
+      const alreadyCorrectCount = updates.filter(
+        (u) => !u.updated && u.userFound
+      ).length;
+      const notFoundCount = updates.filter((u) => !u.userFound).length;
+
+      ResponseUtil.success(
+        res,
+        {
+          totalWhitelistedEmails,
+          updatedCount,
+          alreadyCorrectCount,
+          notFoundCount,
+          updates,
+        },
+        `Processed ${totalWhitelistedEmails} whitelisted emails. Updated ${updatedCount} roles, ${alreadyCorrectCount} already had correct roles, ${notFoundCount} users not found.`
+      );
     } catch (error) {
       next(error);
     }

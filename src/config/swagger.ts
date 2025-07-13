@@ -495,6 +495,88 @@ const swaggerOptions: Options = {
             },
           },
         },
+        WhitelistRoleUpdateResponse: {
+          type: 'object',
+          description: 'Response for whitelist-based role update endpoint',
+          properties: {
+            success: {
+              type: 'boolean',
+              example: true,
+            },
+            data: {
+              type: 'object',
+              properties: {
+                totalWhitelistedEmails: {
+                  type: 'number',
+                  description: 'Total number of whitelisted emails processed',
+                  example: 5,
+                },
+                updatedCount: {
+                  type: 'number',
+                  description: 'Number of users whose roles were updated',
+                  example: 2,
+                },
+                alreadyCorrectCount: {
+                  type: 'number',
+                  description: 'Number of users who already had correct roles',
+                  example: 2,
+                },
+                notFoundCount: {
+                  type: 'number',
+                  description:
+                    "Number of whitelisted emails that don't have corresponding users",
+                  example: 1,
+                },
+                updates: {
+                  type: 'array',
+                  description:
+                    'Detailed list of all processed emails and their results',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      email: {
+                        type: 'string',
+                        description: 'Email address from the whitelist',
+                        example: 'admin@example.com',
+                      },
+                      previousRole: {
+                        type: 'string',
+                        description:
+                          'User\'s previous role (or "N/A" if user not found)',
+                        example: 'user',
+                      },
+                      newRole: {
+                        type: 'string',
+                        description: 'Target role based on whitelist',
+                        example: 'admin',
+                      },
+                      updated: {
+                        type: 'boolean',
+                        description: 'Whether the role was actually updated',
+                        example: true,
+                      },
+                      userFound: {
+                        type: 'boolean',
+                        description: 'Whether a user with this email exists',
+                        example: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            message: {
+              type: 'string',
+              description: 'Human-readable summary of the operation',
+              example:
+                'Processed 5 whitelisted emails. Updated 2 roles, 2 already had correct roles, 1 users not found.',
+            },
+            timestamp: {
+              type: 'string',
+              format: 'date-time',
+            },
+          },
+        },
       },
     },
     tags: [

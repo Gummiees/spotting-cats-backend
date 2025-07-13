@@ -99,3 +99,14 @@ export const cleanupRateLimit =
         legacyHeaders: false,
       })
     : (req: Request, res: Response, next: NextFunction) => next(); // No-op in non-production
+
+export const whitelistRoleUpdateRateLimit =
+  config.nodeEnv === 'production'
+    ? rateLimit({
+        windowMs: 15 * 60 * 1000, // 15 minutes
+        max: 1, // limit each IP to 1 request per 15 minutes
+        message: 'Too many role update requests, please try again later.',
+        standardHeaders: true,
+        legacyHeaders: false,
+      })
+    : (req: Request, res: Response, next: NextFunction) => next(); // No-op in non-production
