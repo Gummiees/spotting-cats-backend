@@ -181,6 +181,12 @@ Content-Type: application/json
 ```
 *Admin/Superadmin only. Cannot update your own role.*
 
+#### Update User Roles by Whitelist (Open Endpoint)
+```
+POST /api/v1/users/role/whitelist
+```
+*No authentication required. Rate limited to 1 request per 15 minutes. Automatically promotes users whose emails are in admin/superadmin whitelists and demotes superadmins who are no longer in the superadmin whitelist.*
+
 #### Ban User
 ```
 POST /api/v1/users/ban

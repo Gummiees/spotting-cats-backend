@@ -497,7 +497,8 @@ const swaggerOptions: Options = {
         },
         WhitelistRoleUpdateResponse: {
           type: 'object',
-          description: 'Response for whitelist-based role update endpoint',
+          description:
+            'Response for whitelist-based role update endpoint (promotes whitelisted emails and demotes superadmins not in whitelist)',
           properties: {
             success: {
               type: 'boolean',
@@ -511,12 +512,19 @@ const swaggerOptions: Options = {
                   description: 'Total number of whitelisted emails processed',
                   example: 5,
                 },
-                updatedCount: {
+                promotedCount: {
                   type: 'number',
-                  description: 'Number of users whose roles were updated',
+                  description:
+                    'Number of users promoted to admin/superadmin roles',
                   example: 2,
                 },
-                alreadyCorrectCount: {
+                demotedCount: {
+                  type: 'number',
+                  description:
+                    'Number of superadmins demoted to user role (not in superadmin whitelist)',
+                  example: 1,
+                },
+                noChangeCount: {
                   type: 'number',
                   description: 'Number of users who already had correct roles',
                   example: 2,
@@ -527,6 +535,12 @@ const swaggerOptions: Options = {
                     "Number of whitelisted emails that don't have corresponding users",
                   example: 1,
                 },
+                totalUpdated: {
+                  type: 'number',
+                  description:
+                    'Total number of users whose roles were changed (promoted + demoted)',
+                  example: 3,
+                },
                 updates: {
                   type: 'array',
                   description:
@@ -536,7 +550,8 @@ const swaggerOptions: Options = {
                     properties: {
                       email: {
                         type: 'string',
-                        description: 'Email address from the whitelist',
+                        description:
+                          'Email address from the whitelist or existing superadmin',
                         example: 'admin@example.com',
                       },
                       previousRole: {
@@ -547,7 +562,8 @@ const swaggerOptions: Options = {
                       },
                       newRole: {
                         type: 'string',
-                        description: 'Target role based on whitelist',
+                        description:
+                          'Target role based on whitelist or demotion to user',
                         example: 'admin',
                       },
                       updated: {
@@ -560,6 +576,12 @@ const swaggerOptions: Options = {
                         description: 'Whether a user with this email exists',
                         example: true,
                       },
+                      action: {
+                        type: 'string',
+                        enum: ['promoted', 'demoted', 'no_change', 'not_found'],
+                        description: 'Type of action performed on this user',
+                        example: 'promoted',
+                      },
                     },
                   },
                 },
@@ -569,7 +591,7 @@ const swaggerOptions: Options = {
               type: 'string',
               description: 'Human-readable summary of the operation',
               example:
-                'Processed 5 whitelisted emails. Updated 2 roles, 2 already had correct roles, 1 users not found.',
+                'Processed 5 whitelisted emails and 2 superadmin users. Promoted 2, demoted 1, 2 no changes, 1 not found.',
             },
             timestamp: {
               type: 'string',

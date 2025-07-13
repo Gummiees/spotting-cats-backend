@@ -778,7 +778,7 @@ router.put('/role', authMiddleware, UserController.updateUserRole);
  * /api/v1/users/role/whitelist:
  *   post:
  *     summary: Update user roles based on admin/superadmin whitelists (Open endpoint)
- *     description: Automatically updates all users whose emails are in the admin or superadmin whitelists to have the correct roles. Only processes whitelisted emails for efficiency. Rate limited to 1 request per 15 minutes.
+ *     description: Automatically promotes users whose emails are in the admin/superadmin whitelists and demotes superadmins who are no longer in the superadmin whitelist. Only processes whitelisted emails and existing superadmins for efficiency. Rate limited to 1 request per 15 minutes.
  *     tags: [Admin]
  *     responses:
  *       200:
