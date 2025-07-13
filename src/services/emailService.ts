@@ -93,7 +93,8 @@ export class EmailService {
       const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">Email Change Verification</h2>
-          <p>You have requested to change your email address on SpottingCats. To confirm this change, please enter the following verification code:</p>
+          <p>You have requested to change your email address to: <strong>${email}</strong></p>
+          <p>To confirm this change, please enter the following verification code:</p>
           <div style="background-color: #f4f4f4; padding: 20px; text-align: center; border-radius: 5px; margin: 20px 0;">
             <h1 style="color: #007bff; font-size: 32px; margin: 0; letter-spacing: 5px;">${code}</h1>
           </div>
