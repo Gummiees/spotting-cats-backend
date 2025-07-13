@@ -234,6 +234,35 @@ export class UserCacheService implements UserServiceInterface {
     return this.userService.checkEmailAvailability(email, excludeUserId);
   }
 
+  async updateUserRole(
+    userId: string,
+    newRole: 'user' | 'moderator' | 'admin' | 'superadmin',
+    updatedByUserId: string
+  ): Promise<{ success: boolean; message: string; token?: string }> {
+    const result = await this.userService.updateUserRole(
+      userId,
+      newRole,
+      updatedByUserId
+    );
+
+    // Invalidate cache for this user after successful role update
+    if (result.success) {
+      await this.invalidateUserCache(userId);
+    }
+
+    return result;
+  }
+
+  async getAllUsers(): Promise<{
+    success: boolean;
+    users: User[];
+    message: string;
+  }> {
+    // For getting all users, we go directly to the database service
+    // since this is an admin operation and caching all users would be inefficient
+    return this.userService.getAllUsers();
+  }
+
   // Cache management methods
   private async cacheUserData(user: User): Promise<void> {
     try {

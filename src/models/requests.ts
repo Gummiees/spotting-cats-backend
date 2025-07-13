@@ -1,5 +1,5 @@
 import { Request } from 'express';
-import { UserSession } from './user';
+import { UserSession, UserRole } from './user';
 
 export interface AuthRequest extends Request {
   user?: UserSession;
@@ -27,6 +27,7 @@ export interface UserUpdateRequest {
   isActive?: boolean;
   isBanned?: boolean;
   banReason?: string;
+  role?: UserRole;
 }
 
 // Specific endpoint request body interfaces
@@ -53,6 +54,11 @@ export interface BanUserRequest {
 
 export interface UnbanUserRequest {
   username: string;
+}
+
+export interface UpdateUserRoleRequest {
+  username: string;
+  role: UserRole;
 }
 
 export interface DeactivateUserRequest {}

@@ -1,4 +1,4 @@
-import { User, UserSession } from '@/models/user';
+import { User, UserSession, UserRole } from '@/models/user';
 import { UserUpdateRequest } from '@/models/requests';
 
 export interface UserServiceInterface {
@@ -46,6 +46,14 @@ export interface UserServiceInterface {
     userId: string
   ): Promise<{ success: boolean; message: string }>;
   deleteUser(userId: string): Promise<{ success: boolean; message: string }>;
+
+  // Role management methods
+  updateUserRole(
+    userId: string,
+    newRole: UserRole,
+    updatedByUserId: string
+  ): Promise<{ success: boolean; message: string; token?: string }>;
+  getAllUsers(): Promise<{ success: boolean; users: User[]; message: string }>;
 
   // Utility methods
   cleanupExpiredCodes(): Promise<void>;

@@ -13,12 +13,20 @@ const adminEmailWhitelist = process.env.ADMIN_EMAIL_WHITELIST
     )
   : [];
 
+// Parse superadmin email whitelist from environment variable
+const superadminEmailWhitelist = process.env.SUPERADMIN_EMAIL_WHITELIST
+  ? process.env.SUPERADMIN_EMAIL_WHITELIST.split(',').map((email) =>
+      email.trim().toLowerCase()
+    )
+  : [];
+
 export const config = {
   port: process.env.PORT || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
   version: process.env.npm_package_version || '1.0.0',
   admin: {
     emailWhitelist: adminEmailWhitelist,
+    superadminEmailWhitelist: superadminEmailWhitelist,
   },
   cors: {
     origin: function (

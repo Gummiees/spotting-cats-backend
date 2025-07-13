@@ -715,6 +715,62 @@ router.post('/unban', authMiddleware, UserController.unbanUser);
 
 /**
  * @swagger
+ * /api/v1/users/role:
+ *   put:
+ *     summary: Update user role (Admin/Superadmin only)
+ *     description: Update a user's role. Admins can promote users to moderators, Superadmins can promote to admin. Cannot update your own role.
+ *     tags: [Admin]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - role
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 example: "johndoe"
+ *                 description: Username of the user to update
+ *               role:
+ *                 type: string
+ *                 enum: [user, moderator, admin, superadmin]
+ *                 example: "moderator"
+ *                 description: New role to assign to the user
+ *     responses:
+ *       200:
+ *         description: User role updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         description: Invalid request, missing username/role, user not found, or cannot update own role
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized - No valid authentication token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - Insufficient permissions to assign this role
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.put('/role', authMiddleware, UserController.updateUserRole);
+
+/**
+ * @swagger
  * /api/v1/users/admin/all:
  *   get:
  *     summary: Get all users (Admin only)

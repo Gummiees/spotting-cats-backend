@@ -92,9 +92,11 @@ const swaggerOptions: Options = {
               type: 'string',
               example: 'https://example.com/avatar.jpg',
             },
-            isAdmin: {
-              type: 'boolean',
-              example: false,
+            role: {
+              type: 'string',
+              enum: ['user', 'moderator', 'admin', 'superadmin'],
+              example: 'user',
+              description: 'User role in the system',
             },
             isActive: {
               type: 'boolean',
@@ -169,10 +171,11 @@ const swaggerOptions: Options = {
               description: 'User avatar URL (optional)',
               example: 'https://example.com/avatar.jpg',
             },
-            isAdmin: {
-              type: 'boolean',
-              description: 'Whether the user is an admin',
-              example: false,
+            role: {
+              type: 'string',
+              enum: ['user', 'moderator', 'admin', 'superadmin'],
+              description: 'User role in the system',
+              example: 'user',
             },
             isInactive: {
               type: 'boolean',
@@ -214,10 +217,11 @@ const swaggerOptions: Options = {
               description: 'User avatar URL (optional)',
               example: 'https://example.com/avatar.jpg',
             },
-            isAdmin: {
-              type: 'boolean',
-              description: 'Whether the user is an admin',
-              example: false,
+            role: {
+              type: 'string',
+              enum: ['user', 'moderator', 'admin', 'superadmin'],
+              description: 'User role in the system',
+              example: 'user',
             },
             isInactive: {
               type: 'boolean',

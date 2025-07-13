@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import { userService } from '@/services/userService';
+import { AuthRequest } from '@/models/requests';
 import { ResponseUtil } from '@/utils/response';
+import { UserRole, canManageRole, canBanUser } from '@/models/user';
 import {
-  AuthRequest,
   EmailVerificationRequest,
   CodeVerificationRequest,
   UsernameUpdateRequest,
@@ -11,6 +12,7 @@ import {
   AvatarUpdateRequest,
   BanUserRequest,
   UnbanUserRequest,
+  UpdateUserRoleRequest,
 } from '@/models/requests';
 import { PublicUserByUsername } from '@/models/user';
 import { isValidDiceBearUrl } from '@/utils/avatar';
@@ -583,7 +585,10 @@ export class UserController {
     message?: string;
   }> {
     const currentUser = await userService.getUserById(userId);
-    if (!currentUser?.isAdmin) {
+    if (
+      !currentUser ||
+      (currentUser.role !== 'admin' && currentUser.role !== 'superadmin')
+    ) {
       return { valid: false, message: 'Admin access required' };
     }
     return { valid: true };
@@ -623,14 +628,6 @@ export class UserController {
         return;
       }
 
-      const adminValidation = await UserController.validateAdminAccess(
-        req.user!.userId
-      );
-      if (!adminValidation.valid) {
-        UserController.handleAdminError(res, adminValidation.message!);
-        return;
-      }
-
       const { username, banReason }: BanUserRequest = req.body;
 
       if (
@@ -650,8 +647,22 @@ export class UserController {
       }
 
       const currentUser = await userService.getUserById(req.user!.userId);
+      if (!currentUser) {
+        UserController.handleAuthError(res, 'Current user not found');
+        return;
+      }
+
+      // Check if user can ban the target user
+      if (!canBanUser(currentUser.role, targetUser.role)) {
+        UserController.handleAdminError(
+          res,
+          `You cannot ban users with role: ${targetUser.role}`
+        );
+        return;
+      }
+
       const selfBanValidation = UserController.validateNotSelfBan(
-        currentUser!.username,
+        currentUser.username,
         targetUser.username
       );
       if (!selfBanValidation.valid) {
@@ -681,14 +692,6 @@ export class UserController {
         return;
       }
 
-      const adminValidation = await UserController.validateAdminAccess(
-        req.user!.userId
-      );
-      if (!adminValidation.valid) {
-        UserController.handleAdminError(res, adminValidation.message!);
-        return;
-      }
-
       const { username }: UnbanUserRequest = req.body;
 
       // Look up target user by username
@@ -698,10 +701,69 @@ export class UserController {
         return;
       }
 
+      const currentUser = await userService.getUserById(req.user!.userId);
+      if (!currentUser) {
+        UserController.handleAuthError(res, 'Current user not found');
+        return;
+      }
+
+      // Check if user can ban the target user (same logic for unbanning)
+      if (!canBanUser(currentUser.role, targetUser.role)) {
+        UserController.handleAdminError(
+          res,
+          `You cannot unban users with role: ${targetUser.role}`
+        );
+        return;
+      }
+
       const result = await userService.updateUser(targetUser.id!, {
         isBanned: false,
         banReason: undefined, // Clear the ban reason when unbanning
       });
+      UserController.handleServiceResponse(res, result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateUserRole(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const validationResult = UserController.validateUpdateRoleRequest(req);
+      if (!validationResult.valid) {
+        UserController.handleValidationError(res, validationResult.message!);
+        return;
+      }
+
+      const { username, role }: UpdateUserRoleRequest = req.body;
+
+      // Look up target user by username
+      const targetUser = await userService.getUserByUsername(username);
+      if (!targetUser) {
+        UserController.handleValidationError(res, 'User not found');
+        return;
+      }
+
+      const currentUser = await userService.getUserById(req.user!.userId);
+      if (!currentUser) {
+        UserController.handleAuthError(res, 'Current user not found');
+        return;
+      }
+
+      // Check if user can manage the target role
+      if (!canManageRole(currentUser.role, role)) {
+        UserController.handleAdminError(res, `You cannot assign role: ${role}`);
+        return;
+      }
+
+      const result = await userService.updateUserRole(
+        targetUser.id!,
+        role,
+        currentUser.id!
+      );
       UserController.handleServiceResponse(res, result);
     } catch (error) {
       next(error);
@@ -720,22 +782,24 @@ export class UserController {
         return;
       }
 
-      const adminValidation = await UserController.validateAdminAccess(
-        req.user!.userId
-      );
-      if (!adminValidation.valid) {
-        UserController.handleAdminError(res, adminValidation.message!);
+      const currentUser = await userService.getUserById(req.user!.userId);
+      if (!currentUser) {
+        UserController.handleAuthError(res, 'Current user not found');
         return;
       }
 
-      // This would need to be implemented in the user service
-      // For now, we'll return an error indicating it's not implemented
-      ResponseUtil.error(
-        res,
-        'Not Implemented',
-        'getAllUsers method not implemented yet',
-        501
-      );
+      // Only admins and superadmins can view all users
+      if (currentUser.role !== 'admin' && currentUser.role !== 'superadmin') {
+        UserController.handleAdminError(res, 'Admin access required');
+        return;
+      }
+
+      const result = await userService.getAllUsers();
+      if (result.success) {
+        ResponseUtil.success(res, { users: result.users }, result.message);
+      } else {
+        ResponseUtil.error(res, 'Internal Server Error', result.message, 500);
+      }
     } catch (error) {
       next(error);
     }
@@ -800,7 +864,7 @@ export class UserController {
       const publicUser: PublicUserByUsername = {
         username: user.username,
         avatarUrl: user.avatarUrl,
-        isAdmin: user.isAdmin,
+        role: user.role,
         isInactive: !user.isActive || user.isBanned,
         isBanned: user.isBanned,
         lastLoginAt: user.lastLoginAt,
@@ -933,5 +997,25 @@ export class UserController {
     } catch (error) {
       next(error);
     }
+  }
+
+  private static validateUpdateRoleRequest(req: AuthRequest): {
+    valid: boolean;
+    message?: string;
+  } {
+    const { username, role } = req.body;
+
+    if (!username || typeof username !== 'string' || username.trim() === '') {
+      return { valid: false, message: 'Username is required' };
+    }
+
+    if (!role || !['user', 'moderator', 'admin', 'superadmin'].includes(role)) {
+      return {
+        valid: false,
+        message: 'Valid role is required (user, moderator, admin, superadmin)',
+      };
+    }
+
+    return { valid: true };
   }
 }

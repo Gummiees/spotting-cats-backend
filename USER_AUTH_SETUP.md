@@ -1,6 +1,6 @@
 # User Authentication System Setup
 
-This project now includes a secure user authentication system using email-based verification codes and HTTP-only cookies.
+This project now includes a secure user authentication system using email-based verification codes and HTTP-only cookies with comprehensive role-based access control.
 
 ## Features
 
@@ -11,11 +11,44 @@ This project now includes a secure user authentication system using email-based 
 - **Account deactivation**: Users can be deactivated but not deleted
 - **Account deletion**: Users can permanently delete their accounts
 - **Automatic cleanup**: Deactivated accounts are automatically deleted after 30 days
-- **User banning**: Admins can ban/unban users (banned users cannot authenticate)
+- **Role-based access control**: Four-tier role system (user, moderator, admin, superadmin)
+- **User banning**: Role-based banning with proper permission checks
 - **Email verification**: Automatic email sending for verification codes
 - **Secure email changes**: Two-step email change process with verification codes
-- **Admin controls**: Admin-only endpoints for user management
-- **Admin email whitelist**: Users with emails in the whitelist automatically become admins
+- **Admin controls**: Role-based endpoints for user management
+- **Email whitelist**: Users with emails in whitelists automatically get appropriate roles
+
+## Role System
+
+### Role Hierarchy
+1. **User** (default) - Basic user with standard permissions
+2. **Moderator** - Can ban/unban regular users
+3. **Admin** - Can ban/unban moderators and users, can promote users to moderators
+4. **Superadmin** - Can manage all roles except other superadmins, can promote to admin
+
+### Role Permissions
+
+#### Superadmin
+- Can ban/unban users, moderators, and admins
+- Can promote users to moderator, admin, or superadmin roles
+- Cannot ban or modify other superadmins
+- Can view all users
+
+#### Admin
+- Can ban/unban users and moderators
+- Can promote users to moderator role
+- Cannot ban or modify admins or superadmins
+- Can view all users
+
+#### Moderator
+- Can ban/unban regular users only
+- Cannot ban or modify moderators, admins, or superadmins
+- Cannot promote users to any role
+
+#### User
+- Standard user permissions
+- Cannot ban or modify any users
+- Cannot promote users to any role
 
 ## Environment Variables Required
 
@@ -46,8 +79,9 @@ SMTP_FROM=your-email@gmail.com
 # CORS Configuration
 CORS_ORIGINS=http://localhost:3000,http://localhost:3001
 
-# Admin Configuration
+# Role Configuration
 ADMIN_EMAIL_WHITELIST=admin@example.com,superuser@example.com
+SUPERADMIN_EMAIL_WHITELIST=superadmin@example.com,owner@example.com
 ```
 
 ## API Endpoints
@@ -133,30 +167,45 @@ POST /api/v1/users/deactivate
 POST /api/v1/users/delete
 ```
 
-### Admin Endpoints (Admin Authentication Required)
+### Role Management Endpoints (Role-based Authentication Required)
+
+#### Update User Role
+```
+PUT /api/v1/users/role
+Content-Type: application/json
+
+{
+  "username": "johndoe",
+  "role": "moderator"
+}
+```
+*Admin/Superadmin only. Cannot update your own role.*
 
 #### Ban User
 ```
 POST /api/v1/users/ban
 Body: { "username": "string", "banReason": "string" }
 ```
+*Role-based: Moderators can ban users, Admins can ban moderators and users, Superadmins can ban everyone except other superadmins.*
 
 #### Unban User
 ```
 POST /api/v1/users/unban
 Body: { "username": "string" }
 ```
+*Same role-based permissions as ban.*
 
 #### Get All Users
 ```
 GET /api/v1/users/admin/all
 ```
+*Admin/Superadmin only.*
 
 #### Manual Cleanup
 ```
 POST /api/v1/users/admin/cleanup?days=30
 ```
-*Rate limited to 3 requests per hour. Deletes deactivated users older than specified days (default 30).*
+*Admin/Superadmin only. Rate limited to 3 requests per hour. Deletes deactivated users older than specified days (default 30).*
 
 ## Security Features
 
@@ -169,11 +218,11 @@ POST /api/v1/users/admin/cleanup?days=30
 7. **Account Deactivation**: Deactivated users are marked as inactive but not physically removed
 8. **Account Deletion**: Users can permanently delete their accounts (marked as deleted)
 9. **Automatic Cleanup**: Deactivated accounts are automatically deleted after 30 days via scheduled cron job
-10. **User Banning**: Banned users cannot authenticate or access protected endpoints
-11. **Admin Controls**: Admin-only endpoints for user management with proper authorization
+10. **Role-based Banning**: Users can only ban users with roles they have permission to manage
+11. **Role Management**: Proper role hierarchy enforcement with permission checks
 12. **Secure Headers**: Helmet.js provides security headers
 13. **CORS Protection**: Configurable CORS settings
-14. **JWT Token Security**: Tokens include user ID, email, username, and admin status for complete user context
+14. **JWT Token Security**: Tokens include user ID, email, username, and role for complete user context
 
 ## JWT Token Structure
 
@@ -184,7 +233,7 @@ The application uses JWT tokens for authentication with the following payload st
   userId: string,        // User's unique identifier
   email: string,         // User's email address
   username: string,      // User's username
-  isAdmin: boolean,      // Whether the user has admin privileges
+  role: string,          // User's role (user, moderator, admin, superadmin)
   iat: number,          // Issued at timestamp (JWT standard)
   exp: number           // Expiration timestamp (JWT standard)
 }
@@ -192,112 +241,43 @@ The application uses JWT tokens for authentication with the following payload st
 
 **Token Features:**
 - **Complete User Context**: Contains all essential user information for authorization
-- **Admin Status**: Includes admin privileges to avoid additional database queries
+- **Role Information**: Includes user role to avoid additional database queries
 - **7-day Expiration**: Tokens expire after 7 days for security
 - **Automatic Refresh**: Email and username changes automatically update the token to maintain session continuity
 - **Proactive Refresh**: Tokens are automatically refreshed when they expire within 24 hours, maintaining seamless user sessions
 
-## Secure Email Change Flow
+## Role Assignment
 
-The application implements a secure two-step email change process to prevent unauthorized email modifications:
+### Automatic Role Assignment
+- **Superadmin**: Users with emails in `SUPERADMIN_EMAIL_WHITELIST` automatically become superadmins
+- **Admin**: Users with emails in `ADMIN_EMAIL_WHITELIST` (but not in superadmin list) automatically become admins
+- **User**: All other users start with the 'user' role
 
-### Step 1: Initiate Email Change
-- **Endpoint**: `PUT /api/v1/users/email`
-- **Authentication**: Required
-- **Process**:
-  1. User provides new email address
-  2. System validates email format and availability
-  3. System checks 90-day cooldown period (prevents frequent changes)
-  4. System generates 6-digit verification code
-  5. Verification code is sent to the new email address
-  6. Email change request is stored with 10-minute expiration
+### Manual Role Management
+- **Admins** can promote users to moderator role
+- **Superadmins** can promote users to moderator, admin, or superadmin roles
+- Users cannot modify their own roles
+- Role changes are tracked with timestamps and the ID of the user who made the change
 
-### Step 2: Verify Email Change
-- **Endpoint**: `POST /api/v1/users/email/verify`
-- **Process**:
-  1. User provides verification code from new email
-  2. System validates code against stored request
-  3. Email address is updated if verification succeeds
-  4. New JWT token is generated with updated email address
-  5. Authentication cookie is updated to maintain user session
-  6. Email change request is cleaned up
-
-## Username Update Flow
-
-The application supports secure username updates with automatic token regeneration:
-
-### Username Update Process
-- **Endpoint**: `PUT /api/v1/users/username`
-- **Authentication**: Required
-- **Process**:
-  1. User provides new username
-  2. System validates username format and availability
-  3. System checks 30-day cooldown period (prevents frequent changes)
-  4. Username is updated if validation succeeds
-  5. New JWT token is generated with updated username
-  6. Authentication cookie is updated to maintain user session
-
-### Security Features
-- **30-day Cooldown**: Users can only change username once every 30 days
-- **Format Validation**: Username must be 3-20 characters, alphanumeric + underscores only
-- **Availability Check**: Username must be unique across all users
-- **Reserved Names**: Certain usernames (admin, root, etc.) are reserved
-- **Automatic Token Update**: JWT token is automatically updated with new username
-- **Session Continuity**: User session is maintained without requiring re-authentication
-
-## Proactive Token Refresh
-
-The application implements a proactive token refresh mechanism to maintain seamless user sessions:
-
-### How It Works
-- **24-Hour Threshold**: Tokens are automatically refreshed when they expire within the next 24 hours
-- **Automatic Detection**: The auth middleware checks token expiration on every authenticated request
-- **Seamless Experience**: Users don't need to manually re-authenticate when tokens are close to expiring
-- **Cookie Update**: New tokens are automatically set as secure HTTP-only cookies
-
-### Refresh Scenarios
-1. **Automatic Refresh**: Happens transparently during normal API calls
-2. **Explicit Refresh**: Clients can call `/api/v1/users/refresh-token` to proactively refresh tokens
-3. **No Refresh Needed**: If token is still valid for more than 24 hours, no action is taken
-
-### Security Features
-- **Verification Codes**: 6-digit codes sent to new email address
-- **10-minute Expiration**: Codes expire after 10 minutes
-- **Single Use**: Codes can only be used once
-- **90-day Cooldown**: Users can only change email once every 90 days
-- **Automatic Cleanup**: Email change requests are cleaned up when users are deleted/banned
-- **Email Validation**: Comprehensive email format and availability checks
-
-### Database Storage
-Email change requests are stored in the `auth_codes` collection with additional fields:
-```javascript
-{
-  _id: ObjectId,
-  userId: ObjectId,        // Reference to user
-  newEmail: String,        // The new email address
-  code: String,           // 6-digit verification code
-  expiresAt: Date,        // 10-minute expiration
-  used: Boolean,          // Whether code has been used
-  createdAt: Date         // Creation timestamp
-}
-```
-
-## Database Collections
+## Database Schema
 
 ### Users Collection
 ```javascript
 {
   _id: ObjectId,
   email: String (unique, lowercase),
-  username: String (optional),
+  username: String (unique),
   usernameUpdatedAt: Date (optional),
   avatarUrl: String (optional),
   avatarUpdatedAt: Date (optional),
-  isAdmin: Boolean (default: false),
+  role: String (enum: 'user', 'moderator', 'admin', 'superadmin'),
+  roleUpdatedAt: Date (optional),
+  roleUpdatedBy: String (optional, ObjectId of user who updated role),
   isVerified: Boolean,
   isActive: Boolean,
   isDeleted: Boolean,
   isBanned: Boolean (default: false),
+  banReason: String (optional),
   createdAt: Date,
   updatedAt: Date,
   lastLoginAt: Date,
@@ -317,7 +297,7 @@ The system includes an automatic cleanup process that runs daily at 2:00 AM UTC:
 - **Data Orphaning**: Before deleting users, related data (cats, etc.) is properly orphaned to maintain data integrity
 
 ### Manual Cleanup
-Admins can manually trigger the cleanup process using the admin endpoint:
+Admins and Superadmins can manually trigger the cleanup process using the admin endpoint:
 
 ```bash
 # Default cleanup (30 days retention)
@@ -360,8 +340,9 @@ POST /api/v1/users/admin/cleanup?days=7
 3. **Email Sending**: Code is sent to user's email
 4. **Code Verification**: User enters the code
 5. **Account Creation/Login**: System creates account or logs in existing user
-6. **Cookie Setting**: JWT token is set as HTTP-only cookie
-7. **Authentication**: Subsequent requests use the cookie for authentication
+6. **Role Assignment**: User gets appropriate role based on email whitelists
+7. **Cookie Setting**: JWT token is set as HTTP-only cookie
+8. **Authentication**: Subsequent requests use the cookie for authentication
 
 ## Email Setup
 
@@ -402,4 +383,7 @@ npm start
 - Configure proper CORS origins
 - Set up proper email service
 - Monitor rate limiting
-- Regularly clean up expired verification codes 
+- Regularly clean up expired verification codes
+- Review role assignments regularly
+- Monitor role change logs for security
+- Ensure superadmin emails are secure and limited 

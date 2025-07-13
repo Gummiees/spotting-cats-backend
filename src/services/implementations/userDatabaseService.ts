@@ -240,6 +240,86 @@ export class UserDatabaseService implements UserServiceInterface {
     }
   }
 
+  async updateUserRole(
+    userId: string,
+    newRole: 'user' | 'moderator' | 'admin' | 'superadmin',
+    updatedByUserId: string
+  ): Promise<{ success: boolean; message: string; token?: string }> {
+    try {
+      const user = await this.getUserById(userId);
+      if (!user) {
+        return { success: false, message: 'User not found' };
+      }
+
+      // Check if user is trying to update their own role
+      if (userId === updatedByUserId) {
+        return { success: false, message: 'Cannot update your own role' };
+      }
+
+      // Update user role
+      const result = await this.usersCollection.updateOne(
+        { _id: this.createObjectId(userId) },
+        {
+          $set: {
+            role: newRole,
+            roleUpdatedAt: this.createTimestamp(),
+            roleUpdatedBy: updatedByUserId,
+            updatedAt: this.createTimestamp(),
+          },
+        }
+      );
+
+      if (result.matchedCount === 0) {
+        return { success: false, message: 'User not found' };
+      }
+
+      // Generate new token for the updated user
+      const updatedUser = await this.getUserById(userId);
+      if (!updatedUser) {
+        return { success: false, message: 'Failed to retrieve updated user' };
+      }
+
+      const newToken = this.generateTokenForUser(updatedUser);
+
+      return {
+        success: true,
+        message: `User role updated to ${newRole} successfully`,
+        token: newToken,
+      };
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      return { success: false, message: 'Failed to update user role' };
+    }
+  }
+
+  async getAllUsers(): Promise<{
+    success: boolean;
+    users: User[];
+    message: string;
+  }> {
+    try {
+      const users = await this.usersCollection
+        .find({})
+        .sort({ createdAt: -1 })
+        .toArray();
+
+      const mappedUsers = users.map((user) => this.mapUserToResponse(user));
+
+      return {
+        success: true,
+        users: mappedUsers,
+        message: 'All users retrieved successfully',
+      };
+    } catch (error) {
+      console.error('Error getting all users:', error);
+      return {
+        success: false,
+        users: [],
+        message: 'Failed to retrieve users',
+      };
+    }
+  }
+
   async deactivateUser(
     userId: string
   ): Promise<{ success: boolean; message: string }> {
@@ -256,7 +336,12 @@ export class UserDatabaseService implements UserServiceInterface {
     userId: string
   ): Promise<{ success: boolean; message: string }> {
     try {
-      // First, orphan all related data (cats, etc.)
+      const user = await this.getUserById(userId);
+      if (!user) {
+        return { success: false, message: 'User not found' };
+      }
+
+      // Orphan user data before deletion
       await this.orphanUserData(userId);
 
       // Clean up any pending email change requests
@@ -863,14 +948,19 @@ export class UserDatabaseService implements UserServiceInterface {
     const avatarUrl = generateAvatarForUsername(username);
     const normalizedEmail = this.normalizeEmail(email);
 
-    // Check if email is in admin whitelist
-    const isAdmin = config.admin.emailWhitelist.includes(normalizedEmail);
+    // Determine user role based on email whitelists
+    let role: 'user' | 'moderator' | 'admin' | 'superadmin' = 'user';
+    if (config.admin.superadminEmailWhitelist.includes(normalizedEmail)) {
+      role = 'superadmin';
+    } else if (config.admin.emailWhitelist.includes(normalizedEmail)) {
+      role = 'admin';
+    }
 
     const userData = {
       email: normalizedEmail,
       username,
       avatarUrl,
-      isAdmin,
+      role,
       isVerified: true,
       isActive: true,
       isBanned: false,
@@ -1090,8 +1180,10 @@ export class UserDatabaseService implements UserServiceInterface {
       emailUpdatedAt: user.emailUpdatedAt,
       avatarUrl: user.avatarUrl,
       avatarUpdatedAt: user.avatarUpdatedAt,
-      isAdmin: user.isAdmin || false,
+      role: user.role || 'user',
       banReason: user.banReason,
+      roleUpdatedAt: user.roleUpdatedAt,
+      roleUpdatedBy: user.roleUpdatedBy,
     };
   }
 
@@ -1125,7 +1217,7 @@ export class UserDatabaseService implements UserServiceInterface {
    * This is the main token generation function used throughout the application
    */
   private generateTokenForUser(user: User): string {
-    return this.createToken(user.id!, user.email, user.username, user.isAdmin);
+    return this.createToken(user.id!, user.email, user.username, user.role);
   }
 
   /**
@@ -1136,13 +1228,13 @@ export class UserDatabaseService implements UserServiceInterface {
     userId: string,
     email: string,
     username: string,
-    isAdmin: boolean = false
+    role: 'user' | 'moderator' | 'admin' | 'superadmin' = 'user'
   ): string {
     const payload = {
       userId,
       email,
       username,
-      isAdmin,
+      role,
       iat: Math.floor(Date.now() / 1000),
     };
     return jwt.sign(payload, this.JWT_SECRET, {
