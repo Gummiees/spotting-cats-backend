@@ -102,7 +102,8 @@ export class UserDatabaseService implements UserServiceInterface {
       const token = this.createToken(
         mappedUser.id!,
         mappedUser.email,
-        mappedUser.username
+        mappedUser.username,
+        mappedUser.isAdmin
       );
 
       return {
@@ -523,10 +524,12 @@ export class UserDatabaseService implements UserServiceInterface {
         return { success: false, message: 'User not found' };
       }
 
+      // Generate new JWT token with updated email
       const newToken = this.createToken(
         userId,
         normalizedEmail,
-        currentUser.username
+        currentUser.username,
+        currentUser.isAdmin
       );
 
       await this.cleanupEmailChangeRequest(userId);
@@ -965,11 +968,17 @@ export class UserDatabaseService implements UserServiceInterface {
     );
   }
 
-  private createToken(userId: string, email: string, username: string): string {
+  private createToken(
+    userId: string,
+    email: string,
+    username: string,
+    isAdmin: boolean = false
+  ): string {
     const payload = {
       userId,
       email,
       username,
+      isAdmin,
       iat: Math.floor(Date.now() / 1000),
     };
     return jwt.sign(payload, this.JWT_SECRET, {
