@@ -216,6 +216,24 @@ export class UserCacheService implements UserServiceInterface {
     return result;
   }
 
+  async checkUsernameAvailability(
+    username: string,
+    excludeUserId?: string
+  ): Promise<{ available: boolean; message: string }> {
+    // For availability checks, we go directly to the database service
+    // since these are real-time checks and don't benefit from caching
+    return this.userService.checkUsernameAvailability(username, excludeUserId);
+  }
+
+  async checkEmailAvailability(
+    email: string,
+    excludeUserId?: string
+  ): Promise<{ available: boolean; message: string }> {
+    // For availability checks, we go directly to the database service
+    // since these are real-time checks and don't benefit from caching
+    return this.userService.checkEmailAvailability(email, excludeUserId);
+  }
+
   // Cache management methods
   private async cacheUserData(user: User): Promise<void> {
     try {
