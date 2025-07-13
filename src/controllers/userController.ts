@@ -1012,9 +1012,26 @@ export class UserController {
         newRole: string;
         updated: boolean;
         userFound: boolean;
+        action: 'promoted' | 'demoted' | 'no_change' | 'not_found';
       }> = [];
 
-      // Process superadmin whitelist
+      // Get all superadmin users to check for demotions
+      const allUsersResult = await userService.getAllUsers();
+      if (!allUsersResult.success) {
+        ResponseUtil.error(
+          res,
+          'Failed to retrieve users',
+          allUsersResult.message,
+          500
+        );
+        return;
+      }
+
+      const superadminUsers = allUsersResult.users.filter(
+        (user) => user.role === 'superadmin'
+      );
+
+      // Process superadmin whitelist (promotions)
       for (const email of config.admin.superadminEmailWhitelist) {
         const user = await userService.getUserByEmail(email);
 
@@ -1033,6 +1050,7 @@ export class UserController {
               newRole: 'superadmin',
               updated: result.success,
               userFound: true,
+              action: 'promoted',
             });
           } else {
             updates.push({
@@ -1041,6 +1059,7 @@ export class UserController {
               newRole: 'superadmin',
               updated: false, // Already correct role
               userFound: true,
+              action: 'no_change',
             });
           }
         } else {
@@ -1050,11 +1069,12 @@ export class UserController {
             newRole: 'superadmin',
             updated: false,
             userFound: false,
+            action: 'not_found',
           });
         }
       }
 
-      // Process admin whitelist (excluding emails already in superadmin list)
+      // Process admin whitelist (promotions, excluding emails already in superadmin list)
       for (const email of config.admin.emailWhitelist) {
         // Skip if email is already in superadmin whitelist
         if (config.admin.superadminEmailWhitelist.includes(email)) {
@@ -1078,6 +1098,7 @@ export class UserController {
               newRole: 'admin',
               updated: result.success,
               userFound: true,
+              action: 'promoted',
             });
           } else {
             updates.push({
@@ -1086,6 +1107,7 @@ export class UserController {
               newRole: 'admin',
               updated: false, // Already correct role
               userFound: true,
+              action: 'no_change',
             });
           }
         } else {
@@ -1095,6 +1117,32 @@ export class UserController {
             newRole: 'admin',
             updated: false,
             userFound: false,
+            action: 'not_found',
+          });
+        }
+      }
+
+      // Process demotions - check superadmin users not in superadmin whitelist
+      for (const user of superadminUsers) {
+        const userEmail = user.email.toLowerCase();
+        const isInSuperadminWhitelist =
+          config.admin.superadminEmailWhitelist.includes(userEmail);
+
+        // If superadmin is not in superadmin whitelist, demote to user
+        if (!isInSuperadminWhitelist) {
+          const result = await userService.updateUserRole(
+            user.id!,
+            'user',
+            'system-whitelist-update'
+          );
+
+          updates.push({
+            email: userEmail,
+            previousRole: user.role,
+            newRole: 'user',
+            updated: result.success,
+            userFound: true,
+            action: 'demoted',
           });
         }
       }
@@ -1105,22 +1153,32 @@ export class UserController {
         config.admin.emailWhitelist.filter(
           (email) => !config.admin.superadminEmailWhitelist.includes(email)
         ).length;
-      const updatedCount = updates.filter((u) => u.updated).length;
-      const alreadyCorrectCount = updates.filter(
-        (u) => !u.updated && u.userFound
+      const promotedCount = updates.filter(
+        (u) => u.action === 'promoted' && u.updated
       ).length;
-      const notFoundCount = updates.filter((u) => !u.userFound).length;
+      const demotedCount = updates.filter(
+        (u) => u.action === 'demoted' && u.updated
+      ).length;
+      const noChangeCount = updates.filter(
+        (u) => u.action === 'no_change'
+      ).length;
+      const notFoundCount = updates.filter(
+        (u) => u.action === 'not_found'
+      ).length;
+      const totalUpdated = promotedCount + demotedCount;
 
       ResponseUtil.success(
         res,
         {
           totalWhitelistedEmails,
-          updatedCount,
-          alreadyCorrectCount,
+          promotedCount,
+          demotedCount,
+          noChangeCount,
           notFoundCount,
+          totalUpdated,
           updates,
         },
-        `Processed ${totalWhitelistedEmails} whitelisted emails. Updated ${updatedCount} roles, ${alreadyCorrectCount} already had correct roles, ${notFoundCount} users not found.`
+        `Processed ${totalWhitelistedEmails} whitelisted emails and ${superadminUsers.length} superadmin users. Promoted ${promotedCount}, demoted ${demotedCount}, ${noChangeCount} no changes, ${notFoundCount} not found.`
       );
     } catch (error) {
       next(error);
