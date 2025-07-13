@@ -259,7 +259,8 @@ router.put('/username', authMiddleware, UserController.updateUsername);
  * @swagger
  * /api/v1/users/email:
  *   put:
- *     summary: Update user's email address
+ *     summary: Initiate email address change
+ *     description: Request to change user's email address. A verification code will be sent to the new email address to confirm the change.
  *     tags: [Users]
  *     security:
  *       - cookieAuth: []
@@ -276,15 +277,16 @@ router.put('/username', authMiddleware, UserController.updateUsername);
  *                 type: string
  *                 format: email
  *                 example: "newemail@example.com"
+ *                 description: New email address to change to
  *     responses:
  *       200:
- *         description: Email updated successfully
+ *         description: Verification code sent to new email address
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/SuccessResponse'
  *       400:
- *         description: Invalid email or too soon to update (90-day limit)
+ *         description: Invalid email, email already in use, same as current email, or too soon to update (90-day limit)
  *         content:
  *           application/json:
  *             schema:
@@ -297,6 +299,50 @@ router.put('/username', authMiddleware, UserController.updateUsername);
  *               $ref: '#/components/schemas/Error'
  */
 router.put('/email', authMiddleware, UserController.updateEmail);
+
+/**
+ * @swagger
+ * /api/v1/users/email/verify:
+ *   post:
+ *     summary: Verify email change with verification code
+ *     description: Complete the email change process by providing the verification code sent to the new email address.
+ *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - code
+ *             properties:
+ *               code:
+ *                 type: string
+ *                 example: "123456"
+ *                 description: Verification code sent to the new email address
+ *     responses:
+ *       200:
+ *         description: Email changed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         description: Invalid verification code or too soon to update (90-day limit)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized - No valid authentication token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/email/verify', authMiddleware, UserController.verifyEmailChange);
 
 /**
  * @swagger

@@ -190,6 +190,26 @@ export class UserCacheService implements UserServiceInterface {
     return result;
   }
 
+  async initiateEmailChange(
+    userId: string,
+    newEmail: string
+  ): Promise<{ success: boolean; message: string }> {
+    return this.userService.initiateEmailChange(userId, newEmail);
+  }
+
+  async verifyEmailChange(
+    userId: string,
+    code: string
+  ): Promise<{ success: boolean; message: string }> {
+    const result = await this.userService.verifyEmailChange(userId, code);
+
+    if (result.success) {
+      await this.invalidateUserCache(userId);
+    }
+
+    return result;
+  }
+
   // Cache management methods
   private async cacheUserData(user: User): Promise<void> {
     try {

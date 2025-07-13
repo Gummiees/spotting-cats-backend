@@ -13,6 +13,7 @@ This project now includes a secure user authentication system using email-based 
 - **Automatic cleanup**: Deactivated accounts are automatically deleted after 30 days
 - **User banning**: Admins can ban/unban users (banned users cannot authenticate)
 - **Email verification**: Automatic email sending for verification codes
+- **Secure email changes**: Two-step email change process with verification codes
 - **Admin controls**: Admin-only endpoints for user management
 - **Admin email whitelist**: Users with emails in the whitelist automatically become admins
 
@@ -86,6 +87,26 @@ POST /api/v1/users/logout
 GET /api/v1/users/profile
 ```
 
+#### Initiate Email Change
+```
+PUT /api/v1/users/email
+Content-Type: application/json
+
+{
+  "email": "newemail@example.com"
+}
+```
+
+#### Verify Email Change
+```
+POST /api/v1/users/email/verify
+Content-Type: application/json
+
+{
+  "code": "123456"
+}
+```
+
 #### Deactivate Account
 ```
 POST /api/v1/users/deactivate
@@ -125,14 +146,60 @@ POST /api/v1/users/admin/cleanup?days=30
 2. **Rate Limiting**: Authentication endpoints are rate-limited to prevent brute force attacks (production only)
 3. **Email Validation**: Proper email format validation
 4. **Code Expiration**: Verification codes expire after 10 minutes
-5. **Account Status Tracking**: Users can be active, deactivated, or banned
-6. **Account Deactivation**: Deactivated users are marked as inactive but not physically removed
-7. **Account Deletion**: Users can permanently delete their accounts (marked as deleted)
-8. **Automatic Cleanup**: Deactivated accounts are automatically deleted after 30 days via scheduled cron job
-9. **User Banning**: Banned users cannot authenticate or access protected endpoints
-10. **Admin Controls**: Admin-only endpoints for user management with proper authorization
-11. **Secure Headers**: Helmet.js provides security headers
-12. **CORS Protection**: Configurable CORS settings
+5. **Secure Email Changes**: Two-step email change process with verification codes sent to new email address
+6. **Account Status Tracking**: Users can be active, deactivated, or banned
+7. **Account Deactivation**: Deactivated users are marked as inactive but not physically removed
+8. **Account Deletion**: Users can permanently delete their accounts (marked as deleted)
+9. **Automatic Cleanup**: Deactivated accounts are automatically deleted after 30 days via scheduled cron job
+10. **User Banning**: Banned users cannot authenticate or access protected endpoints
+11. **Admin Controls**: Admin-only endpoints for user management with proper authorization
+12. **Secure Headers**: Helmet.js provides security headers
+13. **CORS Protection**: Configurable CORS settings
+
+## Secure Email Change Flow
+
+The application implements a secure two-step email change process to prevent unauthorized email modifications:
+
+### Step 1: Initiate Email Change
+- **Endpoint**: `PUT /api/v1/users/email`
+- **Authentication**: Required
+- **Process**:
+  1. User provides new email address
+  2. System validates email format and availability
+  3. System checks 90-day cooldown period (prevents frequent changes)
+  4. System generates 6-digit verification code
+  5. Verification code is sent to the new email address
+  6. Email change request is stored with 10-minute expiration
+
+### Step 2: Verify Email Change
+- **Endpoint**: `POST /api/v1/users/email/verify`
+- **Process**:
+  1. User provides verification code from new email
+  2. System validates code against stored request
+  3. Email address is updated if verification succeeds
+  4. Email change request is cleaned up
+
+### Security Features
+- **Verification Codes**: 6-digit codes sent to new email address
+- **10-minute Expiration**: Codes expire after 10 minutes
+- **Single Use**: Codes can only be used once
+- **90-day Cooldown**: Users can only change email once every 90 days
+- **Automatic Cleanup**: Email change requests are cleaned up when users are deleted/banned
+- **Email Validation**: Comprehensive email format and availability checks
+
+### Database Storage
+Email change requests are stored in the `auth_codes` collection with additional fields:
+```javascript
+{
+  _id: ObjectId,
+  userId: ObjectId,        // Reference to user
+  newEmail: String,        // The new email address
+  code: String,           // 6-digit verification code
+  expiresAt: Date,        // 10-minute expiration
+  used: Boolean,          // Whether code has been used
+  createdAt: Date         // Creation timestamp
+}
+```
 
 ## Database Collections
 

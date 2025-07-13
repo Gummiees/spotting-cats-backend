@@ -277,6 +277,30 @@ The Swagger UI provides:
 - Schema definitions
 - Error documentation
 
+### Secure Email Change Flow
+
+The application implements a secure two-step email change process:
+
+1. **Initiate Email Change** (`PUT /api/v1/users/email`)
+   - User provides new email address
+   - System validates email format and availability
+   - System checks 90-day cooldown period
+   - Verification code is sent to the new email address
+   - Email change request is stored with 10-minute expiration
+
+2. **Verify Email Change** (`POST /api/v1/users/email/verify`)
+   - User provides verification code from new email
+   - System validates code against stored request
+   - Email address is updated if verification succeeds
+   - Email change request is cleaned up
+
+**Security Features:**
+- **Verification Codes**: 6-digit codes sent to new email address
+- **10-minute Expiration**: Codes expire after 10 minutes
+- **Single Use**: Codes can only be used once
+- **90-day Cooldown**: Users can only change email once every 90 days
+- **Automatic Cleanup**: Email change requests are cleaned up when users are deleted/banned
+
 ### API Endpoints
 
 #### Authentication
@@ -288,7 +312,8 @@ The Swagger UI provides:
 - **GET** `/api/v1/users/:username` - Get user by username (public access, returns limited user fields)
 - **GET** `/api/v1/users/profile` - Get current user profile (protected)
 - **PUT** `/api/v1/users/username` - Update user's username (30-day limit, protected)
-- **PUT** `/api/v1/users/email` - Update user's email address (90-day limit, protected)
+- **PUT** `/api/v1/users/email` - Initiate email address change (sends verification code, 90-day limit, protected)
+- **POST** `/api/v1/users/email/verify` - Verify email change with verification code (protected)
 - **PUT** `/api/v1/users/avatar` - Update user's avatar URL (30-day limit, protected)
 - **POST** `/api/v1/users/deactivate` - Deactivate user account (protected)
 - **DELETE** `/api/v1/users/delete` - Permanently delete user account (protected)

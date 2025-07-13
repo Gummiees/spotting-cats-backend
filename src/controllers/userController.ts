@@ -7,6 +7,7 @@ import {
   CodeVerificationRequest,
   UsernameUpdateRequest,
   EmailUpdateRequest,
+  EmailChangeVerificationRequest,
   AvatarUpdateRequest,
   BanUserRequest,
   UnbanUserRequest,
@@ -212,9 +213,40 @@ export class UserController {
         return;
       }
 
-      const result = await userService.updateUser(req.user!.userId, {
-        email: emailValidation.normalizedEmail!,
-      });
+      const result = await userService.initiateEmailChange(
+        req.user!.userId,
+        emailValidation.normalizedEmail!
+      );
+
+      UserController.handleServiceResponse(res, result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async verifyEmailChange(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const authValidation = UserController.validateUserAuth(req);
+      if (!authValidation.valid) {
+        UserController.handleAuthError(res, authValidation.message);
+        return;
+      }
+
+      const { code }: EmailChangeVerificationRequest = req.body;
+
+      if (!code) {
+        ResponseUtil.badRequest(res, 'Verification code is required');
+        return;
+      }
+
+      const result = await userService.verifyEmailChange(
+        req.user!.userId,
+        code
+      );
 
       UserController.handleServiceResponse(res, result);
     } catch (error) {

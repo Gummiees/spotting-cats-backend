@@ -18,6 +18,16 @@ export interface UserServiceInterface {
   }>;
   verifyToken(token: string): UserSession | null;
 
+  // Email change methods
+  initiateEmailChange(
+    userId: string,
+    newEmail: string
+  ): Promise<{ success: boolean; message: string }>;
+  verifyEmailChange(
+    userId: string,
+    code: string
+  ): Promise<{ success: boolean; message: string }>;
+
   // User management methods
   getUserById(userId: string): Promise<User | null>;
   getUserByEmail(email: string): Promise<User | null>;

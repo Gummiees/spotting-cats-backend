@@ -84,6 +84,40 @@ export class EmailService {
       return false;
     }
   }
+
+  async sendEmailChangeVerificationCode(
+    email: string,
+    code: string
+  ): Promise<boolean> {
+    try {
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Email Change Verification</h2>
+          <p>You have requested to change your email address on SpottingCats. To confirm this change, please enter the following verification code:</p>
+          <div style="background-color: #f4f4f4; padding: 20px; text-align: center; border-radius: 5px; margin: 20px 0;">
+            <h1 style="color: #007bff; font-size: 32px; margin: 0; letter-spacing: 5px;">${code}</h1>
+          </div>
+          <p>This code will expire in 10 minutes.</p>
+          <p>If you didn't request this email change, please ignore this email and your current email address will remain unchanged.</p>
+          <hr style="margin: 30px 0;">
+          <p style="color: #666; font-size: 12px;">This is an automated message, please do not reply.</p>
+        </div>
+      `;
+
+      const mailOptions: EmailOptions = {
+        from: this.fromEmail,
+        to: email,
+        subject: 'Email Change Verification Code',
+        html,
+      };
+
+      await this.transporter.sendMail(mailOptions);
+      return true;
+    } catch (error) {
+      console.error('Email change verification email sending failed:', error);
+      return false;
+    }
+  }
 }
 
 export const emailService = new EmailService();

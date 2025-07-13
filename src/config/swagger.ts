@@ -244,6 +244,18 @@ const swaggerOptions: Options = {
             },
           },
         },
+        EmailChangeVerificationRequest: {
+          type: 'object',
+          description: 'Request body for email change verification',
+          required: ['code'],
+          properties: {
+            code: {
+              type: 'string',
+              description: 'Verification code sent to the new email address',
+              example: '123456',
+            },
+          },
+        },
         Cat: {
           type: 'object',
           properties: {

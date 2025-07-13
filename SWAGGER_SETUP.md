@@ -32,6 +32,8 @@ http://localhost:3000/api-docs
 - **GET** `/api/v1/users/{userId}` - Get user by ID (Public access, returns limited user fields)
 - **GET** `/api/v1/users/profile` - Get current user profile (Protected)
 - **PUT** `/api/v1/users/username` - Update user's username (Protected)
+- **PUT** `/api/v1/users/email` - Initiate email address change (Protected, sends verification code)
+- **POST** `/api/v1/users/email/verify` - Verify email change with verification code (Protected)
 - **POST** `/api/v1/users/deactivate` - Deactivate user account (Protected)
 - **DELETE** `/api/v1/users/delete` - Permanently delete user account (Protected)
 
@@ -73,6 +75,34 @@ The API uses HTTP-only cookies for authentication. When you authenticate via the
 1. First, authenticate using the `/api/v1/users/verify-code` endpoint
 2. The Swagger UI will automatically include the authentication cookie in subsequent requests
 3. You can now test protected endpoints that require authentication
+
+## Secure Email Change Flow
+
+The API implements a secure two-step email change process:
+
+### Step 1: Initiate Email Change
+- **Endpoint**: `PUT /api/v1/users/email`
+- **Purpose**: Request to change email address
+- **Process**: 
+  - Validates email format and availability
+  - Checks 90-day cooldown period
+  - Sends verification code to new email address
+  - Stores email change request with 10-minute expiration
+
+### Step 2: Verify Email Change
+- **Endpoint**: `POST /api/v1/users/email/verify`
+- **Purpose**: Complete email change with verification code
+- **Process**:
+  - Validates verification code against stored request
+  - Updates email address if verification succeeds
+  - Cleans up email change request
+
+### Security Features
+- **Verification Codes**: 6-digit codes sent to new email address
+- **10-minute Expiration**: Codes expire after 10 minutes
+- **Single Use**: Codes can only be used once
+- **90-day Cooldown**: Users can only change email once every 90 days
+- **Automatic Cleanup**: Email change requests are cleaned up when users are deleted/banned
 
 ## Data Models
 
@@ -135,6 +165,13 @@ The API uses HTTP-only cookies for authentication. When you authenticate via the
   "createdAt": "2024-01-01T00:00:00.000Z",
   "updatedAt": "2024-01-01T00:00:00.000Z",
   "confirmedOwnerAt": "2024-01-01T00:00:00.000Z"
+}
+```
+
+### Email Change Verification Request
+```json
+{
+  "code": "123456"
 }
 ```
 

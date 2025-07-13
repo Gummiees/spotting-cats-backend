@@ -215,6 +215,11 @@ export class UserDatabaseService implements UserServiceInterface {
         return { success: false, message: 'User not found' };
       }
 
+      // Clean up email change requests if user is being banned
+      if (updates.isBanned === true) {
+        await this.cleanupEmailChangeRequest(userId);
+      }
+
       return { success: true, message: 'User updated successfully' };
     } catch (error) {
       console.error('Error updating user:', error);
@@ -241,6 +246,9 @@ export class UserDatabaseService implements UserServiceInterface {
       // First, orphan all related data (cats, etc.)
       await this.orphanUserData(userId);
 
+      // Clean up any pending email change requests
+      await this.cleanupEmailChangeRequest(userId);
+
       // Then hard delete the user
       const result = await this.usersCollection.deleteOne({
         _id: this.createObjectId(userId),
@@ -259,8 +267,16 @@ export class UserDatabaseService implements UserServiceInterface {
 
   async cleanupExpiredCodes(): Promise<void> {
     try {
+      // Clean up expired regular verification codes
       await this.authCodesCollection.deleteMany({
         expiresAt: { $lt: this.createTimestamp() },
+        newEmail: { $exists: false }, // Only regular auth codes (not email change requests)
+      });
+
+      // Clean up expired email change requests
+      await this.authCodesCollection.deleteMany({
+        expiresAt: { $lt: this.createTimestamp() },
+        newEmail: { $exists: true }, // Only email change requests
       });
     } catch (error) {
       console.error('Error cleaning up expired codes:', error);
@@ -387,6 +403,187 @@ export class UserDatabaseService implements UserServiceInterface {
         message: 'Failed to update user avatars',
       };
     }
+  }
+
+  async initiateEmailChange(
+    userId: string,
+    newEmail: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      if (!this.isValidEmail(newEmail)) {
+        return { success: false, message: 'Invalid email format' };
+      }
+
+      const currentUser = await this.getUserById(userId);
+      if (!currentUser) {
+        return { success: false, message: 'User not found' };
+      }
+
+      if (currentUser.email.toLowerCase() === newEmail.toLowerCase()) {
+        return {
+          success: false,
+          message: 'New email must be different from current email',
+        };
+      }
+
+      const eligibility = await this.checkEmailUpdateEligibility(currentUser);
+      if (!eligibility.eligible) {
+        return {
+          success: false,
+          message: `Email can only be updated once every 90 days. You can update it again in ${eligibility.daysRemaining} days.`,
+        };
+      }
+
+      const isAvailable = await this.checkEmailAvailability(newEmail, userId);
+      if (!isAvailable) {
+        return { success: false, message: 'Email is already in use' };
+      }
+
+      const code = this.generateVerificationCode();
+      const normalizedEmail = this.normalizeEmail(newEmail);
+
+      await this.saveEmailChangeRequest(userId, normalizedEmail, code);
+
+      const emailSent = await emailService.sendEmailChangeVerificationCode(
+        normalizedEmail,
+        code
+      );
+      if (!emailSent) {
+        return { success: false, message: 'Failed to send verification email' };
+      }
+
+      return {
+        success: true,
+        message: 'Verification code sent to your new email address',
+      };
+    } catch (error) {
+      console.error('Error initiating email change:', error);
+      return { success: false, message: 'Internal server error' };
+    }
+  }
+
+  private async saveEmailChangeRequest(
+    userId: string,
+    newEmail: string,
+    code: string
+  ): Promise<void> {
+    const expiresAt = this.calculateExpirationTime(this.CODE_EXPIRES_IN);
+    const timestamp = this.createTimestamp();
+
+    const emailChangeRequest = {
+      userId: this.createObjectId(userId),
+      newEmail,
+      code,
+      expiresAt,
+      used: false,
+      createdAt: timestamp,
+    };
+
+    await this.invalidatePreviousEmailChangeRequests(userId);
+
+    await this.authCodesCollection.insertOne(emailChangeRequest);
+  }
+
+  async verifyEmailChange(
+    userId: string,
+    code: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      // Validate the verification code for this specific email change request
+      const codeValidation = await this.validateEmailChangeCode(userId, code);
+      if (!codeValidation.valid) {
+        return { success: false, message: codeValidation.message! };
+      }
+
+      // Get the stored email change request to get the new email
+      const emailChangeRequest = await this.findEmailChangeRequest(
+        userId,
+        code
+      );
+      if (!emailChangeRequest) {
+        return { success: false, message: 'Email change request not found' };
+      }
+
+      // Update the user's email
+      const normalizedEmail = this.normalizeEmail(emailChangeRequest.newEmail);
+      const result = await this.usersCollection.updateOne(
+        { _id: this.createObjectId(userId) },
+        {
+          $set: {
+            email: normalizedEmail,
+            emailUpdatedAt: this.createTimestamp(),
+            updatedAt: this.createTimestamp(),
+          },
+        }
+      );
+
+      if (result.matchedCount === 0) {
+        return { success: false, message: 'User not found' };
+      }
+
+      // Clean up the email change request
+      await this.cleanupEmailChangeRequest(userId);
+
+      return { success: true, message: 'Email updated successfully' };
+    } catch (error) {
+      console.error('Error verifying email change:', error);
+      return { success: false, message: 'Internal server error' };
+    }
+  }
+
+  private async validateEmailChangeCode(
+    userId: string,
+    code: string
+  ): Promise<{ valid: boolean; message?: string }> {
+    const emailChangeRequest = await this.authCodesCollection.findOne({
+      userId: this.createObjectId(userId),
+      code,
+      newEmail: { $exists: true },
+      used: false,
+      expiresAt: { $gt: this.createTimestamp() },
+    });
+
+    if (!emailChangeRequest) {
+      return {
+        valid: false,
+        message: 'Invalid or expired verification code',
+      };
+    }
+
+    await this.markEmailChangeRequestAsUsed(emailChangeRequest._id);
+    return { valid: true };
+  }
+
+  private async cleanupEmailChangeRequest(userId: string): Promise<void> {
+    try {
+      await this.authCodesCollection.deleteMany({
+        userId: this.createObjectId(userId),
+        newEmail: { $exists: true }, // Only delete email change requests, not regular auth codes
+      });
+    } catch (error) {
+      console.error('Error cleaning up email change request:', error);
+    }
+  }
+
+  private async invalidatePreviousEmailChangeRequests(
+    userId: string
+  ): Promise<void> {
+    await this.authCodesCollection.updateMany(
+      {
+        userId: this.createObjectId(userId),
+        newEmail: { $exists: true }, // Only update email change requests
+      },
+      { $set: { used: true } }
+    );
+  }
+
+  private async markEmailChangeRequestAsUsed(
+    requestId: ObjectId
+  ): Promise<void> {
+    await this.authCodesCollection.updateOne(
+      { _id: requestId },
+      { $set: { used: true } }
+    );
   }
 
   public verifyToken(token: string): UserSession | null {
@@ -952,6 +1149,8 @@ export class UserDatabaseService implements UserServiceInterface {
   private async orphanUserDataForUsers(users: any[]): Promise<void> {
     for (const user of users) {
       await this.orphanUserData(user._id.toString());
+      // Clean up email change requests for users being deleted
+      await this.cleanupEmailChangeRequest(user._id.toString());
     }
   }
 
@@ -978,6 +1177,19 @@ export class UserDatabaseService implements UserServiceInterface {
       isActive: false,
       deactivatedAt: { $lt: cutoffDate },
       isBanned: false,
+    });
+  }
+
+  private async findEmailChangeRequest(
+    userId: string,
+    code: string
+  ): Promise<any | null> {
+    return this.authCodesCollection.findOne({
+      userId: this.createObjectId(userId),
+      code,
+      newEmail: { $exists: true }, // Only find email change requests
+      used: false,
+      expiresAt: { $gt: this.createTimestamp() },
     });
   }
 }

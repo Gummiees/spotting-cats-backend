@@ -38,6 +38,10 @@ export interface EmailUpdateRequest {
   email: string;
 }
 
+export interface EmailChangeVerificationRequest {
+  code: string;
+}
+
 export interface AvatarUpdateRequest {
   avatarUrl: string;
 }
