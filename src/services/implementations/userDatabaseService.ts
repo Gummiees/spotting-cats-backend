@@ -99,12 +99,7 @@ export class UserDatabaseService implements UserServiceInterface {
       const mappedUser = this.mapUserToResponse(userResult.user!);
 
       // Step 4: Generate authentication token
-      const token = this.createToken(
-        mappedUser.id!,
-        mappedUser.email,
-        mappedUser.username,
-        mappedUser.isAdmin
-      );
+      const token = this.generateTokenForUser(mappedUser);
 
       return {
         success: true,
@@ -163,9 +158,11 @@ export class UserDatabaseService implements UserServiceInterface {
   async updateUser(
     userId: string,
     updates: UserUpdateRequest
-  ): Promise<{ success: boolean; message: string }> {
+  ): Promise<{ success: boolean; message: string; token?: string }> {
     try {
       const updateData = this.createUserUpdatePayload(updates);
+      let shouldRegenerateToken = false;
+      let updatedUser: User | null = null;
 
       if (this.isValidUsername(updates.username)) {
         const username = updates.username;
@@ -180,6 +177,7 @@ export class UserDatabaseService implements UserServiceInterface {
 
         updateData.username = username;
         updateData.usernameUpdatedAt = this.createTimestamp(); // Always set for manual updates
+        shouldRegenerateToken = true; // Username is in JWT token
       }
 
       if (this.isValidEmailForUpdate(updates.email)) {
@@ -191,6 +189,7 @@ export class UserDatabaseService implements UserServiceInterface {
 
         updateData.email = this.normalizeEmail(email);
         updateData.emailUpdatedAt = this.createTimestamp();
+        shouldRegenerateToken = true; // Email is in JWT token
       }
 
       if (this.isValidAvatarUrl(updates.avatarUrl)) {
@@ -221,7 +220,20 @@ export class UserDatabaseService implements UserServiceInterface {
         await this.cleanupEmailChangeRequest(userId);
       }
 
-      return { success: true, message: 'User updated successfully' };
+      // Generate new token if needed
+      let newToken: string | undefined;
+      if (shouldRegenerateToken) {
+        updatedUser = await this.getUserById(userId);
+        if (updatedUser) {
+          newToken = this.generateTokenForUser(updatedUser);
+        }
+      }
+
+      return {
+        success: true,
+        message: 'User updated successfully',
+        token: newToken,
+      };
     } catch (error) {
       console.error('Error updating user:', error);
       return { success: false, message: 'Internal server error' };
@@ -524,13 +536,17 @@ export class UserDatabaseService implements UserServiceInterface {
         return { success: false, message: 'User not found' };
       }
 
+      // Get updated user data for token generation
+      const updatedUser = await this.getUserById(userId);
+      if (!updatedUser) {
+        return {
+          success: false,
+          message: 'Failed to retrieve updated user data',
+        };
+      }
+
       // Generate new JWT token with updated email
-      const newToken = this.createToken(
-        userId,
-        normalizedEmail,
-        currentUser.username,
-        currentUser.isAdmin
-      );
+      const newToken = this.generateTokenForUser(updatedUser);
 
       await this.cleanupEmailChangeRequest(userId);
 
@@ -968,6 +984,18 @@ export class UserDatabaseService implements UserServiceInterface {
     );
   }
 
+  /**
+   * Generates a JWT token for a user with all necessary claims
+   * This is the main token generation function used throughout the application
+   */
+  private generateTokenForUser(user: User): string {
+    return this.createToken(user.id!, user.email, user.username, user.isAdmin);
+  }
+
+  /**
+   * Creates a JWT token with the specified user data
+   * This is the core token creation function
+   */
   private createToken(
     userId: string,
     email: string,
@@ -984,6 +1012,20 @@ export class UserDatabaseService implements UserServiceInterface {
     return jwt.sign(payload, this.JWT_SECRET, {
       expiresIn: this.JWT_EXPIRES_IN,
     } as any);
+  }
+
+  /**
+   * Regenerates a token for a user by their ID
+   * Used when we need to update a token but only have the user ID
+   */
+  private async regenerateTokenForUserId(
+    userId: string
+  ): Promise<string | null> {
+    const user = await this.getUserById(userId);
+    if (!user) {
+      return null;
+    }
+    return this.generateTokenForUser(user);
   }
 
   private buildUsernameQuery(username: string, excludeUserId?: string): any {

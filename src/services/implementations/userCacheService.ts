@@ -109,7 +109,7 @@ export class UserCacheService implements UserServiceInterface {
   async updateUser(
     userId: string,
     updates: UserUpdateRequest
-  ): Promise<{ success: boolean; message: string }> {
+  ): Promise<{ success: boolean; message: string; token?: string }> {
     const result = await this.userService.updateUser(userId, updates);
 
     // Invalidate cache for this user after successful update

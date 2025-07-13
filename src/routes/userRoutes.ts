@@ -216,7 +216,7 @@ router.get('/:username', UserController.getUserByUsername);
  * /api/v1/users/username:
  *   put:
  *     summary: Update user's username
- *     description: Update user's username. Can only be changed once every 30 days. New users get auto-generated usernames that don't count towards this limit.
+ *     description: Update user's username. Can only be changed once every 30 days. New users get auto-generated usernames that don't count towards this limit. The authentication cookie will be updated with a new token containing the updated username.
  *     tags: [Users]
  *     security:
  *       - cookieAuth: []
@@ -235,11 +235,17 @@ router.get('/:username', UserController.getUserByUsername);
  *                 description: New username (must be unique)
  *     responses:
  *       200:
- *         description: Username updated successfully
+ *         description: Username updated successfully. Authentication cookie updated with new token.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/SuccessResponse'
+ *         headers:
+ *           Set-Cookie:
+ *             description: Updated authentication cookie with new token
+ *             schema:
+ *               type: string
+ *               example: "auth_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; HttpOnly; Secure; SameSite=Strict"
  *       400:
  *         description: Invalid username, username already taken, or too soon to update (30-day limit)
  *         content:

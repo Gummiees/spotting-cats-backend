@@ -35,7 +35,7 @@ export interface UserServiceInterface {
   updateUser(
     userId: string,
     updates: UserUpdateRequest
-  ): Promise<{ success: boolean; message: string }>;
+  ): Promise<{ success: boolean; message: string; token?: string }>;
   deactivateUser(
     userId: string
   ): Promise<{ success: boolean; message: string }>;

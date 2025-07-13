@@ -87,6 +87,16 @@ POST /api/v1/users/logout
 GET /api/v1/users/profile
 ```
 
+#### Update Username
+```
+PUT /api/v1/users/username
+Content-Type: application/json
+
+{
+  "username": "newusername"
+}
+```
+
 #### Initiate Email Change
 ```
 PUT /api/v1/users/email
@@ -176,7 +186,7 @@ The application uses JWT tokens for authentication with the following payload st
 - **Complete User Context**: Contains all essential user information for authorization
 - **Admin Status**: Includes admin privileges to avoid additional database queries
 - **7-day Expiration**: Tokens expire after 7 days for security
-- **Automatic Refresh**: Email changes automatically update the token with new email address
+- **Automatic Refresh**: Email and username changes automatically update the token to maintain session continuity
 
 ## Secure Email Change Flow
 
@@ -202,6 +212,29 @@ The application implements a secure two-step email change process to prevent una
   4. New JWT token is generated with updated email address
   5. Authentication cookie is updated to maintain user session
   6. Email change request is cleaned up
+
+## Username Update Flow
+
+The application supports secure username updates with automatic token regeneration:
+
+### Username Update Process
+- **Endpoint**: `PUT /api/v1/users/username`
+- **Authentication**: Required
+- **Process**:
+  1. User provides new username
+  2. System validates username format and availability
+  3. System checks 30-day cooldown period (prevents frequent changes)
+  4. Username is updated if validation succeeds
+  5. New JWT token is generated with updated username
+  6. Authentication cookie is updated to maintain user session
+
+### Security Features
+- **30-day Cooldown**: Users can only change username once every 30 days
+- **Format Validation**: Username must be 3-20 characters, alphanumeric + underscores only
+- **Availability Check**: Username must be unique across all users
+- **Reserved Names**: Certain usernames (admin, root, etc.) are reserved
+- **Automatic Token Update**: JWT token is automatically updated with new username
+- **Session Continuity**: User session is maintained without requiring re-authentication
 
 ### Security Features
 - **Verification Codes**: 6-digit codes sent to new email address
