@@ -5,7 +5,14 @@ import {
   cleanupRateLimit,
   whitelistRoleUpdateRateLimit,
 } from '@/middleware/security';
-import { authMiddleware } from '@/middleware/auth';
+import {
+  authMiddleware,
+  requireModerator,
+  requireAdmin,
+  requireSuperadmin,
+  validateRoleManagement,
+  validateBanPermission,
+} from '@/middleware/auth';
 import { AuthRequest } from '@/models/requests';
 
 const router = Router();
@@ -666,7 +673,12 @@ router.get('/debug-cookies', (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/ban', authMiddleware, UserController.banUser);
+router.post(
+  '/ban',
+  authMiddleware,
+  validateBanPermission,
+  UserController.banUser
+);
 
 /**
  * @swagger
@@ -715,7 +727,12 @@ router.post('/ban', authMiddleware, UserController.banUser);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/unban', authMiddleware, UserController.unbanUser);
+router.post(
+  '/unban',
+  authMiddleware,
+  validateBanPermission,
+  UserController.unbanUser
+);
 
 /**
  * @swagger
@@ -771,7 +788,12 @@ router.post('/unban', authMiddleware, UserController.unbanUser);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.put('/role', authMiddleware, UserController.updateUserRole);
+router.put(
+  '/role',
+  authMiddleware,
+  validateRoleManagement,
+  UserController.updateUserRole
+);
 
 /**
  * @swagger
@@ -851,7 +873,12 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/admin/all', authMiddleware, UserController.getAllUsers);
+router.get(
+  '/admin/all',
+  authMiddleware,
+  requireAdmin,
+  UserController.getAllUsers
+);
 
 /**
  * @swagger
@@ -905,6 +932,7 @@ router.get('/admin/all', authMiddleware, UserController.getAllUsers);
 router.post(
   '/admin/ensure-avatars',
   authMiddleware,
+  requireAdmin,
   UserController.ensureAllUsersHaveAvatars
 );
 
@@ -987,6 +1015,7 @@ router.post(
   '/admin/cleanup',
   cleanupRateLimit,
   authMiddleware,
+  requireAdmin,
   UserController.triggerCleanup
 );
 

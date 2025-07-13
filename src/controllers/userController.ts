@@ -557,44 +557,6 @@ export class UserController {
     ResponseUtil.error(res, message, message, 401);
   }
 
-  // Admin validation methods
-  private static validateBanUserRequest(req: AuthRequest): {
-    valid: boolean;
-    message?: string;
-  } {
-    const authValidation = UserController.validateUserAuth(req);
-    if (!authValidation.valid) {
-      return authValidation;
-    }
-
-    const { username } = req.body;
-    if (!username) {
-      return { valid: false, message: 'Username is required' };
-    }
-
-    // Add username format validation
-    const usernameValidation = UserController.validateUsername(username);
-    if (!usernameValidation.valid) {
-      return { valid: false, message: usernameValidation.message };
-    }
-
-    return { valid: true };
-  }
-
-  private static async validateAdminAccess(userId: string): Promise<{
-    valid: boolean;
-    message?: string;
-  }> {
-    const currentUser = await userService.getUserById(userId);
-    if (
-      !currentUser ||
-      (currentUser.role !== 'admin' && currentUser.role !== 'superadmin')
-    ) {
-      return { valid: false, message: 'Admin access required' };
-    }
-    return { valid: true };
-  }
-
   private static validateNotSelfBan(
     currentUserUsername: string,
     targetUserUsername: string
@@ -623,13 +585,7 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const validationResult = UserController.validateBanUserRequest(req);
-      if (!validationResult.valid) {
-        UserController.handleValidationError(res, validationResult.message!);
-        return;
-      }
-
-      const { username, banReason }: BanUserRequest = req.body;
+      const { banReason }: BanUserRequest = req.body;
 
       if (
         !banReason ||
@@ -640,25 +596,12 @@ export class UserController {
         return;
       }
 
-      // Look up target user by username
-      const targetUser = await userService.getUserByUsername(username);
-      if (!targetUser) {
-        UserController.handleValidationError(res, 'User not found');
-        return;
-      }
-
+      // Get target user from middleware (already validated)
+      const targetUser = (req as any).targetUser;
       const currentUser = await userService.getUserById(req.user!.userId);
+
       if (!currentUser) {
         UserController.handleAuthError(res, 'Current user not found');
-        return;
-      }
-
-      // Check if user can ban the target user
-      if (!canBanUser(currentUser.role, targetUser.role)) {
-        UserController.handleAdminError(
-          res,
-          `You cannot ban users with role: ${targetUser.role}`
-        );
         return;
       }
 
@@ -687,35 +630,8 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const validationResult = UserController.validateBanUserRequest(req);
-      if (!validationResult.valid) {
-        UserController.handleValidationError(res, validationResult.message!);
-        return;
-      }
-
-      const { username }: UnbanUserRequest = req.body;
-
-      // Look up target user by username
-      const targetUser = await userService.getUserByUsername(username);
-      if (!targetUser) {
-        UserController.handleValidationError(res, 'User not found');
-        return;
-      }
-
-      const currentUser = await userService.getUserById(req.user!.userId);
-      if (!currentUser) {
-        UserController.handleAuthError(res, 'Current user not found');
-        return;
-      }
-
-      // Check if user can ban the target user (same logic for unbanning)
-      if (!canBanUser(currentUser.role, targetUser.role)) {
-        UserController.handleAdminError(
-          res,
-          `You cannot unban users with role: ${targetUser.role}`
-        );
-        return;
-      }
+      // Get target user from middleware (already validated)
+      const targetUser = (req as any).targetUser;
 
       const result = await userService.updateUser(targetUser.id!, {
         isBanned: false,
@@ -754,12 +670,6 @@ export class UserController {
         return;
       }
 
-      // Check if user can manage the target role
-      if (!canManageRole(currentUser.role, role)) {
-        UserController.handleAdminError(res, `You cannot assign role: ${role}`);
-        return;
-      }
-
       const result = await userService.updateUserRole(
         targetUser.id!,
         role,
@@ -777,24 +687,6 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const authValidation = UserController.validateUserAuth(req);
-      if (!authValidation.valid) {
-        UserController.handleAuthError(res, authValidation.message);
-        return;
-      }
-
-      const currentUser = await userService.getUserById(req.user!.userId);
-      if (!currentUser) {
-        UserController.handleAuthError(res, 'Current user not found');
-        return;
-      }
-
-      // Only admins and superadmins can view all users
-      if (currentUser.role !== 'admin' && currentUser.role !== 'superadmin') {
-        UserController.handleAdminError(res, 'Admin access required');
-        return;
-      }
-
       const result = await userService.getAllUsers();
       if (result.success) {
         ResponseUtil.success(res, { users: result.users }, result.message);
@@ -812,20 +704,6 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const authValidation = UserController.validateUserAuth(req);
-      if (!authValidation.valid) {
-        UserController.handleAuthError(res, authValidation.message);
-        return;
-      }
-
-      const adminValidation = await UserController.validateAdminAccess(
-        req.user!.userId
-      );
-      if (!adminValidation.valid) {
-        UserController.handleAdminError(res, adminValidation.message!);
-        return;
-      }
-
       const result = await userService.ensureAllUsersHaveAvatars();
 
       if (result.success) {
@@ -952,20 +830,6 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const authValidation = UserController.validateUserAuth(req);
-      if (!authValidation.valid) {
-        UserController.handleAuthError(res, authValidation.message);
-        return;
-      }
-
-      const adminValidation = await UserController.validateAdminAccess(
-        req.user!.userId
-      );
-      if (!adminValidation.valid) {
-        UserController.handleAdminError(res, adminValidation.message!);
-        return;
-      }
-
       // Get retention days from query params, default to 30
       const retentionDays = parseInt(req.query.days as string) || 30;
 
