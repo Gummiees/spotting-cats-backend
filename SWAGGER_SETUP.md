@@ -70,6 +70,20 @@ http://localhost:3000/api-docs
 
 The API uses HTTP-only cookies for authentication. When you authenticate via the `/api/v1/users/verify-code` endpoint, a JWT token is automatically set as a secure HTTP-only cookie.
 
+### JWT Token Structure
+
+The JWT token contains the following user information:
+```json
+{
+  "userId": "507f1f77bcf86cd799439011",
+  "email": "user@example.com",
+  "username": "johndoe",
+  "isAdmin": false,
+  "iat": 1640995200,
+  "exp": 1641600000
+}
+```
+
 ### Testing Protected Endpoints
 
 1. First, authenticate using the `/api/v1/users/verify-code` endpoint

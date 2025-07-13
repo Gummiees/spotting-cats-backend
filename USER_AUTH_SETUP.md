@@ -155,6 +155,28 @@ POST /api/v1/users/admin/cleanup?days=30
 11. **Admin Controls**: Admin-only endpoints for user management with proper authorization
 12. **Secure Headers**: Helmet.js provides security headers
 13. **CORS Protection**: Configurable CORS settings
+14. **JWT Token Security**: Tokens include user ID, email, username, and admin status for complete user context
+
+## JWT Token Structure
+
+The application uses JWT tokens for authentication with the following payload structure:
+
+```javascript
+{
+  userId: string,        // User's unique identifier
+  email: string,         // User's email address
+  username: string,      // User's username
+  isAdmin: boolean,      // Whether the user has admin privileges
+  iat: number,          // Issued at timestamp (JWT standard)
+  exp: number           // Expiration timestamp (JWT standard)
+}
+```
+
+**Token Features:**
+- **Complete User Context**: Contains all essential user information for authorization
+- **Admin Status**: Includes admin privileges to avoid additional database queries
+- **7-day Expiration**: Tokens expire after 7 days for security
+- **Automatic Refresh**: Email changes automatically update the token with new email address
 
 ## Secure Email Change Flow
 
