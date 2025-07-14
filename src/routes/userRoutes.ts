@@ -7,13 +7,11 @@ import {
 } from '@/middleware/security';
 import {
   authMiddleware,
-  requireModerator,
   requireAdmin,
-  requireSuperadmin,
   validateRoleManagement,
   validateBanPermission,
+  checkProfileAccess,
 } from '@/middleware/auth';
-import { AuthRequest } from '@/models/requests';
 
 const router = Router();
 
@@ -298,8 +296,8 @@ router.get('/check-email', UserController.checkEmailAvailability);
  * @swagger
  * /api/v1/users/{username}:
  *   get:
- *     summary: Get user by username (public access)
- *     description: Retrieve public user information by username. Returns a limited set of user fields suitable for public display.
+ *     summary: Get user by username (public access with security restrictions)
+ *     description: Retrieve public user information by username. Returns a limited set of user fields suitable for public display. For security reasons, banned or inactive user profiles are only accessible to users with moderator, admin, or superadmin roles. Users with "user" role and anonymous users will receive a 404 error when trying to access banned/inactive profiles.
  *     tags: [Users]
  *     parameters:
  *       - in: path
@@ -335,13 +333,13 @@ router.get('/check-email', UserController.checkEmailAvailability);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       404:
- *         description: User not found
+ *         description: User not found (or access denied for security reasons)
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/:username', UserController.getUserByUsername);
+router.get('/:username', checkProfileAccess, UserController.getUserByUsername);
 
 /**
  * @swagger

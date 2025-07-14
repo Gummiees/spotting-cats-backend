@@ -336,3 +336,109 @@ export const validateBanPermission = async (
     });
   }
 };
+
+// Middleware to check profile access permissions
+export const checkProfileAccess = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { username } = req.params;
+
+    if (!username || username.trim() === '') {
+      res.status(400).json({
+        success: false,
+        error: 'Bad Request',
+        message: 'Username is required',
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // Get the target user
+    const targetUser = await userService.getUserByUsername(username.trim());
+
+    if (!targetUser) {
+      res.status(404).json({
+        success: false,
+        error: 'Not Found',
+        message: 'User not found',
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // Check if the target user is banned or inactive
+    const isTargetInactive = !targetUser.isActive || targetUser.isBanned;
+
+    if (!isTargetInactive) {
+      // If target user is active and not banned, allow access to everyone
+      next();
+      return;
+    }
+
+    // For banned/inactive users, check the requesting user's permissions
+    const token = req.cookies?.auth_token;
+
+    if (!token) {
+      // Anonymous user trying to access banned/inactive profile - return 404 for security
+      res.status(404).json({
+        success: false,
+        error: 'Not Found',
+        message: 'User not found',
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // Verify token
+    const decoded = userService.verifyToken(token);
+    if (!decoded) {
+      // Invalid token - treat as anonymous user
+      res.status(404).json({
+        success: false,
+        error: 'Not Found',
+        message: 'User not found',
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // Get the requesting user
+    const requestingUser = await userService.getUserById(decoded.userId);
+    if (!requestingUser || requestingUser.isBanned) {
+      // Requesting user doesn't exist or is banned - return 404 for security
+      res.status(404).json({
+        success: false,
+        error: 'Not Found',
+        message: 'User not found',
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // Check if requesting user has elevated permissions (moderator, admin, superadmin)
+    if (requestingUser.role === 'user') {
+      // User with "user" role trying to access banned/inactive profile - return 404 for security
+      res.status(404).json({
+        success: false,
+        error: 'Not Found',
+        message: 'User not found',
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // Moderator, admin, or superadmin can access banned/inactive profiles
+    next();
+  } catch (error) {
+    console.error('Profile access check error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal Server Error',
+      message: 'Profile access check failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+};

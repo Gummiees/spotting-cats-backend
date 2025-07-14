@@ -712,13 +712,10 @@ export class UserController {
     try {
       const { username } = req.params;
 
-      if (!username || username.trim() === '') {
-        ResponseUtil.badRequest(res, 'Username is required');
-        return;
-      }
-
+      // The middleware has already validated the username and checked permissions
       const user = await userService.getUserByUsername(username.trim());
 
+      // This should never be null since the middleware handles the 404 case
       if (!user) {
         ResponseUtil.notFound(res, 'User not found');
         return;
