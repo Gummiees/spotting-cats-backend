@@ -724,21 +724,46 @@ export class UserController {
         return;
       }
 
-      const publicUser: PublicUserByUsername = {
-        username: user.username,
-        avatarUrl: user.avatarUrl,
-        role: user.role,
-        isInactive: !user.isActive || user.isBanned,
-        isBanned: user.isBanned,
-        lastLoginAt: user.lastLoginAt,
-        createdAt: user.createdAt,
-      };
+      // Check if the caller has elevated permissions
+      const token = req.cookies?.auth_token;
+      let callerHasElevatedPermissions = false;
 
-      ResponseUtil.success(
-        res,
-        { user: publicUser },
-        'User retrieved successfully'
-      );
+      if (token) {
+        const decoded = userService.verifyToken(token);
+        if (decoded) {
+          const caller = await userService.getUserById(decoded.userId);
+          if (caller && !caller.isBanned) {
+            // Check if caller has elevated permissions (moderator, admin, superadmin)
+            callerHasElevatedPermissions = [
+              'moderator',
+              'admin',
+              'superadmin',
+            ].includes(caller.role);
+          }
+        }
+      }
+
+      if (callerHasElevatedPermissions) {
+        // Return complete user information for elevated roles
+        ResponseUtil.success(res, { user }, 'User retrieved successfully');
+      } else {
+        // Return public user information for regular users
+        const publicUser: PublicUserByUsername = {
+          username: user.username,
+          avatarUrl: user.avatarUrl,
+          role: user.role,
+          isInactive: !user.isActive || user.isBanned,
+          isBanned: user.isBanned,
+          lastLoginAt: user.lastLoginAt,
+          createdAt: user.createdAt,
+        };
+
+        ResponseUtil.success(
+          res,
+          { user: publicUser },
+          'User retrieved successfully'
+        );
+      }
     } catch (error) {
       next(error);
     }
