@@ -4,11 +4,12 @@ import { errorHandler, notFoundHandler } from '@/middleware/errorHandler';
 import { configureSecurityMiddleware } from '@/middleware/security';
 import { securityCheck } from '@/utils/security';
 import routes from '@/routes';
-import swaggerMiddleware from '@/middleware/swagger';
+import { swaggerMiddleware } from '@/middleware/swagger';
 import cors from 'cors';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import { cleanupService } from '@/services/cleanupService';
+import { logger } from '@/utils/logger';
 
 const app = express();
 
@@ -34,7 +35,7 @@ app.use(
 app.use(cookieParser());
 
 // Swagger documentation
-app.use('/api-docs', swaggerMiddleware);
+app.use('/api-docs', ...swaggerMiddleware);
 
 // Security monitoring middleware
 app.use(securityCheck);
@@ -45,7 +46,7 @@ app.use((req, res, next) => {
   const ip = req.ip || req.connection.remoteAddress;
   const userAgent = req.get('User-Agent') || 'Unknown';
 
-  console.log(
+  logger.info(
     `${timestamp} - ${req.method} ${req.originalUrl} - IP: ${ip} - UA: ${userAgent}`
   );
   next();

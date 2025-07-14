@@ -1,6 +1,7 @@
 import { ResponseUtil } from '@/utils/response';
 import { NextFunction, Request, Response } from 'express';
 import { config } from '@/config';
+import { logger } from '@/utils/logger';
 
 export interface AppError extends Error {
   statusCode?: number;
@@ -11,7 +12,7 @@ export const errorHandler = (
   error: AppError,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void => {
   const statusCode = error.statusCode || 500;
   const isProduction = config.nodeEnv === 'production';
@@ -29,7 +30,7 @@ export const errorHandler = (
     stack: isProduction ? undefined : error.stack,
   };
 
-  console.error('Error occurred:', errorLog);
+  logger.error('Error occurred:', errorLog);
 
   // In production, don't expose internal error details
   const message =
@@ -39,7 +40,7 @@ export const errorHandler = (
 
   // Don't log stack traces in production
   if (!isProduction && error.stack) {
-    console.error(error.stack);
+    logger.error(error.stack);
   }
 
   ResponseUtil.error(res, message, error.name || 'Error', statusCode);
@@ -48,10 +49,10 @@ export const errorHandler = (
 export const notFoundHandler = (
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void => {
   // Log 404 attempts for security monitoring
-  console.log(
+  logger.info(
     `404 - ${req.method} ${req.originalUrl} - IP: ${
       req.ip || req.connection.remoteAddress
     }`

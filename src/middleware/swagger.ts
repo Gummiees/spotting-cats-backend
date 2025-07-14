@@ -1,11 +1,12 @@
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import swaggerOptions from '@/config/swagger';
+import { RequestHandler } from 'express';
 
 const specs = swaggerJsdoc(swaggerOptions);
 
-export const swaggerMiddleware = [
-  swaggerUi.serve,
+export const swaggerMiddleware: RequestHandler[] = [
+  ...swaggerUi.serve,
   swaggerUi.setup(specs, {
     explorer: true,
     customCss: '.swagger-ui .topbar { display: none }',
@@ -16,13 +17,12 @@ export const swaggerMiddleware = [
       filter: true,
       showRequestHeaders: true,
       tryItOutEnabled: true,
-      requestInterceptor: (req: any) => {
+      requestInterceptor: (req: Record<string, unknown>) => {
         // Enable cookies for authentication
         req.credentials = 'include';
         return req;
       },
     },
   }),
-] as any;
-
+];
 export default swaggerMiddleware;

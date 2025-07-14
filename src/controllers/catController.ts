@@ -9,10 +9,12 @@ const catService = new CatService();
 export class CatController {
   static async create(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      // Automatically set userId from authenticated user
+      if (!req.user) {
+        return ResponseUtil.forbidden(res, 'User not authenticated');
+      }
       const catData = {
         ...req.body,
-        userId: req.user!.userId,
+        userId: req.user.userId,
       };
 
       const cat = await catService.create(catData);
@@ -51,7 +53,7 @@ export class CatController {
 
       // Remove undefined values to create a clean filter object
       const cleanFilters: CatFilters = Object.fromEntries(
-        Object.entries(filters).filter(([_, value]) => value !== undefined)
+        Object.entries(filters).filter(([, value]) => value !== undefined)
       );
 
       const cats = await catService.getAll(
@@ -65,7 +67,10 @@ export class CatController {
 
   static async getMyCats(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const cats = await catService.getByUserId(req.user!.userId);
+      if (!req.user) {
+        return ResponseUtil.forbidden(res, 'User not authenticated');
+      }
+      const cats = await catService.getByUserId(req.user.userId);
       ResponseUtil.success(res, cats, 'Your cats retrieved');
     } catch (err) {
       next(err);
@@ -84,11 +89,13 @@ export class CatController {
 
   static async update(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      // Check if user owns the cat
+      if (!req.user) {
+        return ResponseUtil.forbidden(res, 'User not authenticated');
+      }
       const cat = await catService.getById(req.params.id);
       if (!cat) return ResponseUtil.notFound(res, 'Cat not found');
 
-      if (cat.userId !== req.user!.userId) {
+      if (cat.userId !== req.user.userId) {
         return ResponseUtil.forbidden(res, 'You can only update your own cats');
       }
 
@@ -102,11 +109,14 @@ export class CatController {
 
   static async delete(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      // Check if user owns the cat
+      if (!req.user) {
+        return ResponseUtil.forbidden(res, 'User not authenticated');
+      }
+
       const cat = await catService.getById(req.params.id);
       if (!cat) return ResponseUtil.notFound(res, 'Cat not found');
 
-      if (cat.userId !== req.user!.userId) {
+      if (cat.userId !== req.user.userId) {
         return ResponseUtil.forbidden(res, 'You can only delete your own cats');
       }
 

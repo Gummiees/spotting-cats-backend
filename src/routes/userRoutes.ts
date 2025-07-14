@@ -7,13 +7,10 @@ import {
 } from '@/middleware/security';
 import {
   authMiddleware,
-  requireModerator,
   requireAdmin,
-  requireSuperadmin,
   validateRoleManagement,
   validateBanPermission,
 } from '@/middleware/auth';
-import { AuthRequest } from '@/models/requests';
 
 const router = Router();
 

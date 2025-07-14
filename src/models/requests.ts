@@ -1,8 +1,9 @@
 import { Request } from 'express';
-import { UserSession, UserRole } from './user';
+import { UserSession, UserRole, User } from './user';
 
 export interface AuthRequest extends Request {
   user?: UserSession;
+  targetUser?: User;
 }
 
 export interface EmailVerificationRequest {
@@ -56,7 +57,3 @@ export interface UpdateUserRoleRequest {
   username: string;
   role: UserRole;
 }
-
-export interface DeactivateUserRequest {}
-
-export interface DeleteUserRequest {}
