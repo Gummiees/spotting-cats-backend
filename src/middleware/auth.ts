@@ -6,6 +6,7 @@ import {
   hasRolePermission,
   canManageRole,
   canBanUser,
+  ROLE_HIERARCHY,
 } from '@/models/user';
 
 export const authMiddleware = async (
@@ -197,17 +198,6 @@ export const validateRoleManagement = async (
       return;
     }
 
-    // Check if current user can manage the target role
-    if (!canManageRole(currentUser.role, role)) {
-      res.status(403).json({
-        success: false,
-        error: 'Forbidden',
-        message: `You cannot manage users with role: ${role}`,
-        timestamp: new Date().toISOString(),
-      });
-      return;
-    }
-
     // Get target user to check their current role
     const targetUser = await userService.getUserByUsername(username);
     if (!targetUser) {
@@ -220,12 +210,40 @@ export const validateRoleManagement = async (
       return;
     }
 
-    // Check if target user is already at or above the target role
-    if (hasRolePermission(targetUser.role, role)) {
+    // Check if current user can manage the target user's current role
+    if (!canManageRole(currentUser.role, targetUser.role)) {
+      res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        message: `You cannot manage users with role: ${targetUser.role}`,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // Check if this is a promotion or demotion
+    const isPromotion =
+      ROLE_HIERARCHY[role as UserRole] > ROLE_HIERARCHY[targetUser.role];
+    const isDemotion =
+      ROLE_HIERARCHY[role as UserRole] < ROLE_HIERARCHY[targetUser.role];
+
+    // For promotions: prevent promoting users who are already at or above the target role
+    if (isPromotion && hasRolePermission(targetUser.role, role)) {
       res.status(400).json({
         success: false,
         error: 'Bad Request',
         message: `User is already ${targetUser.role} or higher`,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // For demotions: prevent demoting users who are already at or below the target role
+    if (isDemotion && hasRolePermission(role, targetUser.role)) {
+      res.status(400).json({
+        success: false,
+        error: 'Bad Request',
+        message: `User is already ${targetUser.role} or lower`,
         timestamp: new Date().toISOString(),
       });
       return;
