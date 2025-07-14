@@ -1,12 +1,11 @@
 import cron from 'node-cron';
-import { userService } from './userService';
-import { logger } from '@/utils/logger';
+import { userService } from '@/services/userService';
+import { config } from '@/config';
 
 export class CleanupService {
   private static instance: CleanupService;
   private isInitialized = false;
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   private constructor() {}
 
   public static getInstance(): CleanupService {
@@ -21,11 +20,11 @@ export class CleanupService {
    */
   public initialize(): void {
     if (this.isInitialized) {
-      logger.info('CleanupService already initialized');
+      console.log('CleanupService already initialized');
       return;
     }
 
-    logger.info('Initializing CleanupService...');
+    console.log('Initializing CleanupService...');
 
     // Schedule cleanup of old deactivated users (runs daily at 2 AM)
     this.scheduleDeactivatedUserCleanup();
@@ -34,7 +33,7 @@ export class CleanupService {
     this.scheduleExpiredCodesCleanup();
 
     this.isInitialized = true;
-    logger.info('CleanupService initialized successfully');
+    console.log('CleanupService initialized successfully');
   }
 
   /**
@@ -45,11 +44,11 @@ export class CleanupService {
     cron.schedule(
       '0 2 * * *',
       async () => {
-        logger.info('Starting scheduled cleanup of old deactivated users...');
+        console.log('Starting scheduled cleanup of old deactivated users...');
         try {
           await this.cleanupOldDeactivatedUsers(30); // 30 days retention
         } catch (error) {
-          logger.error('Error during deactivated user cleanup:', error);
+          console.error('Error during deactivated user cleanup:', error);
         }
       },
       {
@@ -57,7 +56,7 @@ export class CleanupService {
       }
     );
 
-    logger.info('Scheduled deactivated user cleanup: daily at 2:00 AM UTC');
+    console.log('Scheduled deactivated user cleanup: daily at 2:00 AM UTC');
   }
 
   /**
@@ -68,13 +67,13 @@ export class CleanupService {
     cron.schedule(
       '0 * * * *',
       async () => {
-        logger.info(
+        console.log(
           'Starting scheduled cleanup of expired verification codes...'
         );
         try {
           await userService.cleanupExpiredCodes();
         } catch (error) {
-          logger.error('Error during expired codes cleanup:', error);
+          console.error('Error during expired codes cleanup:', error);
         }
       },
       {
@@ -82,19 +81,19 @@ export class CleanupService {
       }
     );
 
-    logger.info('Scheduled expired codes cleanup: every hour');
+    console.log('Scheduled expired codes cleanup: every hour');
   }
 
   /**
    * Clean up deactivated users older than the specified number of days
    */
-  public async cleanupOldDeactivatedUsers(retentionDays = 30): Promise<{
+  public async cleanupOldDeactivatedUsers(retentionDays: number = 30): Promise<{
     success: boolean;
     deletedCount: number;
     message: string;
   }> {
     try {
-      logger.info(
+      console.log(
         `Cleaning up deactivated users older than ${retentionDays} days...`
       );
 
@@ -103,11 +102,11 @@ export class CleanupService {
       );
 
       if (result.success) {
-        logger.info(
+        console.log(
           `Successfully deleted ${result.deletedCount} old deactivated users`
         );
       } else {
-        logger.error(
+        console.error(
           'Failed to cleanup old deactivated users:',
           result.message
         );
@@ -115,7 +114,7 @@ export class CleanupService {
 
       return result;
     } catch (error) {
-      logger.error('Error in cleanupOldDeactivatedUsers:', error);
+      console.error('Error in cleanupOldDeactivatedUsers:', error);
       return {
         success: false,
         deletedCount: 0,
@@ -128,12 +127,12 @@ export class CleanupService {
   /**
    * Manually trigger cleanup of old deactivated users (for testing/admin use)
    */
-  public async manualCleanup(retentionDays = 30): Promise<{
+  public async manualCleanup(retentionDays: number = 30): Promise<{
     success: boolean;
     deletedCount: number;
     message: string;
   }> {
-    logger.info(
+    console.log(
       `Manual cleanup triggered for users deactivated more than ${retentionDays} days ago`
     );
     return this.cleanupOldDeactivatedUsers(retentionDays);
@@ -155,7 +154,7 @@ export class CleanupService {
         retentionDays: 30,
       };
     } catch (error) {
-      logger.error('Error getting cleanup stats:', error);
+      console.error('Error getting cleanup stats:', error);
       return {
         deactivatedUsersCount: 0,
         oldDeactivatedUsersCount: 0,

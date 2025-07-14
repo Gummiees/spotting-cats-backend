@@ -1,4 +1,4 @@
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { userService } from '@/services/userService';
 import { AuthRequest } from '@/models/requests';
 import {
@@ -7,7 +7,6 @@ import {
   canManageRole,
   canBanUser,
 } from '@/models/user';
-import { logger } from '@/utils/logger';
 
 export const authMiddleware = async (
   req: AuthRequest,
@@ -71,7 +70,7 @@ export const authMiddleware = async (
     req.user = decoded;
     next();
   } catch (error) {
-    logger.error('Auth middleware error:', error);
+    console.error('Auth middleware error:', error);
     res.status(500).json({
       success: false,
       error: 'Internal Server Error',
@@ -122,7 +121,7 @@ export const requireRole = (requiredRole: UserRole) => {
 
       next();
     } catch (error) {
-      logger.error('Role middleware error:', error);
+      console.error('Role middleware error:', error);
       res.status(500).json({
         success: false,
         error: 'Internal Server Error',
@@ -233,10 +232,10 @@ export const validateRoleManagement = async (
     }
 
     // Add target user to request for use in controller
-    req.targetUser = targetUser;
+    (req as any).targetUser = targetUser;
     next();
   } catch (error) {
-    logger.error('Role management validation error:', error);
+    console.error('Role management validation error:', error);
     res.status(500).json({
       success: false,
       error: 'Internal Server Error',
@@ -307,10 +306,10 @@ export const validateBanPermission = async (
     }
 
     // Add target user to request for use in controller
-    req.targetUser = targetUser;
+    (req as any).targetUser = targetUser;
     next();
   } catch (error) {
-    logger.error('Ban permission validation error:', error);
+    console.error('Ban permission validation error:', error);
     res.status(500).json({
       success: false,
       error: 'Internal Server Error',

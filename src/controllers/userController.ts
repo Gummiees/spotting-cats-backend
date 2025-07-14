@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { userService } from '@/services/userService';
+import { AuthRequest } from '@/models/requests';
 import { ResponseUtil } from '@/utils/response';
 import {
-  AuthRequest,
   EmailVerificationRequest,
   CodeVerificationRequest,
   UsernameUpdateRequest,
@@ -27,7 +27,7 @@ export class UserController {
 
       const emailValidation = UserController.validateEmail(email);
       if (!emailValidation.valid) {
-        ResponseUtil.badRequest(res, emailValidation.message);
+        ResponseUtil.badRequest(res, emailValidation.message!);
         return;
       }
 
@@ -48,7 +48,7 @@ export class UserController {
 
       const validation = UserController.validateEmailAndCode(email, code);
       if (!validation.valid) {
-        ResponseUtil.badRequest(res, validation.message);
+        ResponseUtil.badRequest(res, validation.message!);
         return;
       }
 
@@ -84,12 +84,7 @@ export class UserController {
         return;
       }
 
-      if (!req.user) {
-        UserController.handleAuthError(res, 'User not authenticated');
-        return;
-      }
-
-      const user = await userService.getUserById(req.user.userId);
+      const user = await userService.getUserById(req.user!.userId);
 
       if (!user) {
         ResponseUtil.notFound(res, 'User not found');
@@ -166,12 +161,7 @@ export class UserController {
         return;
       }
 
-      if (!req.user) {
-        UserController.handleAuthError(res, 'User not authenticated');
-        return;
-      }
-
-      const result = await userService.deactivateUser(req.user.userId);
+      const result = await userService.deactivateUser(req.user!.userId);
 
       if (result.success) {
         UserController.clearAuthCookie(res);
@@ -196,12 +186,7 @@ export class UserController {
         return;
       }
 
-      if (!req.user) {
-        UserController.handleAuthError(res, 'User not authenticated');
-        return;
-      }
-
-      const result = await userService.deleteUser(req.user.userId);
+      const result = await userService.deleteUser(req.user!.userId);
 
       if (result.success) {
         UserController.clearAuthCookie(res);
@@ -226,21 +211,16 @@ export class UserController {
         return;
       }
 
-      if (!req.user) {
-        UserController.handleAuthError(res, 'User not authenticated');
-        return;
-      }
-
       const { username }: UsernameUpdateRequest = req.body;
       const usernameValidation = UserController.validateUsername(username);
 
       if (!usernameValidation.valid) {
-        ResponseUtil.badRequest(res, usernameValidation.message);
+        ResponseUtil.badRequest(res, usernameValidation.message!);
         return;
       }
 
-      const result = await userService.updateUser(req.user.userId, {
-        username: usernameValidation.trimmedUsername,
+      const result = await userService.updateUser(req.user!.userId, {
+        username: usernameValidation.trimmedUsername!,
       });
 
       if (result.success && result.token) {
@@ -266,22 +246,17 @@ export class UserController {
         return;
       }
 
-      if (!req.user) {
-        UserController.handleAuthError(res, 'User not authenticated');
-        return;
-      }
-
       const { email }: EmailUpdateRequest = req.body;
       const emailValidation = UserController.validateEmailFormat(email);
 
       if (!emailValidation.valid) {
-        ResponseUtil.badRequest(res, emailValidation.message);
+        ResponseUtil.badRequest(res, emailValidation.message!);
         return;
       }
 
       const result = await userService.initiateEmailChange(
-        req.user.userId,
-        emailValidation.normalizedEmail
+        req.user!.userId,
+        emailValidation.normalizedEmail!
       );
 
       UserController.handleServiceResponse(res, result);
@@ -302,11 +277,6 @@ export class UserController {
         return;
       }
 
-      if (!req.user) {
-        UserController.handleAuthError(res, 'User not authenticated');
-        return;
-      }
-
       const { code }: EmailChangeVerificationRequest = req.body;
 
       if (!code) {
@@ -314,7 +284,10 @@ export class UserController {
         return;
       }
 
-      const result = await userService.verifyEmailChange(req.user.userId, code);
+      const result = await userService.verifyEmailChange(
+        req.user!.userId,
+        code
+      );
 
       if (result.success && result.token) {
         UserController.setAuthCookie(res, result.token);
@@ -339,21 +312,16 @@ export class UserController {
         return;
       }
 
-      if (!req.user) {
-        UserController.handleAuthError(res, 'User not authenticated');
-        return;
-      }
-
       const { avatarUrl }: AvatarUpdateRequest = req.body;
       const avatarValidation = UserController.validateAvatarUrl(avatarUrl);
 
       if (!avatarValidation.valid) {
-        ResponseUtil.badRequest(res, avatarValidation.message);
+        ResponseUtil.badRequest(res, avatarValidation.message!);
         return;
       }
 
-      const result = await userService.updateUser(req.user.userId, {
-        avatarUrl: avatarValidation.normalizedUrl,
+      const result = await userService.updateUser(req.user!.userId, {
+        avatarUrl: avatarValidation.normalizedUrl!,
       });
 
       UserController.handleServiceResponse(res, result);
@@ -362,30 +330,31 @@ export class UserController {
     }
   }
 
-  private static validateEmail(
-    email: string | undefined | null
-  ): { valid: true; message: string } | { valid: false; message: string } {
+  private static validateEmail(email: any): {
+    valid: boolean;
+    message?: string;
+  } {
     if (!email || typeof email !== 'string') {
       return { valid: false, message: 'Email is required' };
     }
-    return { valid: true, message: 'Email is valid' };
+    return { valid: true };
   }
 
   private static validateEmailAndCode(
-    email: string | undefined | null,
-    code: string | undefined | null
-  ): { valid: true; message: string } | { valid: false; message: string } {
+    email: any,
+    code: any
+  ): { valid: boolean; message?: string } {
     if (!email || !code) {
       return { valid: false, message: 'Email and code are required' };
     }
-    return { valid: true, message: 'Email and code are valid' };
+    return { valid: true };
   }
 
-  private static validateEmailFormat(
-    email: string | undefined | null
-  ):
-    | { valid: true; message: string; normalizedEmail: string }
-    | { valid: false; message: string } {
+  private static validateEmailFormat(email: any): {
+    valid: boolean;
+    message?: string;
+    normalizedEmail?: string;
+  } {
     if (!email || typeof email !== 'string' || email.trim() === '') {
       return {
         valid: false,
@@ -431,27 +400,24 @@ export class UserController {
       }
     }
 
-    return {
-      valid: true,
-      message: 'Email format is valid',
-      normalizedEmail: trimmedEmail,
-    };
+    return { valid: true, normalizedEmail: trimmedEmail };
   }
 
-  private static validateUserAuth(
-    req: AuthRequest
-  ): { valid: true; message: string } | { valid: false; message: string } {
+  private static validateUserAuth(req: AuthRequest): {
+    valid: boolean;
+    message?: string;
+  } {
     if (!req.user) {
       return { valid: false, message: 'Unauthorized' };
     }
-    return { valid: true, message: 'User is authenticated' };
+    return { valid: true };
   }
 
-  private static validateUsername(
-    username: string | undefined | null
-  ):
-    | { valid: true; message: string; trimmedUsername: string }
-    | { valid: false; message: string } {
+  private static validateUsername(username: any): {
+    valid: boolean;
+    message?: string;
+    trimmedUsername?: string;
+  } {
     if (!username || typeof username !== 'string' || username.trim() === '') {
       return {
         valid: false,
@@ -492,14 +458,14 @@ export class UserController {
       };
     }
 
-    return { valid: true, message: 'Username is valid', trimmedUsername };
+    return { valid: true, trimmedUsername };
   }
 
-  private static validateAvatarUrl(
-    avatarUrl: string | undefined | null
-  ):
-    | { valid: true; message: string; normalizedUrl: string }
-    | { valid: false; message: string } {
+  private static validateAvatarUrl(avatarUrl: any): {
+    valid: boolean;
+    message?: string;
+    normalizedUrl?: string;
+  } {
     if (
       !avatarUrl ||
       typeof avatarUrl !== 'string' ||
@@ -532,11 +498,7 @@ export class UserController {
 
     // Check if it's a valid DiceBear URL
     if (isValidDiceBearUrl(trimmedUrl)) {
-      return {
-        valid: true,
-        message: 'Avatar URL is valid',
-        normalizedUrl: trimmedUrl,
-      };
+      return { valid: true, normalizedUrl: trimmedUrl };
     }
 
     const imageHosts = ['dicebear.com'];
@@ -552,11 +514,7 @@ export class UserController {
       };
     }
 
-    return {
-      valid: true,
-      message: 'Avatar URL is valid',
-      normalizedUrl: trimmedUrl,
-    };
+    return { valid: true, normalizedUrl: trimmedUrl };
   }
 
   private static setAuthCookie(res: Response, token: string): void {
@@ -581,7 +539,7 @@ export class UserController {
   private static handleServiceResponse(
     res: Response,
     result: { success: boolean; message: string },
-    successData?: Record<string, unknown>
+    successData?: any
   ): void {
     if (result.success) {
       ResponseUtil.success(res, successData, result.message);
@@ -592,7 +550,7 @@ export class UserController {
 
   private static handleAuthError(
     res: Response,
-    message = 'Unauthorized'
+    message: string = 'Unauthorized'
   ): void {
     ResponseUtil.error(res, message, message, 401);
   }
@@ -600,11 +558,14 @@ export class UserController {
   private static validateNotSelfBan(
     currentUserUsername: string,
     targetUserUsername: string
-  ): { valid: true; message: string } | { valid: false; message: string } {
+  ): {
+    valid: boolean;
+    message?: string;
+  } {
     if (targetUserUsername === currentUserUsername) {
       return { valid: false, message: 'Cannot ban your own account' };
     }
-    return { valid: true, message: 'Self-ban validation passed' };
+    return { valid: true };
   }
 
   private static handleValidationError(res: Response, message: string): void {
@@ -618,17 +579,6 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const authValidation = UserController.validateUserAuth(req);
-      if (!authValidation.valid) {
-        UserController.handleAuthError(res, authValidation.message);
-        return;
-      }
-
-      if (!req.user) {
-        UserController.handleAuthError(res, 'User not authenticated');
-        return;
-      }
-
       const { banReason }: BanUserRequest = req.body;
 
       if (
@@ -641,13 +591,8 @@ export class UserController {
       }
 
       // Get target user from middleware (already validated)
-      const targetUser = req.targetUser;
-      if (!targetUser) {
-        UserController.handleValidationError(res, 'Target user not found');
-        return;
-      }
-
-      const currentUser = await userService.getUserById(req.user.userId);
+      const targetUser = (req as any).targetUser;
+      const currentUser = await userService.getUserById(req.user!.userId);
 
       if (!currentUser) {
         UserController.handleAuthError(res, 'Current user not found');
@@ -659,16 +604,11 @@ export class UserController {
         targetUser.username
       );
       if (!selfBanValidation.valid) {
-        UserController.handleValidationError(res, selfBanValidation.message);
+        UserController.handleValidationError(res, selfBanValidation.message!);
         return;
       }
 
-      if (!targetUser.id) {
-        UserController.handleValidationError(res, 'Target user ID not found');
-        return;
-      }
-
-      const result = await userService.updateUser(targetUser.id, {
+      const result = await userService.updateUser(targetUser.id!, {
         isBanned: true,
         banReason: banReason.trim(),
       });
@@ -685,18 +625,9 @@ export class UserController {
   ): Promise<void> {
     try {
       // Get target user from middleware (already validated)
-      const targetUser = req.targetUser;
-      if (!targetUser) {
-        UserController.handleValidationError(res, 'Target user not found');
-        return;
-      }
+      const targetUser = (req as any).targetUser;
 
-      if (!targetUser.id) {
-        UserController.handleValidationError(res, 'Target user ID not found');
-        return;
-      }
-
-      const result = await userService.updateUser(targetUser.id, {
+      const result = await userService.updateUser(targetUser.id!, {
         isBanned: false,
         banReason: undefined, // Clear the ban reason when unbanning
       });
@@ -712,45 +643,25 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const authValidation = UserController.validateUserAuth(req);
-      if (!authValidation.valid) {
-        UserController.handleAuthError(res, authValidation.message);
-        return;
-      }
-
-      if (!req.user) {
-        UserController.handleAuthError(res, 'User not authenticated');
-        return;
-      }
-
       const validationResult = UserController.validateUpdateRoleRequest(req);
       if (!validationResult.valid) {
-        UserController.handleValidationError(res, validationResult.message);
+        UserController.handleValidationError(res, validationResult.message!);
         return;
       }
 
       const { role }: UpdateUserRoleRequest = req.body;
-      const targetUser = req.targetUser; // Already fetched by middleware
-      if (!targetUser) {
-        UserController.handleValidationError(res, 'Target user not found');
-        return;
-      }
+      const targetUser = (req as any).targetUser; // Already fetched by middleware
 
-      const currentUser = await userService.getUserById(req.user.userId);
+      const currentUser = await userService.getUserById(req.user!.userId);
       if (!currentUser) {
         UserController.handleAuthError(res, 'Current user not found');
         return;
       }
 
-      if (!targetUser.id || !currentUser.id) {
-        UserController.handleAuthError(res, 'User ID not found');
-        return;
-      }
-
       const result = await userService.updateUserRole(
-        targetUser.id,
+        targetUser.id!,
         role,
-        currentUser.id
+        currentUser.id!
       );
       UserController.handleServiceResponse(res, result);
     } catch (error) {
@@ -979,20 +890,8 @@ export class UserController {
         if (user) {
           if (user.role !== 'superadmin') {
             // Update user to superadmin
-            if (!user.id) {
-              updates.push({
-                email: email,
-                previousRole: user.role,
-                newRole: 'superadmin',
-                updated: false,
-                userFound: false,
-                action: 'not_found',
-              });
-              continue;
-            }
-
             const result = await userService.updateUserRole(
-              user.id,
+              user.id!,
               'superadmin',
               'system-whitelist-update'
             );
@@ -1039,20 +938,8 @@ export class UserController {
         if (user) {
           if (user.role !== 'admin') {
             // Update user to admin
-            if (!user.id) {
-              updates.push({
-                email: email,
-                previousRole: user.role,
-                newRole: 'admin',
-                updated: false,
-                userFound: false,
-                action: 'not_found',
-              });
-              continue;
-            }
-
             const result = await userService.updateUserRole(
-              user.id,
+              user.id!,
               'admin',
               'system-whitelist-update'
             );
@@ -1095,20 +982,8 @@ export class UserController {
 
         // If superadmin is not in superadmin whitelist, demote to user
         if (!isInSuperadminWhitelist) {
-          if (!user.id) {
-            updates.push({
-              email: userEmail,
-              previousRole: user.role,
-              newRole: 'user',
-              updated: false,
-              userFound: true,
-              action: 'not_found',
-            });
-            continue;
-          }
-
           const result = await userService.updateUserRole(
-            user.id,
+            user.id!,
             'user',
             'system-whitelist-update'
           );
@@ -1162,9 +1037,10 @@ export class UserController {
     }
   }
 
-  private static validateUpdateRoleRequest(
-    req: AuthRequest
-  ): { valid: true; message: string } | { valid: false; message: string } {
+  private static validateUpdateRoleRequest(req: AuthRequest): {
+    valid: boolean;
+    message?: string;
+  } {
     const { username, role } = req.body;
 
     if (!username || typeof username !== 'string' || username.trim() === '') {
@@ -1178,6 +1054,6 @@ export class UserController {
       };
     }
 
-    return { valid: true, message: 'Role update request is valid' };
+    return { valid: true };
   }
 }

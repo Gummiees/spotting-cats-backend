@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { logger } from '@/utils/logger';
+import { config } from '@/config';
 
 export interface EmailOptions {
   from: string;
@@ -53,7 +53,7 @@ export class EmailService {
       await this.transporter.sendMail(mailOptions);
       return true;
     } catch (error) {
-      logger.error('Email sending failed:', error);
+      console.error('Email sending failed:', error);
       return false;
     }
   }
@@ -80,7 +80,7 @@ export class EmailService {
       await this.transporter.sendMail(mailOptions);
       return true;
     } catch (error) {
-      logger.error('Welcome email sending failed:', error);
+      console.error('Welcome email sending failed:', error);
       return false;
     }
   }
@@ -115,7 +115,7 @@ export class EmailService {
       await this.transporter.sendMail(mailOptions);
       return true;
     } catch (error) {
-      logger.error('Email change verification email sending failed:', error);
+      console.error('Email change verification email sending failed:', error);
       return false;
     }
   }

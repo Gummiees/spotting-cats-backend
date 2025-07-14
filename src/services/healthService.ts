@@ -18,8 +18,12 @@ export class HealthService {
       return true; // Database not configured, so consider it "healthy"
     }
 
-    // TODO: Add actual database health check
-    return true;
+    try {
+      // TODO: Add actual database health check
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
 
   static async checkExternalServices(): Promise<boolean> {

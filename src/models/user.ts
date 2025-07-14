@@ -86,16 +86,11 @@ export function createUserWithDefaults(
   userData: Partial<CreateUser>
 ): CreateUser {
   const createdAt = userData.createdAt ?? new Date();
-
-  if (!userData.email || !userData.username || !userData.avatarUrl) {
-    throw new Error('Email, username, and avatarUrl are required');
-  }
-
   return {
     ...userData,
-    email: userData.email,
-    username: userData.username,
-    avatarUrl: userData.avatarUrl,
+    email: userData.email!,
+    username: userData.username!,
+    avatarUrl: userData.avatarUrl!,
     role: userData.role ?? 'user',
     isActive: userData.isActive ?? false,
     isBanned: userData.isBanned ?? false,

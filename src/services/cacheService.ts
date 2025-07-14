@@ -1,14 +1,13 @@
 import { connectToRedis, isRedisConfigured } from '@/utils/redis';
-import { logger } from '@/utils/logger';
 
 export class CacheService {
   static async set(
     key: string,
-    value: unknown,
+    value: any,
     ttlSeconds?: number
   ): Promise<void> {
     if (!isRedisConfigured()) {
-      logger.warn('Redis not configured, skipping cache set');
+      console.warn('Redis not configured, skipping cache set');
       return;
     }
 
@@ -22,13 +21,13 @@ export class CacheService {
         await client.set(key, serializedValue);
       }
     } catch (error) {
-      logger.error('Cache set error:', error);
+      console.error('Cache set error:', error);
     }
   }
 
   static async get<T>(key: string): Promise<T | null> {
     if (!isRedisConfigured()) {
-      logger.warn('Redis not configured, skipping cache get');
+      console.warn('Redis not configured, skipping cache get');
       return null;
     }
 
@@ -41,14 +40,14 @@ export class CacheService {
       }
       return null;
     } catch (error) {
-      logger.error('Cache get error:', error);
+      console.error('Cache get error:', error);
       return null;
     }
   }
 
   static async delete(key: string): Promise<void> {
     if (!isRedisConfigured()) {
-      logger.warn('Redis not configured, skipping cache delete');
+      console.warn('Redis not configured, skipping cache delete');
       return;
     }
 
@@ -56,7 +55,7 @@ export class CacheService {
       const client = await connectToRedis();
       await client.del(key);
     } catch (error) {
-      logger.error('Cache delete error:', error);
+      console.error('Cache delete error:', error);
     }
   }
 
@@ -70,14 +69,14 @@ export class CacheService {
       const result = await client.exists(key);
       return result === 1;
     } catch (error) {
-      logger.error('Cache exists error:', error);
+      console.error('Cache exists error:', error);
       return false;
     }
   }
 
   static async flush(): Promise<void> {
     if (!isRedisConfigured()) {
-      logger.warn('Redis not configured, skipping cache flush');
+      console.warn('Redis not configured, skipping cache flush');
       return;
     }
 
@@ -85,7 +84,7 @@ export class CacheService {
       const client = await connectToRedis();
       await client.flushAll();
     } catch (error) {
-      logger.error('Cache flush error:', error);
+      console.error('Cache flush error:', error);
     }
   }
 }

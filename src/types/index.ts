@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 
 // API Response types
-export interface ApiResponse<T = Record<string, unknown>> {
+export interface ApiResponse<T = any> {
   success: boolean;
   message: string;
   data?: T;
@@ -13,26 +13,26 @@ export interface ErrorResponse {
   error: string;
   message: string;
   timestamp: string;
-  details?: Record<string, unknown>;
+  details?: any;
 }
 
 // Controller types
 export interface Controller {
   [key: string]: (
-    _req: Request,
-    _res: Response,
-    _next: NextFunction
+    req: Request,
+    res: Response,
+    next: NextFunction
   ) => void | Promise<void>;
 }
 
 // Service types
 export interface Service {
-  [key: string]: (..._args: unknown[]) => unknown | Promise<unknown>;
+  [key: string]: (...args: any[]) => any | Promise<any>;
 }
 
 // Middleware types
 export interface Middleware {
-  (_req: Request, _res: Response, _next: NextFunction): void | Promise<void>;
+  (req: Request, res: Response, next: NextFunction): void | Promise<void>;
 }
 
 // Health check types
