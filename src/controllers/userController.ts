@@ -579,13 +579,9 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const { banReason }: BanUserRequest = req.body;
+      const { reason }: BanUserRequest = req.body;
 
-      if (
-        !banReason ||
-        typeof banReason !== 'string' ||
-        banReason.trim() === ''
-      ) {
+      if (!reason || typeof reason !== 'string' || reason.trim() === '') {
         UserController.handleValidationError(res, 'Ban reason is required');
         return;
       }
@@ -610,7 +606,7 @@ export class UserController {
 
       const result = await userService.updateUser(targetUser.id!, {
         isBanned: true,
-        banReason: banReason.trim(),
+        banReason: reason.trim(),
       });
       UserController.handleServiceResponse(res, result);
     } catch (error) {

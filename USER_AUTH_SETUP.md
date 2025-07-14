@@ -190,7 +190,7 @@ POST /api/v1/users/role/whitelist
 #### Ban User
 ```
 POST /api/v1/users/ban
-Body: { "username": "string", "banReason": "string" }
+Body: { "username": "string", "reason": "string" }
 ```
 *Role-based: Moderators can ban users, Admins can ban moderators and users, Superadmins can ban everyone except other superadmins.*
 

@@ -190,7 +190,7 @@ PUT /api/v1/users/role
 POST /api/v1/users/ban
 {
   "username": "johndoe",
-  "banReason": "Violation of community guidelines"
+  "reason": "Violation of community guidelines"
 }
 
 POST /api/v1/users/unban

@@ -49,7 +49,7 @@ export interface AvatarUpdateRequest {
 
 export interface BanUserRequest {
   username: string;
-  banReason: string;
+  reason: string;
 }
 
 export interface UpdateUserRoleRequest {

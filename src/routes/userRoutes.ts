@@ -609,13 +609,13 @@ router.delete('/delete', authMiddleware, UserController.deleteAccount);
  *             type: object
  *             required:
  *               - username
- *               - banReason
+ *               - reason
  *             properties:
  *               username:
  *                 type: string
  *                 example: "johndoe"
  *                 description: Username of the user to ban
- *               banReason:
+ *               reason:
  *                 type: string
  *                 example: "Violation of community guidelines"
  *                 description: Reason for banning the user

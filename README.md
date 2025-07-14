@@ -63,7 +63,7 @@ erDiagram
         bool isAdmin
         bool isActive
         bool isBanned
-        string banReason
+        string reason
         DateTime lastLoginAt
         DateTime createdAt
         DateTime updatedAt
