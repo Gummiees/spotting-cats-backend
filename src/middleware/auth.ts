@@ -154,7 +154,7 @@ export const validateRoleManagement = async (
       return;
     }
 
-    const { username, targetRole } = req.body;
+    const { username, role } = req.body;
     if (!username) {
       res.status(400).json({
         success: false,
@@ -165,11 +165,11 @@ export const validateRoleManagement = async (
       return;
     }
 
-    if (!targetRole) {
+    if (!role) {
       res.status(400).json({
         success: false,
         error: 'Bad Request',
-        message: 'Target role is required',
+        message: 'Role is required',
         timestamp: new Date().toISOString(),
       });
       return;
@@ -198,11 +198,11 @@ export const validateRoleManagement = async (
     }
 
     // Check if current user can manage the target role
-    if (!canManageRole(currentUser.role, targetRole)) {
+    if (!canManageRole(currentUser.role, role)) {
       res.status(403).json({
         success: false,
         error: 'Forbidden',
-        message: `You cannot manage users with role: ${targetRole}`,
+        message: `You cannot manage users with role: ${role}`,
         timestamp: new Date().toISOString(),
       });
       return;
@@ -221,7 +221,7 @@ export const validateRoleManagement = async (
     }
 
     // Check if target user is already at or above the target role
-    if (hasRolePermission(targetUser.role, targetRole)) {
+    if (hasRolePermission(targetUser.role, role)) {
       res.status(400).json({
         success: false,
         error: 'Bad Request',
