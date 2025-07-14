@@ -77,6 +77,7 @@ export function applyUserBusinessLogic(user: Partial<User>): Partial<User> {
 
   if (updatedUser.isBanned) {
     updatedUser.isActive = false;
+    updatedUser.role = 'user';
   }
 
   return updatedUser;

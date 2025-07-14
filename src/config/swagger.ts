@@ -96,7 +96,8 @@ const swaggerOptions: Options = {
               type: 'string',
               enum: ['user', 'moderator', 'admin', 'superadmin'],
               example: 'user',
-              description: 'User role in the system',
+              description:
+                'User role in the system. Banned users are automatically demoted to "user" role.',
             },
             isActive: {
               type: 'boolean',
