@@ -154,7 +154,17 @@ export const validateRoleManagement = async (
       return;
     }
 
-    const { targetRole } = req.body;
+    const { username, targetRole } = req.body;
+    if (!username) {
+      res.status(400).json({
+        success: false,
+        error: 'Bad Request',
+        message: 'Username is required',
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
     if (!targetRole) {
       res.status(400).json({
         success: false,
@@ -176,6 +186,18 @@ export const validateRoleManagement = async (
       return;
     }
 
+    // Check if user is trying to modify themselves
+    if (currentUser.username === username) {
+      res.status(400).json({
+        success: false,
+        error: 'Bad Request',
+        message: 'Cannot update your own role',
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // Check if current user can manage the target role
     if (!canManageRole(currentUser.role, targetRole)) {
       res.status(403).json({
         success: false,
@@ -186,6 +208,31 @@ export const validateRoleManagement = async (
       return;
     }
 
+    // Get target user to check their current role
+    const targetUser = await userService.getUserByUsername(username);
+    if (!targetUser) {
+      res.status(404).json({
+        success: false,
+        error: 'Not Found',
+        message: 'Target user not found',
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // Check if target user is already at or above the target role
+    if (hasRolePermission(targetUser.role, targetRole)) {
+      res.status(400).json({
+        success: false,
+        error: 'Bad Request',
+        message: `User is already ${targetUser.role} or higher`,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // Add target user to request for use in controller
+    (req as any).targetUser = targetUser;
     next();
   } catch (error) {
     console.error('Role management validation error:', error);

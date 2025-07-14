@@ -739,7 +739,14 @@ router.post(
  * /api/v1/users/role:
  *   put:
  *     summary: Update user role (Admin/Superadmin only)
- *     description: Update a user's role. Admins can promote users to moderators, Superadmins can promote to admin. Cannot update your own role.
+ *     description: |
+ *       Update a user's role with enhanced validation:
+ *       - **Superadmins** can promote users to moderator, admin, or superadmin roles
+ *       - **Admins** can promote users to moderator role only
+ *       - **Moderators** cannot promote users to any role
+ *       - Cannot update your own role
+ *       - Cannot promote users who are already at or above the target role
+ *       - Automatically invalidates and recreates tokens for the updated user
  *     tags: [Admin]
  *     security:
  *       - cookieAuth: []
@@ -770,7 +777,12 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/SuccessResponse'
  *       400:
- *         description: Invalid request, missing username/role, user not found, or cannot update own role
+ *         description: |
+ *           Invalid request:
+ *           - Missing username or role
+ *           - User not found
+ *           - Cannot update your own role
+ *           - User is already at or above the target role
  *         content:
  *           application/json:
  *             schema:
@@ -787,6 +799,12 @@ router.post(
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Target user not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.put(
   '/role',
@@ -794,6 +812,150 @@ router.put(
   validateRoleManagement,
   UserController.updateUserRole
 );
+
+/**
+ * @swagger
+ * /api/v1/users/role:
+ *   put:
+ *     summary: Make user admin (Superadmin only)
+ *     description: |
+ *       **Example usage for making a user admin:**
+ *       ```
+ *       PUT /api/v1/users/role
+ *       {
+ *         "username": "johndoe",
+ *         "role": "admin"
+ *       }
+ *       ```
+ *       **Requirements:**
+ *       - Only superadmins can promote users to admin role
+ *       - Target user must not already be admin or superadmin
+ *       - Cannot promote yourself
+ *     tags: [Admin Examples]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - role
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 example: "johndoe"
+ *                 description: Username of the user to promote to admin
+ *               role:
+ *                 type: string
+ *                 example: "admin"
+ *                 description: Must be "admin"
+ *     responses:
+ *       200:
+ *         description: User promoted to admin successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         description: Invalid request or user already admin/superadmin
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized - No valid authentication token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - Superadmin access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Target user not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
+/**
+ * @swagger
+ * /api/v1/users/role:
+ *   put:
+ *     summary: Make user moderator (Admin/Superadmin only)
+ *     description: |
+ *       **Example usage for making a user moderator:**
+ *       ```
+ *       PUT /api/v1/users/role
+ *       {
+ *         "username": "johndoe",
+ *         "role": "moderator"
+ *       }
+ *       ```
+ *       **Requirements:**
+ *       - Admins and superadmins can promote users to moderator role
+ *       - Target user must not already be moderator, admin, or superadmin
+ *       - Cannot promote yourself
+ *     tags: [Admin Examples]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - role
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 example: "johndoe"
+ *                 description: Username of the user to promote to moderator
+ *               role:
+ *                 type: string
+ *                 example: "moderator"
+ *                 description: Must be "moderator"
+ *     responses:
+ *       200:
+ *         description: User promoted to moderator successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         description: Invalid request or user already moderator/admin/superadmin
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized - No valid authentication token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - Admin/Superadmin access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Target user not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 
 /**
  * @swagger

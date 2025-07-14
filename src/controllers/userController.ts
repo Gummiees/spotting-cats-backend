@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { userService } from '@/services/userService';
 import { AuthRequest } from '@/models/requests';
 import { ResponseUtil } from '@/utils/response';
-import { UserRole, canManageRole, canBanUser } from '@/models/user';
 import {
   EmailVerificationRequest,
   CodeVerificationRequest,
@@ -11,7 +10,6 @@ import {
   EmailChangeVerificationRequest,
   AvatarUpdateRequest,
   BanUserRequest,
-  UnbanUserRequest,
   UpdateUserRoleRequest,
 } from '@/models/requests';
 import { PublicUserByUsername } from '@/models/user';
@@ -574,10 +572,6 @@ export class UserController {
     ResponseUtil.badRequest(res, message);
   }
 
-  private static handleAdminError(res: Response, message: string): void {
-    ResponseUtil.error(res, 'Forbidden', message, 403);
-  }
-
   // Admin methods for user management
   static async banUser(
     req: AuthRequest,
@@ -655,14 +649,8 @@ export class UserController {
         return;
       }
 
-      const { username, role }: UpdateUserRoleRequest = req.body;
-
-      // Look up target user by username
-      const targetUser = await userService.getUserByUsername(username);
-      if (!targetUser) {
-        UserController.handleValidationError(res, 'User not found');
-        return;
-      }
+      const { role }: UpdateUserRoleRequest = req.body;
+      const targetUser = (req as any).targetUser; // Already fetched by middleware
 
       const currentUser = await userService.getUserById(req.user!.userId);
       if (!currentUser) {

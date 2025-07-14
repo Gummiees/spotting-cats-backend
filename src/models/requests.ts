@@ -52,10 +52,6 @@ export interface BanUserRequest {
   banReason: string;
 }
 
-export interface UnbanUserRequest {
-  username: string;
-}
-
 export interface UpdateUserRoleRequest {
   username: string;
   role: UserRole;
