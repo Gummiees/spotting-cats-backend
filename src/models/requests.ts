@@ -27,6 +27,7 @@ export interface UserUpdateRequest {
   isActive?: boolean;
   isBanned?: boolean;
   banReason?: string;
+  bannedBy?: string;
   role?: UserRole;
 }
 

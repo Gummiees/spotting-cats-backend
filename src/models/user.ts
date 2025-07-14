@@ -11,6 +11,7 @@ export interface User {
   isActive: boolean;
   isBanned: boolean;
   banReason?: string;
+  bannedBy?: string; // ID of the user who banned them
   lastLoginAt: Date;
   createdAt: Date;
   updatedAt?: Date;

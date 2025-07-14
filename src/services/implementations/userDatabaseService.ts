@@ -998,17 +998,27 @@ export class UserDatabaseService implements UserServiceInterface {
       updateData.isBanned = updates.isBanned;
       updateData.bannedAt = updates.isBanned ? this.createTimestamp() : null;
 
-      // Handle ban reason
-      if (updates.isBanned && updates.banReason) {
-        updateData.banReason = updates.banReason;
-      } else if (!updates.isBanned) {
-        updateData.banReason = null; // Clear ban reason when unbanning
+      if (updates.isBanned) {
+        if (updates.banReason) {
+          updateData.banReason = updates.banReason;
+        }
+        if (updates.bannedBy) {
+          updateData.bannedBy = updates.bannedBy;
+        }
+      } else {
+        updateData.banReason = null;
+        updateData.bannedBy = null;
       }
     }
 
     // Handle standalone banReason updates (for cases where only banReason is being updated)
     if (updates.banReason !== undefined && updates.isBanned !== false) {
       updateData.banReason = updates.banReason;
+    }
+
+    // Handle standalone bannedBy updates
+    if (updates.bannedBy !== undefined) {
+      updateData.bannedBy = updates.bannedBy;
     }
 
     // Apply business logic to ensure data consistency
@@ -1182,6 +1192,7 @@ export class UserDatabaseService implements UserServiceInterface {
       avatarUpdatedAt: user.avatarUpdatedAt,
       role: user.role || 'user',
       banReason: user.banReason,
+      bannedBy: user.bannedBy,
       roleUpdatedAt: user.roleUpdatedAt,
       roleUpdatedBy: user.roleUpdatedBy,
     };
