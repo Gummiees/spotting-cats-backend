@@ -625,7 +625,8 @@ export class UserController {
 
       const result = await userService.updateUser(targetUser.id!, {
         isBanned: false,
-        banReason: undefined, // Clear the ban reason when unbanning
+        banReason: undefined,
+        isActive: true,
       });
       UserController.handleServiceResponse(res, result);
     } catch (error) {
