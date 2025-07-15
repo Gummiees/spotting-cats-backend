@@ -11,7 +11,7 @@ export interface User {
   isActive: boolean;
   isBanned: boolean;
   banReason?: string;
-  bannedBy?: string; // ID of the user who banned them
+  bannedBy?: string; // ID of the user who banned them (in database) or username (when returned to frontend)
   lastLoginAt: Date;
   createdAt: Date;
   updatedAt?: Date;
@@ -21,7 +21,7 @@ export interface User {
   deactivatedAt?: Date;
   bannedAt?: Date;
   roleUpdatedAt?: Date;
-  roleUpdatedBy?: string; // ID of the user who updated the role
+  roleUpdatedBy?: string; // ID of the user who updated the role (in database) or username (when returned to frontend)
 }
 
 export interface CreateUser {

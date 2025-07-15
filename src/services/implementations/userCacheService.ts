@@ -78,6 +78,21 @@ export class UserCacheService implements UserServiceInterface {
     }
   }
 
+  async getUserByIdWithResolvedUsernames(userId: string): Promise<User | null> {
+    try {
+      // For users with resolved usernames, we'll go directly to the database service
+      // since the cache doesn't store the resolved usernames
+      return await this.userService.getUserByIdWithResolvedUsernames(userId);
+    } catch (error) {
+      console.error(
+        'Error getting user by ID with resolved usernames from cache:',
+        error
+      );
+      // Fallback to database service
+      return this.userService.getUserByIdWithResolvedUsernames(userId);
+    }
+  }
+
   async getUserByEmail(email: string): Promise<User | null> {
     try {
       // Try to get user ID from email cache first
@@ -109,6 +124,25 @@ export class UserCacheService implements UserServiceInterface {
       console.error('Error getting user by username from cache:', error);
       // Fallback to database service
       return this.userService.getUserByUsername(username);
+    }
+  }
+
+  async getUserByUsernameWithResolvedUsernames(
+    username: string
+  ): Promise<User | null> {
+    try {
+      // For username lookups with resolved usernames, we'll go directly to the database service
+      // since usernames are not cached in the same way as emails
+      return await this.userService.getUserByUsernameWithResolvedUsernames(
+        username
+      );
+    } catch (error) {
+      console.error(
+        'Error getting user by username with resolved usernames from cache:',
+        error
+      );
+      // Fallback to database service
+      return this.userService.getUserByUsernameWithResolvedUsernames(username);
     }
   }
 

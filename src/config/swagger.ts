@@ -146,6 +146,23 @@ const swaggerOptions: Options = {
               type: 'string',
               format: 'date-time',
             },
+            bannedBy: {
+              type: 'string',
+              description:
+                'Username of the user who banned this user (only visible to elevated permissions)',
+              example: 'admin_user',
+            },
+            roleUpdatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'When the user role was last updated',
+            },
+            roleUpdatedBy: {
+              type: 'string',
+              description:
+                'Username of the user who last updated this user role (only visible to elevated permissions)',
+              example: 'superadmin_user',
+            },
           },
         },
         PublicUser: {

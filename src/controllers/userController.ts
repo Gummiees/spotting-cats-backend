@@ -15,6 +15,7 @@ import {
 import { PublicUserByUsername } from '@/models/user';
 import { isValidDiceBearUrl } from '@/utils/avatar';
 import { config } from '@/config';
+import { User } from '@/models/user';
 
 export class UserController {
   static async sendVerificationCode(
@@ -364,7 +365,6 @@ export class UserController {
 
     const trimmedEmail = email.trim().toLowerCase();
 
-    // Basic email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(trimmedEmail)) {
       return {
@@ -373,7 +373,6 @@ export class UserController {
       };
     }
 
-    // Check for reasonable email length
     if (trimmedEmail.length > 320) {
       return {
         valid: false,
@@ -381,7 +380,6 @@ export class UserController {
       };
     }
 
-    // Check for some basic reserved patterns
     const reservedPatterns = [
       /^admin@/,
       /^administrator@/,
@@ -479,7 +477,6 @@ export class UserController {
 
     const trimmedUrl = avatarUrl.trim();
 
-    // Basic URL format validation - require https for security
     const urlRegex = /^https:\/\/.+/;
     if (!urlRegex.test(trimmedUrl)) {
       return {
@@ -488,7 +485,6 @@ export class UserController {
       };
     }
 
-    // Check for reasonable URL length
     if (trimmedUrl.length > 512) {
       return {
         valid: false,
@@ -496,7 +492,6 @@ export class UserController {
       };
     }
 
-    // Check if it's a valid DiceBear URL
     if (isValidDiceBearUrl(trimmedUrl)) {
       return { valid: true, normalizedUrl: trimmedUrl };
     }
@@ -572,7 +567,6 @@ export class UserController {
     ResponseUtil.badRequest(res, message);
   }
 
-  // Admin methods for user management
   static async banUser(
     req: AuthRequest,
     res: Response,
@@ -586,7 +580,6 @@ export class UserController {
         return;
       }
 
-      // Get target user from middleware (already validated)
       const targetUser = (req as any).targetUser;
       const currentUser = await userService.getUserById(req.user!.userId);
 
@@ -621,7 +614,6 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      // Get target user from middleware (already validated)
       const targetUser = (req as any).targetUser;
 
       const result = await userService.updateUser(targetUser.id!, {
@@ -649,7 +641,7 @@ export class UserController {
       }
 
       const { role }: UpdateUserRoleRequest = req.body;
-      const targetUser = (req as any).targetUser; // Already fetched by middleware
+      const targetUser = (req as any).targetUser;
 
       const currentUser = await userService.getUserById(req.user!.userId);
       if (!currentUser) {
@@ -715,16 +707,6 @@ export class UserController {
     try {
       const { username } = req.params;
 
-      // The middleware has already validated the username and checked permissions
-      const user = await userService.getUserByUsername(username.trim());
-
-      // This should never be null since the middleware handles the 404 case
-      if (!user) {
-        ResponseUtil.notFound(res, 'User not found');
-        return;
-      }
-
-      // Check if the caller has elevated permissions
       const token = req.cookies?.auth_token;
       let callerHasElevatedPermissions = false;
 
@@ -733,7 +715,6 @@ export class UserController {
         if (decoded) {
           const caller = await userService.getUserById(decoded.userId);
           if (caller && !caller.isBanned) {
-            // Check if caller has elevated permissions (moderator, admin, superadmin)
             callerHasElevatedPermissions = [
               'moderator',
               'admin',
@@ -743,11 +724,23 @@ export class UserController {
         }
       }
 
+      let user: User | null;
       if (callerHasElevatedPermissions) {
-        // Return complete user information for elevated roles
+        user = await userService.getUserByUsernameWithResolvedUsernames(
+          username.trim()
+        );
+      } else {
+        user = await userService.getUserByUsername(username.trim());
+      }
+
+      if (!user) {
+        ResponseUtil.notFound(res, 'User not found');
+        return;
+      }
+
+      if (callerHasElevatedPermissions) {
         ResponseUtil.success(res, { user }, 'User retrieved successfully');
       } else {
-        // Return public user information for regular users
         const publicUser: PublicUserByUsername = {
           username: user.username,
           avatarUrl: user.avatarUrl,
@@ -782,21 +775,21 @@ export class UserController {
         return;
       }
 
-      // Validate that userId is a valid MongoDB ObjectId
       const objectIdRegex = /^[0-9a-fA-F]{24}$/;
       if (!objectIdRegex.test(userId.trim())) {
         ResponseUtil.badRequest(res, 'Invalid user ID format');
         return;
       }
 
-      const user = await userService.getUserById(userId.trim());
+      const user = await userService.getUserByIdWithResolvedUsernames(
+        userId.trim()
+      );
 
       if (!user) {
         ResponseUtil.notFound(res, 'User not found');
         return;
       }
 
-      // Since this endpoint requires elevated permissions, always return complete user information
       ResponseUtil.success(res, { user }, 'User retrieved successfully');
     } catch (error) {
       next(error);
@@ -873,10 +866,8 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      // Get retention days from query params, default to 30
       const retentionDays = parseInt(req.query.days as string) || 30;
 
-      // Validate retention days (between 1 and 365 days)
       if (retentionDays < 1 || retentionDays > 365) {
         ResponseUtil.badRequest(
           res,
@@ -885,7 +876,6 @@ export class UserController {
         return;
       }
 
-      // Import cleanup service
       const { cleanupService } = await import('@/services/cleanupService');
 
       const result = await cleanupService.manualCleanup(retentionDays);
@@ -922,7 +912,6 @@ export class UserController {
         action: 'promoted' | 'demoted' | 'no_change' | 'not_found';
       }> = [];
 
-      // Get all superadmin users to check for demotions
       const allUsersResult = await userService.getAllUsers();
       if (!allUsersResult.success) {
         ResponseUtil.error(
@@ -938,13 +927,11 @@ export class UserController {
         (user) => user.role === 'superadmin'
       );
 
-      // Process superadmin whitelist (promotions)
       for (const email of config.admin.superadminEmailWhitelist) {
         const user = await userService.getUserByEmail(email);
 
         if (user) {
           if (user.role !== 'superadmin') {
-            // Update user to superadmin
             const result = await userService.updateUserRole(
               user.id!,
               'superadmin',
@@ -964,7 +951,7 @@ export class UserController {
               email: email,
               previousRole: user.role,
               newRole: 'superadmin',
-              updated: false, // Already correct role
+              updated: false,
               userFound: true,
               action: 'no_change',
             });
@@ -981,9 +968,7 @@ export class UserController {
         }
       }
 
-      // Process admin whitelist (promotions, excluding emails already in superadmin list)
       for (const email of config.admin.emailWhitelist) {
-        // Skip if email is already in superadmin whitelist
         if (config.admin.superadminEmailWhitelist.includes(email)) {
           continue;
         }
@@ -992,7 +977,6 @@ export class UserController {
 
         if (user) {
           if (user.role !== 'admin') {
-            // Update user to admin
             const result = await userService.updateUserRole(
               user.id!,
               'admin',
@@ -1012,7 +996,7 @@ export class UserController {
               email: email,
               previousRole: user.role,
               newRole: 'admin',
-              updated: false, // Already correct role
+              updated: false,
               userFound: true,
               action: 'no_change',
             });
@@ -1029,13 +1013,11 @@ export class UserController {
         }
       }
 
-      // Process demotions - check superadmin users not in superadmin whitelist
       for (const user of superadminUsers) {
         const userEmail = user.email.toLowerCase();
         const isInSuperadminWhitelist =
           config.admin.superadminEmailWhitelist.includes(userEmail);
 
-        // If superadmin is not in superadmin whitelist, demote to user
         if (!isInSuperadminWhitelist) {
           const result = await userService.updateUserRole(
             user.id!,
@@ -1054,7 +1036,6 @@ export class UserController {
         }
       }
 
-      // Count updates
       const totalWhitelistedEmails =
         config.admin.superadminEmailWhitelist.length +
         config.admin.emailWhitelist.filter(

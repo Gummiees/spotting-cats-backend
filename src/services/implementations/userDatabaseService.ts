@@ -130,6 +130,20 @@ export class UserDatabaseService implements UserServiceInterface {
     }
   }
 
+  async getUserByIdWithResolvedUsernames(userId: string): Promise<User | null> {
+    try {
+      const user = await this.usersCollection.findOne({
+        _id: this.createObjectId(userId),
+      });
+
+      if (!user) return null;
+      return await this.mapUserToResponseWithResolvedUsernames(user);
+    } catch (error) {
+      console.error('Error getting user by ID with resolved usernames:', error);
+      return null;
+    }
+  }
+
   async getUserByEmail(email: string): Promise<User | null> {
     try {
       const user = await this.findUserByEmail(email);
@@ -151,6 +165,25 @@ export class UserDatabaseService implements UserServiceInterface {
       return this.mapUserToResponse(user);
     } catch (error) {
       console.error('Error getting user by username:', error);
+      return null;
+    }
+  }
+
+  async getUserByUsernameWithResolvedUsernames(
+    username: string
+  ): Promise<User | null> {
+    try {
+      const user = await this.usersCollection.findOne({
+        username: username,
+      });
+
+      if (!user) return null;
+      return await this.mapUserToResponseWithResolvedUsernames(user);
+    } catch (error) {
+      console.error(
+        'Error getting user by username with resolved usernames:',
+        error
+      );
       return null;
     }
   }
@@ -303,7 +336,9 @@ export class UserDatabaseService implements UserServiceInterface {
         .sort({ createdAt: -1 })
         .toArray();
 
-      const mappedUsers = users.map((user) => this.mapUserToResponse(user));
+      const mappedUsers = await Promise.all(
+        users.map((user) => this.mapUserToResponseWithResolvedUsernames(user))
+      );
 
       return {
         success: true,
@@ -1195,6 +1230,55 @@ export class UserDatabaseService implements UserServiceInterface {
       roleUpdatedAt: user.roleUpdatedAt,
       roleUpdatedBy: user.roleUpdatedBy,
     };
+  }
+
+  /**
+   * Maps user data to response format with resolved usernames for bannedBy and roleUpdatedBy fields
+   */
+  private async mapUserToResponseWithResolvedUsernames(
+    user: any
+  ): Promise<User> {
+    const mappedUser = this.mapUserToResponse(user);
+
+    // Resolve bannedBy ID to username if it exists
+    if (mappedUser.bannedBy) {
+      const bannedByUsername = await this.resolveUserIdToUsername(
+        mappedUser.bannedBy
+      );
+      if (bannedByUsername) {
+        mappedUser.bannedBy = bannedByUsername;
+      }
+    }
+
+    // Resolve roleUpdatedBy ID to username if it exists
+    if (mappedUser.roleUpdatedBy) {
+      const roleUpdatedByUsername = await this.resolveUserIdToUsername(
+        mappedUser.roleUpdatedBy
+      );
+      if (roleUpdatedByUsername) {
+        mappedUser.roleUpdatedBy = roleUpdatedByUsername;
+      }
+    }
+
+    return mappedUser;
+  }
+
+  /**
+   * Resolves a user ID to a username
+   */
+  private async resolveUserIdToUsername(
+    userId: string
+  ): Promise<string | null> {
+    try {
+      const user = await this.usersCollection.findOne(
+        { _id: this.createObjectId(userId) },
+        { projection: { username: 1 } }
+      );
+      return user?.username || null;
+    } catch (error) {
+      console.error('Error resolving user ID to username:', error);
+      return null;
+    }
   }
 
   private isValidEmail(email: string): boolean {
