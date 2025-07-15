@@ -1200,13 +1200,16 @@ export class UserDatabaseService implements UserServiceInterface {
       updatedAt: this.createTimestamp(),
     };
 
+    // Apply business logic to ensure data consistency for regular fields
+    const processedData: any = applyUserBusinessLogic(updateData);
+
     // Add IP address to the array if provided and not already present
     if (clientIp) {
-      updateData.$addToSet = { ipAddresses: clientIp };
+      // Use $addToSet to add IP address only if it's not already in the array
+      processedData.$addToSet = { ipAddresses: clientIp };
     }
 
-    // Apply business logic to ensure data consistency
-    return applyUserBusinessLogic(updateData);
+    return processedData;
   }
 
   private createUserUpdatePayload(updates: UserUpdateRequest): any {
