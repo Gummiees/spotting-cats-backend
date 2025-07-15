@@ -688,6 +688,19 @@ export class UserController {
     try {
       const result = await userService.getAllUsersWithPrivileges(true);
 
+      const requestingUser = req.user;
+      const includeIpData = !!(
+        requestingUser &&
+        (requestingUser.role === 'admin' ||
+          requestingUser.role === 'superadmin')
+      );
+      if (result.success && result.users && !includeIpData) {
+        result.users.forEach((user) => {
+          delete user.ipAddresses;
+          delete user.lastIpAddress;
+        });
+      }
+
       if (result.success) {
         ResponseUtil.success(res, { users: result.users }, result.message);
       } else {
@@ -730,9 +743,10 @@ export class UserController {
 
       const token = req.cookies?.auth_token;
       let callerHasElevatedPermissions = false;
+      let decoded: any = null;
 
       if (token) {
-        const decoded = userService.verifyToken(token);
+        decoded = userService.verifyToken(token);
         if (decoded) {
           const caller = await userService.getUserById(decoded.userId);
           if (caller && !caller.isBanned) {
@@ -751,6 +765,15 @@ export class UserController {
           username.trim(),
           true
         );
+
+        const caller = await userService.getUserById(decoded!.userId);
+        const includeIpData =
+          caller && ['admin', 'superadmin'].includes(caller.role);
+
+        if (user && !includeIpData) {
+          delete user.ipAddresses;
+          delete user.lastIpAddress;
+        }
       } else {
         user = await userService.getUserByUsername(username.trim());
       }
@@ -785,7 +808,7 @@ export class UserController {
   }
 
   static async getUserById(
-    req: Request,
+    req: AuthRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> {
@@ -807,6 +830,18 @@ export class UserController {
         userId.trim(),
         true
       );
+
+      const requestingUser = req.user;
+      const includeIpData = !!(
+        requestingUser &&
+        (requestingUser.role === 'admin' ||
+          requestingUser.role === 'superadmin')
+      );
+
+      if (user && !includeIpData) {
+        delete user.ipAddresses;
+        delete user.lastIpAddress;
+      }
 
       if (!user) {
         ResponseUtil.notFound(res, 'User not found');
