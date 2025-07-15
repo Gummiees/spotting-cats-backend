@@ -1087,12 +1087,24 @@ export class UserDatabaseService implements UserServiceInterface {
   ): Promise<any> {
     const updateData = this.createUserUpdateData(clientIp);
 
-    await this.usersCollection.updateOne({ _id: userId }, { $set: updateData });
+    // Separate regular fields from MongoDB operators
+    const { $addToSet, ...regularFields } = updateData;
+
+    // First update regular fields
+    await this.usersCollection.updateOne(
+      { _id: userId },
+      { $set: regularFields }
+    );
+
+    // Then update with MongoDB operators if needed
+    if ($addToSet) {
+      await this.usersCollection.updateOne({ _id: userId }, { $addToSet });
+    }
 
     const updatedUser = await this.usersCollection.findOne({ _id: userId });
     return {
       ...updatedUser,
-      ...updateData,
+      ...regularFields,
     };
   }
 

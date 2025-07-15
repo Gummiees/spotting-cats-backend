@@ -229,6 +229,7 @@ POST /api/v1/users/admin/cleanup?days=30
 12. **Secure Headers**: Helmet.js provides security headers
 13. **CORS Protection**: Configurable CORS settings
 14. **JWT Token Security**: Tokens include user ID, email, username, and role for complete user context
+15. **IP Address Tracking**: Automatic tracking of IP addresses used for authentication (visible only to privileged users)
 
 ## JWT Token Structure
 
@@ -284,13 +285,25 @@ The application uses JWT tokens for authentication with the following payload st
   isDeleted: Boolean,
   isBanned: Boolean (default: false),
   banReason: String (optional),
+  bannedBy: String (optional, ObjectId of user who banned them),
   createdAt: Date,
   updatedAt: Date,
   lastLoginAt: Date,
   deactivatedAt: Date (optional),
-  bannedAt: Date (optional)
+  bannedAt: Date (optional),
+  ipAddresses: Array<String> (optional, array of IP addresses used for authentication)
 }
 ```
+
+### IP Address Tracking
+
+The system automatically tracks IP addresses used for authentication:
+
+- **New Users**: IP address is recorded when the account is created
+- **Existing Users**: IP address is added to the array when they log in (if not already present)
+- **Privacy**: IP addresses are only visible to users with elevated permissions (moderator, admin, superadmin)
+- **Storage**: Uses MongoDB's `$addToSet` operator to prevent duplicate IP addresses
+- **Proxy Support**: Handles various proxy headers (X-Forwarded-For, X-Real-IP, CF-Connecting-IP)
 
 ## Cleanup System
 

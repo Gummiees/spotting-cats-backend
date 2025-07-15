@@ -95,7 +95,7 @@ const router = Router();
  *                 example: true
  *               isUserOwner:
  *                 type: boolean
- *                 description: Whether the user is the owner (default: false)
+ *                 description: Whether the user is the owner (default false)
  *                 example: false
  *     responses:
  *       201:
