@@ -110,3 +110,17 @@ export const whitelistRoleUpdateRateLimit =
         legacyHeaders: false,
       })
     : (req: Request, res: Response, next: NextFunction) => next(); // No-op in non-production
+
+export const verificationCodeRateLimit = rateLimit({
+  windowMs: 60 * 1000, // 60 seconds
+  max: 1, // limit each IP to 1 request per 60 seconds
+  message:
+    'Please wait 60 seconds before requesting another verification code.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    // Use email as part of the key to make it per-email rate limiting
+    const email = req.body?.email;
+    return email ? `${req.ip}-${email.toLowerCase()}` : req.ip || '';
+  },
+});

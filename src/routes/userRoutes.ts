@@ -4,6 +4,7 @@ import {
   authRateLimit,
   cleanupRateLimit,
   whitelistRoleUpdateRateLimit,
+  verificationCodeRateLimit,
 } from '@/middleware/security';
 import {
   authMiddleware,
@@ -77,9 +78,39 @@ const router = Router();
  *                       type: boolean
  *                       example: false
  *       429:
- *         description: Rate limit exceeded
+ *         description: Too many requests - You can only request a verification code once every 60 seconds per email address
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
+ *                   type: string
+ *                   example: "Too Many Requests"
+ *                 message:
+ *                   type: string
+ *                   example: "Please wait 60 seconds before requesting another verification code."
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *                 details:
+ *                   type: object
+ *                   properties:
+ *                     errorCode:
+ *                       type: string
+ *                       example: "VERIFICATION_CODE_RATE_LIMITED"
+ *                     canRetry:
+ *                       type: boolean
+ *                       example: true
  */
-router.post('/send-code', authRateLimit, UserController.sendVerificationCode);
+router.post(
+  '/send-code',
+  verificationCodeRateLimit,
+  UserController.sendVerificationCode
+);
 
 /**
  * @swagger
