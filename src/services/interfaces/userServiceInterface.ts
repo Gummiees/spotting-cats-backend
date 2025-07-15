@@ -5,7 +5,7 @@ export interface UserServiceInterface {
   // Authentication methods
   sendVerificationCode(
     email: string
-  ): Promise<{ success: boolean; message: string }>;
+  ): Promise<{ success: boolean; message: string; errorCode?: string }>;
   verifyCodeAndAuthenticate(
     email: string,
     code: string

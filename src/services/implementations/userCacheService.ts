@@ -16,7 +16,7 @@ export class UserCacheService implements UserServiceInterface {
   // Authentication methods - delegate to database service
   async sendVerificationCode(
     email: string
-  ): Promise<{ success: boolean; message: string }> {
+  ): Promise<{ success: boolean; message: string; errorCode?: string }> {
     return this.userService.sendVerificationCode(email);
   }
 

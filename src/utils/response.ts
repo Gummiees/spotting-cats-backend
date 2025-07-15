@@ -57,4 +57,22 @@ export class ResponseUtil {
   static forbidden(res: Response, message: string = 'Forbidden'): void {
     this.error(res, message, 'Forbidden', 403);
   }
+
+  static accountBanned(
+    res: Response,
+    message: string = 'Account has been banned'
+  ): void {
+    const response: ErrorResponse = {
+      success: false,
+      error: 'Account Banned',
+      message,
+      timestamp: new Date().toISOString(),
+      details: {
+        errorCode: 'ACCOUNT_BANNED',
+        canRetry: false,
+      },
+    };
+
+    res.status(403).json(response);
+  }
 }

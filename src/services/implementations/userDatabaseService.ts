@@ -33,7 +33,7 @@ export class UserDatabaseService implements UserServiceInterface {
 
   async sendVerificationCode(
     email: string
-  ): Promise<{ success: boolean; message: string }> {
+  ): Promise<{ success: boolean; message: string; errorCode?: string }> {
     try {
       if (!this.isValidEmail(email)) {
         return { success: false, message: 'Invalid email format' };
@@ -47,6 +47,7 @@ export class UserDatabaseService implements UserServiceInterface {
           success: false,
           message:
             'This account has been banned and cannot receive verification codes',
+          errorCode: 'ACCOUNT_BANNED',
         };
       }
 

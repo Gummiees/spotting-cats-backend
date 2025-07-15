@@ -33,6 +33,13 @@ export class UserController {
       }
 
       const result = await userService.sendVerificationCode(email);
+
+      // Handle banned user case specifically
+      if (!result.success && result.errorCode === 'ACCOUNT_BANNED') {
+        ResponseUtil.accountBanned(res, result.message);
+        return;
+      }
+
       UserController.handleServiceResponse(res, result);
     } catch (error) {
       next(error);
