@@ -100,4 +100,39 @@ export interface UserServiceInterface {
     totalDeactivated: number;
     oldDeactivated: number;
   }>;
+
+  // IP banning methods
+  banUsersByIp(
+    username: string,
+    reason: string,
+    bannedByUserId: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      targetUser: User;
+      affectedUsers: User[];
+      bannedIps: string[];
+      totalBanned: number;
+    };
+  }>;
+  unbanUsersByIp(
+    username: string,
+    unbannedByUserId: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      targetUser: User;
+      affectedUsers: User[];
+      unbannedIps: string[];
+      totalUnbanned: number;
+    };
+  }>;
+  checkIpBanned(ipAddress: string): Promise<{
+    banned: boolean;
+    reason?: string;
+    bannedBy?: string;
+    bannedAt?: Date;
+  }>;
 }

@@ -879,6 +879,119 @@ router.post(
 
 /**
  * @swagger
+ * /api/v1/users/ban-ip:
+ *   post:
+ *     summary: Ban all users from the same IP addresses as the target user (Admin/Superadmin only)
+ *     tags: [Admin]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - reason
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 example: "johndoe"
+ *                 description: Username of the user whose IP addresses will be banned
+ *               reason:
+ *                 type: string
+ *                 example: "IP ban: Multiple violations from this IP range"
+ *                 description: Reason for banning the IP addresses
+ *     responses:
+ *       200:
+ *         description: IP ban successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/IpBanResponse'
+ *       400:
+ *         description: Invalid request, missing username/ban reason, user not found, or no IP addresses to ban
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized - No valid authentication token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - Admin/Superadmin access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post(
+  '/ban-ip',
+  authMiddleware,
+  requireElevatedPermissions,
+  UserController.banUsersByIp
+);
+
+/**
+ * @swagger
+ * /api/v1/users/unban-ip:
+ *   post:
+ *     summary: Unban all users from the same IP addresses as the target user (Admin/Superadmin only)
+ *     tags: [Admin]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 example: "johndoe"
+ *                 description: Username of the user whose IP addresses will be unbanned
+ *     responses:
+ *       200:
+ *         description: IP unban successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/IpUnbanResponse'
+ *       400:
+ *         description: Invalid request, missing username, user not found, or no IP addresses to unban
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized - No valid authentication token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - Admin/Superadmin access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post(
+  '/unban-ip',
+  authMiddleware,
+  requireElevatedPermissions,
+  UserController.unbanUsersByIp
+);
+
+/**
+ * @swagger
  * /api/v1/users/role:
  *   put:
  *     summary: Update user role (Admin/Superadmin only)

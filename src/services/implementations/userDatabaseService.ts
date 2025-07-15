@@ -10,12 +10,14 @@ import { emailService } from '@/services/emailService';
 import { UserServiceInterface } from '@/services/interfaces/userServiceInterface';
 import { User, UserSession, applyUserBusinessLogic } from '@/models/user';
 import { UserUpdateRequest } from '@/models/requests';
+import { BannedIp } from '@/models/bannedIp';
 import { generateAvatarForUsername } from '@/utils/avatar';
 import { config } from '@/config';
 
 export class UserDatabaseService implements UserServiceInterface {
   private usersCollection: Collection<any>;
   private authCodesCollection: Collection<any>;
+  private bannedIpsCollection: Collection<any>;
   private readonly JWT_SECRET: string;
   private readonly JWT_EXPIRES_IN: string;
   private readonly CODE_EXPIRES_IN: number; // minutes
@@ -23,6 +25,7 @@ export class UserDatabaseService implements UserServiceInterface {
   constructor() {
     this.usersCollection = null as any;
     this.authCodesCollection = null as any;
+    this.bannedIpsCollection = null as any;
     this.JWT_SECRET =
       process.env.JWT_SECRET ||
       'your-super-secret-jwt-key-change-in-production';
@@ -38,6 +41,18 @@ export class UserDatabaseService implements UserServiceInterface {
     try {
       if (!this.isValidEmail(email)) {
         return { success: false, message: 'Invalid email format' };
+      }
+
+      // Check if IP is banned
+      if (clientIp) {
+        const ipBanStatus = await this.checkIpBanned(clientIp);
+        if (ipBanStatus.banned) {
+          return {
+            success: false,
+            message: `This IP address has been banned: ${ipBanStatus.reason}`,
+            errorCode: 'IP_BANNED',
+          };
+        }
       }
 
       const existingUser = await this.findUserByEmail(email);
@@ -1624,6 +1639,17 @@ export class UserDatabaseService implements UserServiceInterface {
     user?: any;
     isNewUser?: boolean;
   }> {
+    // Check if IP is banned before processing authentication
+    if (clientIp) {
+      const ipBanStatus = await this.checkIpBanned(clientIp);
+      if (ipBanStatus.banned) {
+        return {
+          success: false,
+          message: `This IP address has been banned: ${ipBanStatus.reason}`,
+        };
+      }
+    }
+
     let user = await this.findUserByEmail(email);
     let isNewUser = false;
 
@@ -1750,6 +1776,7 @@ export class UserDatabaseService implements UserServiceInterface {
       const db = await connectToMongo();
       this.usersCollection = db.collection('users');
       this.authCodesCollection = db.collection('auth_codes');
+      this.bannedIpsCollection = db.collection('banned_ips');
     } catch (error) {
       console.error('Failed to initialize collections:', error);
     }
@@ -1846,6 +1873,236 @@ export class UserDatabaseService implements UserServiceInterface {
       console.error('Error checking email change rate limit:', error);
       // In case of error, allow the request to proceed
       return { allowed: true };
+    }
+  }
+
+  // IP banning methods
+  async banUsersByIp(
+    username: string,
+    reason: string,
+    bannedByUserId: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      targetUser: User;
+      affectedUsers: User[];
+      bannedIps: string[];
+      totalBanned: number;
+    };
+  }> {
+    try {
+      // Find the target user
+      const targetUser = await this.usersCollection.findOne({
+        username: username.trim(),
+      });
+
+      if (!targetUser) {
+        return {
+          success: false,
+          message: 'Target user not found',
+        };
+      }
+
+      // Get all IP addresses from the target user
+      const targetIps = targetUser.ipAddresses || [];
+      if (targetIps.length === 0) {
+        return {
+          success: false,
+          message: 'Target user has no IP addresses to ban',
+        };
+      }
+
+      // Find all users who share any of these IP addresses
+      const affectedUsers = await this.usersCollection
+        .find({
+          $or: [
+            { ipAddresses: { $in: targetIps } },
+            { lastIpAddress: { $in: targetIps } },
+          ],
+        })
+        .toArray();
+
+      // Ban all affected users
+      const bannedUserIds = affectedUsers.map((user) => user._id);
+      const banUpdate = {
+        isBanned: true,
+        banReason: `IP ban: ${reason}`,
+        bannedBy: bannedByUserId,
+        bannedAt: this.createTimestamp(),
+        updatedAt: this.createTimestamp(),
+      };
+
+      await this.usersCollection.updateMany(
+        { _id: { $in: bannedUserIds } },
+        { $set: banUpdate }
+      );
+
+      // Add IP addresses to banned_ips collection
+      const bannedIpDocuments = targetIps.map((ip: string) => ({
+        ipAddress: ip,
+        reason: reason,
+        bannedBy: bannedByUserId,
+        bannedAt: this.createTimestamp(),
+        updatedAt: this.createTimestamp(),
+      }));
+
+      await this.bannedIpsCollection.insertMany(bannedIpDocuments);
+
+      // Map users to response format
+      const mappedTargetUser = this.mapUserToResponse(targetUser);
+      const mappedAffectedUsers = affectedUsers.map((user) =>
+        this.mapUserToResponse(user)
+      );
+
+      return {
+        success: true,
+        message: `Successfully banned ${affectedUsers.length} users from ${targetIps.length} IP addresses`,
+        data: {
+          targetUser: mappedTargetUser,
+          affectedUsers: mappedAffectedUsers,
+          bannedIps: targetIps,
+          totalBanned: affectedUsers.length,
+        },
+      };
+    } catch (error) {
+      console.error('Error banning users by IP:', error);
+      return {
+        success: false,
+        message: 'Failed to ban users by IP',
+      };
+    }
+  }
+
+  async unbanUsersByIp(
+    username: string,
+    unbannedByUserId: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      targetUser: User;
+      affectedUsers: User[];
+      unbannedIps: string[];
+      totalUnbanned: number;
+    };
+  }> {
+    try {
+      // Find the target user
+      const targetUser = await this.usersCollection.findOne({
+        username: username.trim(),
+      });
+
+      if (!targetUser) {
+        return {
+          success: false,
+          message: 'Target user not found',
+        };
+      }
+
+      // Get all IP addresses from the target user
+      const targetIps = targetUser.ipAddresses || [];
+      if (targetIps.length === 0) {
+        return {
+          success: false,
+          message: 'Target user has no IP addresses to unban',
+        };
+      }
+
+      // Find all users who share any of these IP addresses and are banned due to IP ban
+      const affectedUsers = await this.usersCollection
+        .find({
+          $and: [
+            {
+              $or: [
+                { ipAddresses: { $in: targetIps } },
+                { lastIpAddress: { $in: targetIps } },
+              ],
+            },
+            {
+              banReason: { $regex: /^IP ban:/, $options: 'i' },
+            },
+          ],
+        })
+        .toArray();
+
+      // Unban all affected users
+      const unbannedUserIds = affectedUsers.map((user) => user._id);
+      const unbanUpdate = {
+        isBanned: false,
+        banReason: null,
+        bannedBy: null,
+        bannedAt: null,
+        updatedAt: this.createTimestamp(),
+      };
+
+      await this.usersCollection.updateMany(
+        { _id: { $in: unbannedUserIds } },
+        { $set: unbanUpdate }
+      );
+
+      // Remove IP addresses from banned_ips collection
+      await this.bannedIpsCollection.deleteMany({
+        ipAddress: { $in: targetIps },
+      });
+
+      // Map users to response format
+      const mappedTargetUser = this.mapUserToResponse(targetUser);
+      const mappedAffectedUsers = affectedUsers.map((user) =>
+        this.mapUserToResponse(user)
+      );
+
+      return {
+        success: true,
+        message: `Successfully unbanned ${affectedUsers.length} users from ${targetIps.length} IP addresses`,
+        data: {
+          targetUser: mappedTargetUser,
+          affectedUsers: mappedAffectedUsers,
+          unbannedIps: targetIps,
+          totalUnbanned: affectedUsers.length,
+        },
+      };
+    } catch (error) {
+      console.error('Error unbanning users by IP:', error);
+      return {
+        success: false,
+        message: 'Failed to unban users by IP',
+      };
+    }
+  }
+
+  async checkIpBanned(ipAddress: string): Promise<{
+    banned: boolean;
+    reason?: string;
+    bannedBy?: string;
+    bannedAt?: Date;
+  }> {
+    try {
+      const bannedIp = await this.bannedIpsCollection.findOne({
+        ipAddress: ipAddress,
+      });
+
+      if (!bannedIp) {
+        return { banned: false };
+      }
+
+      // Resolve bannedBy ID to username
+      let bannedByUsername = null;
+      if (bannedIp.bannedBy) {
+        bannedByUsername = await this.resolveUserIdToUsername(
+          bannedIp.bannedBy
+        );
+      }
+
+      return {
+        banned: true,
+        reason: bannedIp.reason,
+        bannedBy: bannedByUsername || bannedIp.bannedBy,
+        bannedAt: bannedIp.bannedAt,
+      };
+    } catch (error) {
+      console.error('Error checking IP ban status:', error);
+      return { banned: false };
     }
   }
 }

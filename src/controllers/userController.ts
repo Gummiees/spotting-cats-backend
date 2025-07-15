@@ -11,6 +11,8 @@ import {
   AvatarUpdateRequest,
   BanUserRequest,
   UpdateUserRoleRequest,
+  BanIpRequest,
+  UnbanIpRequest,
 } from '@/models/requests';
 import { PublicUserByUsername } from '@/models/user';
 import { isValidDiceBearUrl } from '@/utils/avatar';
@@ -1149,5 +1151,67 @@ export class UserController {
     }
 
     return { valid: true };
+  }
+
+  static async banUsersByIp(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { username, reason }: BanIpRequest = req.body;
+
+      if (!username || typeof username !== 'string' || username.trim() === '') {
+        UserController.handleValidationError(res, 'Username is required');
+        return;
+      }
+
+      if (!reason || typeof reason !== 'string' || reason.trim() === '') {
+        UserController.handleValidationError(res, 'Ban reason is required');
+        return;
+      }
+
+      const result = await userService.banUsersByIp(
+        username.trim(),
+        reason.trim(),
+        req.user!.userId
+      );
+
+      if (result.success) {
+        ResponseUtil.success(res, result.data, result.message);
+      } else {
+        ResponseUtil.badRequest(res, result.message);
+      }
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async unbanUsersByIp(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { username }: UnbanIpRequest = req.body;
+
+      if (!username || typeof username !== 'string' || username.trim() === '') {
+        UserController.handleValidationError(res, 'Username is required');
+        return;
+      }
+
+      const result = await userService.unbanUsersByIp(
+        username.trim(),
+        req.user!.userId
+      );
+
+      if (result.success) {
+        ResponseUtil.success(res, result.data, result.message);
+      } else {
+        ResponseUtil.badRequest(res, result.message);
+      }
+    } catch (error) {
+      next(error);
+    }
   }
 }

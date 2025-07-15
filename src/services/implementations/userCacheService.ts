@@ -459,4 +459,74 @@ export class UserCacheService implements UserServiceInterface {
       console.error('Error invalidating all user caches:', error);
     }
   }
+
+  // IP banning methods - delegate to database service
+  async banUsersByIp(
+    username: string,
+    reason: string,
+    bannedByUserId: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      targetUser: User;
+      affectedUsers: User[];
+      bannedIps: string[];
+      totalBanned: number;
+    };
+  }> {
+    const result = await this.userService.banUsersByIp(
+      username,
+      reason,
+      bannedByUserId
+    );
+
+    // Invalidate cache for all affected users
+    if (result.success && result.data) {
+      await this.invalidateUserCache(result.data.targetUser.id!);
+      for (const user of result.data.affectedUsers) {
+        await this.invalidateUserCache(user.id!);
+      }
+    }
+
+    return result;
+  }
+
+  async unbanUsersByIp(
+    username: string,
+    unbannedByUserId: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      targetUser: User;
+      affectedUsers: User[];
+      unbannedIps: string[];
+      totalUnbanned: number;
+    };
+  }> {
+    const result = await this.userService.unbanUsersByIp(
+      username,
+      unbannedByUserId
+    );
+
+    // Invalidate cache for all affected users
+    if (result.success && result.data) {
+      await this.invalidateUserCache(result.data.targetUser.id!);
+      for (const user of result.data.affectedUsers) {
+        await this.invalidateUserCache(user.id!);
+      }
+    }
+
+    return result;
+  }
+
+  async checkIpBanned(ipAddress: string): Promise<{
+    banned: boolean;
+    reason?: string;
+    bannedBy?: string;
+    bannedAt?: Date;
+  }> {
+    return this.userService.checkIpBanned(ipAddress);
+  }
 }

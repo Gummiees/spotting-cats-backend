@@ -628,6 +628,92 @@ const swaggerOptions: Options = {
             },
           },
         },
+        IpBanResponse: {
+          type: 'object',
+          description: 'Response for IP ban operations',
+          properties: {
+            success: {
+              type: 'boolean',
+              example: true,
+            },
+            data: {
+              type: 'object',
+              properties: {
+                targetUser: {
+                  $ref: '#/components/schemas/User',
+                },
+                affectedUsers: {
+                  type: 'array',
+                  items: {
+                    $ref: '#/components/schemas/User',
+                  },
+                },
+                bannedIps: {
+                  type: 'array',
+                  items: {
+                    type: 'string',
+                  },
+                  example: ['192.168.1.1', '10.0.0.1'],
+                },
+                totalBanned: {
+                  type: 'number',
+                  example: 3,
+                },
+              },
+            },
+            message: {
+              type: 'string',
+              example: 'Successfully banned 3 users from 2 IP addresses',
+            },
+            timestamp: {
+              type: 'string',
+              format: 'date-time',
+            },
+          },
+        },
+        IpUnbanResponse: {
+          type: 'object',
+          description: 'Response for IP unban operations',
+          properties: {
+            success: {
+              type: 'boolean',
+              example: true,
+            },
+            data: {
+              type: 'object',
+              properties: {
+                targetUser: {
+                  $ref: '#/components/schemas/User',
+                },
+                affectedUsers: {
+                  type: 'array',
+                  items: {
+                    $ref: '#/components/schemas/User',
+                  },
+                },
+                unbannedIps: {
+                  type: 'array',
+                  items: {
+                    type: 'string',
+                  },
+                  example: ['192.168.1.1', '10.0.0.1'],
+                },
+                totalUnbanned: {
+                  type: 'number',
+                  example: 3,
+                },
+              },
+            },
+            message: {
+              type: 'string',
+              example: 'Successfully unbanned 3 users from 2 IP addresses',
+            },
+            timestamp: {
+              type: 'string',
+              format: 'date-time',
+            },
+          },
+        },
       },
     },
     tags: [

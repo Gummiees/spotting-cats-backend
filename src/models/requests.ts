@@ -61,3 +61,12 @@ export interface UpdateUserRoleRequest {
 export interface DeactivateUserRequest {}
 
 export interface DeleteUserRequest {}
+
+export interface BanIpRequest {
+  username: string;
+  reason: string;
+}
+
+export interface UnbanIpRequest {
+  username: string;
+}
