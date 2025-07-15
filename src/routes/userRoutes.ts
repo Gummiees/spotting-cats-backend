@@ -295,71 +295,6 @@ router.get('/check-email', UserController.checkEmailAvailability);
 
 /**
  * @swagger
- * /api/v1/users/{username}:
- *   get:
- *     summary: Get user by username (public access with role-based data visibility)
- *     description: Retrieve user information by username. Returns different levels of user data based on the caller's role. Regular users and anonymous users receive limited public information. Users with moderator, admin, or superadmin roles receive complete user information including sensitive fields like email, ban details, and timestamps. For security reasons, banned or inactive user profiles are only accessible to users with elevated permissions.
- *     tags: [Users]
- *     parameters:
- *       - in: path
- *         name: username
- *         required: true
- *         schema:
- *           type: string
- *         description: The username to retrieve
- *         example: "johndoe"
- *     responses:
- *       200:
- *         description: User retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               oneOf:
- *                 - type: object
- *                   description: Complete user information (for moderator, admin, superadmin)
- *                   properties:
- *                     success:
- *                       type: boolean
- *                       example: true
- *                     data:
- *                       type: object
- *                       properties:
- *                         user:
- *                           $ref: '#/components/schemas/User'
- *                     message:
- *                       type: string
- *                       example: "User retrieved successfully"
- *                 - type: object
- *                   description: Public user information (for regular users and anonymous)
- *                   properties:
- *                     success:
- *                       type: boolean
- *                       example: true
- *                     data:
- *                       type: object
- *                       properties:
- *                         user:
- *                           $ref: '#/components/schemas/PublicUserByUsername'
- *                     message:
- *                       type: string
- *                       example: "User retrieved successfully"
- *       400:
- *         description: Username is required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       404:
- *         description: User not found (or access denied for security reasons)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-router.get('/:username', checkProfileAccess, UserController.getUserByUsername);
-
-/**
- * @swagger
  * /api/v1/users/id/{userId}:
  *   get:
  *     summary: Get user by ID (Elevated permissions only)
@@ -426,6 +361,71 @@ router.get(
   requireElevatedPermissions,
   UserController.getUserById
 );
+
+/**
+ * @swagger
+ * /api/v1/users/{username}:
+ *   get:
+ *     summary: Get user by username (public access with role-based data visibility)
+ *     description: Retrieve user information by username. Returns different levels of user data based on the caller's role. Regular users and anonymous users receive limited public information. Users with moderator, admin, or superadmin roles receive complete user information including sensitive fields like email, ban details, and timestamps. For security reasons, banned or inactive user profiles are only accessible to users with elevated permissions.
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: username
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The username to retrieve
+ *         example: "johndoe"
+ *     responses:
+ *       200:
+ *         description: User retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               oneOf:
+ *                 - type: object
+ *                   description: Complete user information (for moderator, admin, superadmin)
+ *                   properties:
+ *                     success:
+ *                       type: boolean
+ *                       example: true
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         user:
+ *                           $ref: '#/components/schemas/User'
+ *                     message:
+ *                       type: string
+ *                       example: "User retrieved successfully"
+ *                 - type: object
+ *                   description: Public user information (for regular users and anonymous)
+ *                   properties:
+ *                     success:
+ *                       type: boolean
+ *                       example: true
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         user:
+ *                           $ref: '#/components/schemas/PublicUserByUsername'
+ *                     message:
+ *                       type: string
+ *                       example: "User retrieved successfully"
+ *       400:
+ *         description: Username is required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: User not found (or access denied for security reasons)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/:username', checkProfileAccess, UserController.getUserByUsername);
 
 /**
  * @swagger
