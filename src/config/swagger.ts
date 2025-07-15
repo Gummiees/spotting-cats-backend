@@ -630,7 +630,8 @@ const swaggerOptions: Options = {
         },
         IpBanResponse: {
           type: 'object',
-          description: 'Response for IP ban operations',
+          description:
+            'Response for IP ban operations with role hierarchy protection',
           properties: {
             success: {
               type: 'boolean',
@@ -647,6 +648,7 @@ const swaggerOptions: Options = {
                   items: {
                     $ref: '#/components/schemas/User',
                   },
+                  description: 'Users who were successfully banned',
                 },
                 bannedIps: {
                   type: 'array',
@@ -658,6 +660,7 @@ const swaggerOptions: Options = {
                 totalBanned: {
                   type: 'number',
                   example: 3,
+                  description: 'Number of users successfully banned',
                 },
               },
             },

@@ -112,6 +112,7 @@ export interface UserServiceInterface {
     data?: {
       targetUser: User;
       affectedUsers: User[];
+      protectedUsers?: User[]; // Users protected by role hierarchy
       bannedIps: string[];
       totalBanned: number;
     };

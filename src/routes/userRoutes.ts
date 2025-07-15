@@ -882,6 +882,13 @@ router.post(
  * /api/v1/users/ban-ip:
  *   post:
  *     summary: Ban all users from the same IP addresses as the target user (Admin/Superadmin only)
+ *     description: |
+ *       Ban all users sharing IP addresses with the target user, with role hierarchy protection:
+ *       - **Superadmins** can ban users, moderators, and admins (but not other superadmins)
+ *       - **Admins** can ban users and moderators (but not admins or superadmins)
+ *       - **Moderators** can only ban users (but not moderators, admins, or superadmins)
+ *       - If any user with a higher role shares the same IP, the entire operation is blocked
+ *       - TODO: Future enhancement will include more complex role hierarchy rules
  *     tags: [Admin]
  *     security:
  *       - cookieAuth: []
@@ -905,13 +912,18 @@ router.post(
  *                 description: Reason for banning the IP addresses
  *     responses:
  *       200:
- *         description: IP ban successful
+ *         description: IP ban successful (some users may be protected by role hierarchy)
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/IpBanResponse'
  *       400:
- *         description: Invalid request, missing username/ban reason, user not found, or no IP addresses to ban
+ *         description: |
+ *           Invalid request:
+ *           - Missing username/ban reason
+ *           - User not found
+ *           - No IP addresses to ban
+ *           - No users can be banned due to role hierarchy restrictions
  *         content:
  *           application/json:
  *             schema:

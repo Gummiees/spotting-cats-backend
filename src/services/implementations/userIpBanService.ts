@@ -1,12 +1,23 @@
 import { User } from '@/models/user';
 import { UserDatabaseOperations } from './userDatabaseOperations';
 import { UserUtilityService } from './userUtilityService';
+import { IpBanValidationService } from './ipBanValidationService';
+import { IpBanOperationsService } from './ipBanOperationsService';
+import { IpBanQueryService } from './ipBanQueryService';
 
 export class UserIpBanService {
+  private validationService: IpBanValidationService;
+  private operationsService: IpBanOperationsService;
+  private queryService: IpBanQueryService;
+
   constructor(
     private dbOps: UserDatabaseOperations,
     private utilityService: UserUtilityService
-  ) {}
+  ) {
+    this.validationService = new IpBanValidationService();
+    this.operationsService = new IpBanOperationsService(dbOps, utilityService);
+    this.queryService = new IpBanQueryService(dbOps);
+  }
 
   async banUsersByIp(
     username: string,
@@ -23,66 +34,75 @@ export class UserIpBanService {
     };
   }> {
     try {
-      // Find the target user
-      const targetUser = await this.dbOps.findUserByUsername(username.trim());
-
-      if (!targetUser) {
+      // Find and validate target user
+      const targetUser = await this.queryService.findTargetUser(username);
+      const targetValidation =
+        this.validationService.validateTargetUser(targetUser);
+      if (!targetValidation.valid) {
         return {
           success: false,
-          message: 'Target user not found',
+          message: targetValidation.message!,
         };
       }
 
-      // Get all IP addresses from the target user
-      const targetIps = targetUser.ipAddresses || [];
-      if (targetIps.length === 0) {
+      // Find and validate banning user
+      const banningUser = await this.queryService.findBanningUser(
+        bannedByUserId
+      );
+      const banningValidation =
+        this.validationService.validateBanningUser(banningUser);
+      if (!banningValidation.valid) {
         return {
           success: false,
-          message: 'Target user has no IP addresses to ban',
+          message: banningValidation.message!,
         };
       }
 
-      // Find all users who share any of these IP addresses
-      const affectedUsers = await this.dbOps.findUsersByIpAddresses(targetIps);
+      // Get IP addresses and find affected users
+      const targetIps = this.queryService.getTargetUserIps(targetUser);
+      const allAffectedUsers = await this.queryService.findUsersByIpAddresses(
+        targetIps
+      );
 
-      // Ban all affected users
-      const bannedUserIds = affectedUsers.map((user) => user._id);
-      const banUpdate = {
-        isBanned: true,
-        banReason: `IP ban: ${reason}`,
-        bannedBy: bannedByUserId,
-        bannedAt: this.utilityService.createTimestamp(),
-        updatedAt: this.utilityService.createTimestamp(),
-      };
+      // Validate role hierarchy
+      const validation = await this.validationService.validateIpBanOperation(
+        allAffectedUsers,
+        banningUser
+      );
+      if (!validation.canProceed) {
+        return {
+          success: false,
+          message: validation.message!,
+        };
+      }
 
-      await this.dbOps.updateManyUsers(bannedUserIds, banUpdate);
+      // Execute the ban operation
+      const operationResult = await this.operationsService.executeIpBan(
+        allAffectedUsers,
+        targetIps,
+        reason,
+        bannedByUserId
+      );
 
-      // Add IP addresses to banned_ips collection
-      const bannedIpDocuments = targetIps.map((ip: string) => ({
-        ipAddress: ip,
-        reason: reason,
-        bannedBy: bannedByUserId,
-        bannedAt: this.utilityService.createTimestamp(),
-        updatedAt: this.utilityService.createTimestamp(),
-      }));
+      if (!operationResult.success) {
+        return {
+          success: false,
+          message: operationResult.message,
+        };
+      }
 
-      await this.dbOps.insertBannedIps(bannedIpDocuments);
-
-      // Map users to response format
+      // Map target user to response format
       const mappedTargetUser =
         this.utilityService.mapUserToResponse(targetUser);
-      const mappedAffectedUsers = affectedUsers.map((user) =>
-        this.utilityService.mapUserToResponse(user)
-      );
 
       return {
         success: true,
-        message: `Successfully banned ${affectedUsers.length} users from ${targetIps.length} IP addresses`,
+        message: operationResult.message,
         data: {
           targetUser: mappedTargetUser,
-          affectedUsers: mappedAffectedUsers,
-          bannedIps: targetIps,
-          totalBanned: affectedUsers.length,
+          affectedUsers: operationResult.data!.affectedUsers,
+          bannedIps: operationResult.data!.bannedIps,
+          totalBanned: operationResult.data!.totalBanned,
         },
       };
     } catch (error) {
@@ -108,60 +128,47 @@ export class UserIpBanService {
     };
   }> {
     try {
-      // Find the target user
-      const targetUser = await this.dbOps.findUserByUsername(username.trim());
-
-      if (!targetUser) {
+      // Find and validate target user
+      const targetUser = await this.queryService.findTargetUser(username);
+      const targetValidation =
+        this.validationService.validateTargetUser(targetUser);
+      if (!targetValidation.valid) {
         return {
           success: false,
-          message: 'Target user not found',
+          message: targetValidation.message!,
         };
       }
 
-      // Get all IP addresses from the target user
-      const targetIps = targetUser.ipAddresses || [];
-      if (targetIps.length === 0) {
-        return {
-          success: false,
-          message: 'Target user has no IP addresses to unban',
-        };
-      }
+      // Get IP addresses and find affected users
+      const targetIps = this.queryService.getTargetUserIps(targetUser);
+      const affectedUsers =
+        await this.queryService.findUsersByIpAddressesAndBanReason(targetIps);
 
-      // Find all users who share any of these IP addresses and are banned due to IP ban
-      const affectedUsers = await this.dbOps.findUsersByIpAddressesAndBanReason(
+      // Execute the unban operation
+      const operationResult = await this.operationsService.executeIpUnban(
+        affectedUsers,
         targetIps
       );
 
-      // Unban all affected users
-      const unbannedUserIds = affectedUsers.map((user) => user._id);
-      const unbanUpdate = {
-        isBanned: false,
-        banReason: null,
-        bannedBy: null,
-        bannedAt: null,
-        updatedAt: this.utilityService.createTimestamp(),
-      };
+      if (!operationResult.success) {
+        return {
+          success: false,
+          message: operationResult.message,
+        };
+      }
 
-      await this.dbOps.updateManyUsers(unbannedUserIds, unbanUpdate);
-
-      // Remove IP addresses from banned_ips collection
-      await this.dbOps.deleteBannedIps(targetIps);
-
-      // Map users to response format
+      // Map target user to response format
       const mappedTargetUser =
         this.utilityService.mapUserToResponse(targetUser);
-      const mappedAffectedUsers = affectedUsers.map((user) =>
-        this.utilityService.mapUserToResponse(user)
-      );
 
       return {
         success: true,
-        message: `Successfully unbanned ${affectedUsers.length} users from ${targetIps.length} IP addresses`,
+        message: operationResult.message,
         data: {
           targetUser: mappedTargetUser,
-          affectedUsers: mappedAffectedUsers,
-          unbannedIps: targetIps,
-          totalUnbanned: affectedUsers.length,
+          affectedUsers: operationResult.data!.affectedUsers,
+          unbannedIps: operationResult.data!.unbannedIps,
+          totalUnbanned: operationResult.data!.totalUnbanned,
         },
       };
     } catch (error) {
@@ -179,29 +186,6 @@ export class UserIpBanService {
     bannedBy?: string;
     bannedAt?: Date;
   }> {
-    try {
-      const bannedIp = await this.dbOps.findBannedIp(ipAddress);
-
-      if (!bannedIp) {
-        return { banned: false };
-      }
-
-      // Resolve bannedBy ID to username
-      let bannedByUsername = null;
-      if (bannedIp.bannedBy) {
-        const bannedByUser = await this.dbOps.findUserById(bannedIp.bannedBy);
-        bannedByUsername = bannedByUser?.username || null;
-      }
-
-      return {
-        banned: true,
-        reason: bannedIp.reason,
-        bannedBy: bannedByUsername || bannedIp.bannedBy,
-        bannedAt: bannedIp.bannedAt,
-      };
-    } catch (error) {
-      console.error('Error checking IP ban status:', error);
-      return { banned: false };
-    }
+    return await this.queryService.checkIpBanStatus(ipAddress);
   }
 }
