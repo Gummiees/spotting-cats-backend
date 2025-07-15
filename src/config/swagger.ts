@@ -163,6 +163,21 @@ const swaggerOptions: Options = {
                 'Username of the user who last updated this user role (only visible to elevated permissions)',
               example: 'superadmin_user',
             },
+            ipAddresses: {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+              description:
+                'Array of IP addresses used for authentication (only visible to privileged users)',
+              example: ['192.168.1.1', '10.0.0.1'],
+            },
+            lastIpAddress: {
+              type: 'string',
+              description:
+                'Last IP address used for authentication (only visible to privileged users)',
+              example: '192.168.1.1',
+            },
           },
         },
         PublicUser: {

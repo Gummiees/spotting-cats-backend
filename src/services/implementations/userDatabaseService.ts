@@ -1199,6 +1199,7 @@ export class UserDatabaseService implements UserServiceInterface {
       createdAt: timestamp,
       updatedAt: timestamp,
       ipAddresses,
+      lastIpAddress: clientIp || null,
     };
 
     // Apply business logic to ensure data consistency
@@ -1219,6 +1220,8 @@ export class UserDatabaseService implements UserServiceInterface {
     if (clientIp) {
       // Use $addToSet to add IP address only if it's not already in the array
       processedData.$addToSet = { ipAddresses: clientIp };
+      // Update the last IP address
+      processedData.lastIpAddress = clientIp;
     }
 
     return processedData;
@@ -1446,9 +1449,14 @@ export class UserDatabaseService implements UserServiceInterface {
   ): User {
     const mappedUser = this.mapUserToResponse(user);
 
-    // Include IP addresses only for privileged users
-    if (includePrivilegedData && user.ipAddresses) {
-      mappedUser.ipAddresses = user.ipAddresses;
+    // Include IP addresses and last IP address only for privileged users
+    if (includePrivilegedData) {
+      if (user.ipAddresses) {
+        mappedUser.ipAddresses = user.ipAddresses;
+      }
+      if (user.lastIpAddress) {
+        mappedUser.lastIpAddress = user.lastIpAddress;
+      }
     }
 
     return mappedUser;
