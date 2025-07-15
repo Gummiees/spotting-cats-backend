@@ -358,7 +358,34 @@ export class UserDatabaseService implements UserServiceInterface {
   async deactivateUser(
     userId: string
   ): Promise<{ success: boolean; message: string }> {
-    return this.updateUser(userId, { isActive: false });
+    try {
+      // Get user details before deactivation
+      const user = await this.getUserById(userId);
+      if (!user) {
+        return { success: false, message: 'User not found' };
+      }
+
+      // Deactivate the user
+      const result = await this.updateUser(userId, { isActive: false });
+
+      if (result.success) {
+        // Send deactivation email
+        try {
+          await emailService.sendAccountDeactivationEmail(
+            user.email,
+            user.username
+          );
+        } catch (emailError) {
+          console.error('Failed to send deactivation email:', emailError);
+          // Don't fail the deactivation if email fails
+        }
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error deactivating user:', error);
+      return { success: false, message: 'Failed to deactivate user' };
+    }
   }
 
   async reactivateUser(

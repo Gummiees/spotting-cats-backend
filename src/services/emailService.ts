@@ -119,6 +119,46 @@ export class EmailService {
       return false;
     }
   }
+
+  async sendAccountDeactivationEmail(
+    email: string,
+    username: string
+  ): Promise<boolean> {
+    try {
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Account Deactivation Confirmation</h2>
+          <p>Hello <strong>${username}</strong>,</p>
+          <p>Your account has been successfully deactivated as requested.</p>
+          <p><strong>What this means:</strong></p>
+          <ul>
+            <li>You will no longer be able to log in to your account</li>
+            <li>Your profile and data will remain intact but inaccessible</li>
+            <li>You can reactivate your account at any time by logging in again</li>
+          </ul>
+          <p><strong>To reactivate your account:</strong></p>
+          <p>Simply log in with your email address and verification code. Your account will be automatically reactivated.</p>
+          <p><strong>Data retention:</strong></p>
+          <p>Your account data will be retained for 30 days after deactivation. After this period, your account and associated data will be permanently deleted.</p>
+          <hr style="margin: 30px 0;">
+          <p style="color: #666; font-size: 12px;">This is an automated message, please do not reply.</p>
+        </div>
+      `;
+
+      const mailOptions: EmailOptions = {
+        from: this.fromEmail,
+        to: email,
+        subject: 'Account Deactivation Confirmation',
+        html,
+      };
+
+      await this.transporter.sendMail(mailOptions);
+      return true;
+    } catch (error) {
+      console.error('Account deactivation email sending failed:', error);
+      return false;
+    }
+  }
 }
 
 export const emailService = new EmailService();
