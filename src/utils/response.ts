@@ -75,4 +75,23 @@ export class ResponseUtil {
 
     res.status(403).json(response);
   }
+
+  static tooManyRequests(
+    res: Response,
+    message: string = 'Too many requests',
+    errorCode?: string
+  ): void {
+    const response: ErrorResponse = {
+      success: false,
+      error: 'Too Many Requests',
+      message,
+      timestamp: new Date().toISOString(),
+      details: {
+        errorCode: errorCode || 'RATE_LIMITED',
+        canRetry: true,
+      },
+    };
+
+    res.status(429).json(response);
+  }
 }

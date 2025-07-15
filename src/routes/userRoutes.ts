@@ -482,7 +482,7 @@ router.put('/username', authMiddleware, UserController.updateUsername);
  * /api/v1/users/email:
  *   put:
  *     summary: Initiate email address change
- *     description: Request to change user's email address. A verification code will be sent to the new email address to confirm the change.
+ *     description: Request to change user's email address. A verification code will be sent to the new email address to confirm the change. Users can only request a verification code once every 10 minutes.
  *     tags: [Users]
  *     security:
  *       - cookieAuth: []
@@ -519,6 +519,34 @@ router.put('/username', authMiddleware, UserController.updateUsername);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *       429:
+ *         description: Too many requests - Email change verification code can only be requested once every 10 minutes
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
+ *                   type: string
+ *                   example: "Too Many Requests"
+ *                 message:
+ *                   type: string
+ *                   example: "You can only request an email change verification code once every 10 minutes. Please try again in 8 minutes."
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *                 details:
+ *                   type: object
+ *                   properties:
+ *                     errorCode:
+ *                       type: string
+ *                       example: "EMAIL_CHANGE_RATE_LIMITED"
+ *                     canRetry:
+ *                       type: boolean
+ *                       example: true
  */
 router.put('/email', authMiddleware, UserController.updateEmail);
 

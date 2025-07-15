@@ -267,6 +267,12 @@ export class UserController {
         emailValidation.normalizedEmail!
       );
 
+      // Handle rate limiting case specifically
+      if (!result.success && result.errorCode === 'EMAIL_CHANGE_RATE_LIMITED') {
+        ResponseUtil.tooManyRequests(res, result.message);
+        return;
+      }
+
       UserController.handleServiceResponse(res, result);
     } catch (error) {
       next(error);

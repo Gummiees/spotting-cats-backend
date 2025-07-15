@@ -233,7 +233,7 @@ export class UserCacheService implements UserServiceInterface {
   async initiateEmailChange(
     userId: string,
     newEmail: string
-  ): Promise<{ success: boolean; message: string }> {
+  ): Promise<{ success: boolean; message: string; errorCode?: string }> {
     return this.userService.initiateEmailChange(userId, newEmail);
   }
 

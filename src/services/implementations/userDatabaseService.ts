@@ -656,7 +656,7 @@ export class UserDatabaseService implements UserServiceInterface {
   async initiateEmailChange(
     userId: string,
     newEmail: string
-  ): Promise<{ success: boolean; message: string }> {
+  ): Promise<{ success: boolean; message: string; errorCode?: string }> {
     try {
       if (!this.isValidEmail(newEmail)) {
         return { success: false, message: 'Invalid email format' };
@@ -671,6 +671,16 @@ export class UserDatabaseService implements UserServiceInterface {
         return {
           success: false,
           message: 'New email must be different from current email',
+        };
+      }
+
+      // Check rate limiting for email change verification code requests
+      const rateLimitCheck = await this.checkEmailChangeRateLimit(userId);
+      if (!rateLimitCheck.allowed) {
+        return {
+          success: false,
+          message: `You can only request an email change verification code once every 10 minutes. Please try again in ${rateLimitCheck.minutesRemaining} minutes.`,
+          errorCode: 'EMAIL_CHANGE_RATE_LIMITED',
         };
       }
 
@@ -1603,5 +1613,38 @@ export class UserDatabaseService implements UserServiceInterface {
       used: false,
       expiresAt: { $gt: this.createTimestamp() },
     });
+  }
+
+  /**
+   * Checks if a user is allowed to request an email change verification code
+   * Users can only request a code once every 10 minutes
+   */
+  private async checkEmailChangeRateLimit(
+    userId: string
+  ): Promise<{ allowed: boolean; minutesRemaining?: number }> {
+    try {
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+
+      const recentRequest = await this.authCodesCollection.findOne({
+        userId: this.createObjectId(userId),
+        newEmail: { $exists: true }, // Only email change requests
+        createdAt: { $gt: tenMinutesAgo },
+      });
+
+      if (recentRequest) {
+        // Calculate remaining time
+        const timeElapsed = Date.now() - recentRequest.createdAt.getTime();
+        const minutesRemaining = Math.ceil(
+          (10 * 60 * 1000 - timeElapsed) / (60 * 1000)
+        );
+        return { allowed: false, minutesRemaining };
+      }
+
+      return { allowed: true };
+    } catch (error) {
+      console.error('Error checking email change rate limit:', error);
+      // In case of error, allow the request to proceed
+      return { allowed: true };
+    }
   }
 }

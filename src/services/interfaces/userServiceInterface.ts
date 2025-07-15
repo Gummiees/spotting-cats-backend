@@ -25,7 +25,7 @@ export interface UserServiceInterface {
   initiateEmailChange(
     userId: string,
     newEmail: string
-  ): Promise<{ success: boolean; message: string }>;
+  ): Promise<{ success: boolean; message: string; errorCode?: string }>;
   verifyEmailChange(
     userId: string,
     code: string
