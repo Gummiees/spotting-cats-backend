@@ -48,6 +48,34 @@ const router = Router();
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Account banned - Cannot send verification codes to banned accounts
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
+ *                   type: string
+ *                   example: "Account Banned"
+ *                 message:
+ *                   type: string
+ *                   example: "This account has been banned and cannot receive verification codes"
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *                 details:
+ *                   type: object
+ *                   properties:
+ *                     errorCode:
+ *                       type: string
+ *                       example: "ACCOUNT_BANNED"
+ *                     canRetry:
+ *                       type: boolean
+ *                       example: false
  *       429:
  *         description: Rate limit exceeded
  */
