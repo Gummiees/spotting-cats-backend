@@ -94,6 +94,45 @@ export class SecurityMonitor {
   }
 }
 
+/**
+ * Extracts the client IP address from an Express request
+ * Handles various proxy scenarios and headers
+ */
+export function getClientIp(req: Request): string {
+  // Check for forwarded headers (when behind a proxy)
+  const forwardedFor = req.headers['x-forwarded-for'];
+  if (forwardedFor) {
+    // x-forwarded-for can contain multiple IPs, take the first one
+    const ips = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor;
+    return ips.split(',')[0].trim();
+  }
+
+  // Check for other common proxy headers
+  const realIp = req.headers['x-real-ip'];
+  if (realIp) {
+    return Array.isArray(realIp) ? realIp[0] : realIp;
+  }
+
+  // Check for CF-Connecting-IP (Cloudflare)
+  const cfConnectingIp = req.headers['cf-connecting-ip'];
+  if (cfConnectingIp) {
+    return Array.isArray(cfConnectingIp) ? cfConnectingIp[0] : cfConnectingIp;
+  }
+
+  // Fallback to connection remote address
+  if (req.connection && req.connection.remoteAddress) {
+    return req.connection.remoteAddress;
+  }
+
+  // Last resort fallback
+  if (req.socket && req.socket.remoteAddress) {
+    return req.socket.remoteAddress;
+  }
+
+  // If all else fails, return a placeholder
+  return 'unknown';
+}
+
 // Middleware to check for suspicious requests
 export const securityCheck = (req: Request, res: any, next: any): void => {
   if (SecurityMonitor.isSuspiciousRequest(req)) {

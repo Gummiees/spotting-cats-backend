@@ -4,11 +4,13 @@ import { UserUpdateRequest } from '@/models/requests';
 export interface UserServiceInterface {
   // Authentication methods
   sendVerificationCode(
-    email: string
+    email: string,
+    clientIp?: string
   ): Promise<{ success: boolean; message: string; errorCode?: string }>;
   verifyCodeAndAuthenticate(
     email: string,
-    code: string
+    code: string,
+    clientIp?: string
   ): Promise<{
     success: boolean;
     message: string;
@@ -34,10 +36,18 @@ export interface UserServiceInterface {
   // User management methods
   getUserById(userId: string): Promise<User | null>;
   getUserByIdWithResolvedUsernames(userId: string): Promise<User | null>;
+  getUserByIdWithPrivileges(
+    userId: string,
+    includePrivilegedData: boolean
+  ): Promise<User | null>;
   getUserByEmail(email: string): Promise<User | null>;
   getUserByUsername(username: string): Promise<User | null>;
   getUserByUsernameWithResolvedUsernames(
     username: string
+  ): Promise<User | null>;
+  getUserByUsernameWithPrivileges(
+    username: string,
+    includePrivilegedData: boolean
   ): Promise<User | null>;
   updateUser(
     userId: string,
@@ -58,6 +68,9 @@ export interface UserServiceInterface {
     updatedByUserId: string
   ): Promise<{ success: boolean; message: string; token?: string }>;
   getAllUsers(): Promise<{ success: boolean; users: User[]; message: string }>;
+  getAllUsersWithPrivileges(
+    includePrivilegedData: boolean
+  ): Promise<{ success: boolean; users: User[]; message: string }>;
 
   // Utility methods
   cleanupExpiredCodes(): Promise<void>;

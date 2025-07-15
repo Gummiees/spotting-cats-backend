@@ -16,6 +16,7 @@ import { PublicUserByUsername } from '@/models/user';
 import { isValidDiceBearUrl } from '@/utils/avatar';
 import { config } from '@/config';
 import { User } from '@/models/user';
+import { getClientIp } from '@/utils/security';
 
 export class UserController {
   static async sendVerificationCode(
@@ -25,6 +26,7 @@ export class UserController {
   ): Promise<void> {
     try {
       const { email }: EmailVerificationRequest = req.body;
+      const clientIp = getClientIp(req);
 
       const emailValidation = UserController.validateEmail(email);
       if (!emailValidation.valid) {
@@ -32,7 +34,7 @@ export class UserController {
         return;
       }
 
-      const result = await userService.sendVerificationCode(email);
+      const result = await userService.sendVerificationCode(email, clientIp);
 
       // Handle banned user case specifically
       if (!result.success && result.errorCode === 'ACCOUNT_BANNED') {
@@ -53,6 +55,7 @@ export class UserController {
   ): Promise<void> {
     try {
       const { email, code }: CodeVerificationRequest = req.body;
+      const clientIp = getClientIp(req);
 
       const validation = UserController.validateEmailAndCode(email, code);
       if (!validation.valid) {
@@ -60,7 +63,11 @@ export class UserController {
         return;
       }
 
-      const result = await userService.verifyCodeAndAuthenticate(email, code);
+      const result = await userService.verifyCodeAndAuthenticate(
+        email,
+        code,
+        clientIp
+      );
 
       if (result.success && result.token) {
         UserController.setAuthCookie(res, result.token);
@@ -679,7 +686,8 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const result = await userService.getAllUsers();
+      const result = await userService.getAllUsersWithPrivileges(true);
+
       if (result.success) {
         ResponseUtil.success(res, { users: result.users }, result.message);
       } else {
@@ -739,8 +747,9 @@ export class UserController {
 
       let user: User | null;
       if (callerHasElevatedPermissions) {
-        user = await userService.getUserByUsernameWithResolvedUsernames(
-          username.trim()
+        user = await userService.getUserByUsernameWithPrivileges(
+          username.trim(),
+          true
         );
       } else {
         user = await userService.getUserByUsername(username.trim());
@@ -794,8 +803,9 @@ export class UserController {
         return;
       }
 
-      const user = await userService.getUserByIdWithResolvedUsernames(
-        userId.trim()
+      const user = await userService.getUserByIdWithPrivileges(
+        userId.trim(),
+        true
       );
 
       if (!user) {

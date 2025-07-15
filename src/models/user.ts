@@ -22,6 +22,7 @@ export interface User {
   bannedAt?: Date;
   roleUpdatedAt?: Date;
   roleUpdatedBy?: string; // ID of the user who updated the role (in database) or username (when returned to frontend)
+  ipAddresses?: string[]; // Array of IP addresses used for authentication
 }
 
 export interface CreateUser {
@@ -42,6 +43,7 @@ export interface CreateUser {
   bannedAt?: Date;
   roleUpdatedAt?: Date;
   roleUpdatedBy?: string;
+  ipAddresses?: string[];
 }
 
 export interface UserWithObjectId extends Omit<User, 'id'> {

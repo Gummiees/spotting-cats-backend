@@ -32,7 +32,8 @@ export class UserDatabaseService implements UserServiceInterface {
   }
 
   async sendVerificationCode(
-    email: string
+    email: string,
+    clientIp?: string
   ): Promise<{ success: boolean; message: string; errorCode?: string }> {
     try {
       if (!this.isValidEmail(email)) {
@@ -75,7 +76,8 @@ export class UserDatabaseService implements UserServiceInterface {
 
   async verifyCodeAndAuthenticate(
     email: string,
-    code: string
+    code: string,
+    clientIp?: string
   ): Promise<{
     success: boolean;
     message: string;
@@ -91,7 +93,7 @@ export class UserDatabaseService implements UserServiceInterface {
       }
 
       // Step 2: Process user authentication
-      const userResult = await this.processUserAuthentication(email);
+      const userResult = await this.processUserAuthentication(email, clientIp);
       if (!userResult.success) {
         return { success: false, message: userResult.message! };
       }
@@ -145,6 +147,49 @@ export class UserDatabaseService implements UserServiceInterface {
     }
   }
 
+  async getUserByIdWithPrivileges(
+    userId: string,
+    includePrivilegedData: boolean
+  ): Promise<User | null> {
+    try {
+      const user = await this.usersCollection.findOne({
+        _id: this.createObjectId(userId),
+      });
+
+      if (!user) return null;
+
+      const mappedUser = this.mapUserToResponseWithPrivileges(
+        user,
+        includePrivilegedData
+      );
+
+      // Resolve bannedBy ID to username if it exists
+      if (mappedUser.bannedBy) {
+        const bannedByUsername = await this.resolveUserIdToUsername(
+          mappedUser.bannedBy
+        );
+        if (bannedByUsername) {
+          mappedUser.bannedBy = bannedByUsername;
+        }
+      }
+
+      // Resolve roleUpdatedBy ID to username if it exists
+      if (mappedUser.roleUpdatedBy) {
+        const roleUpdatedByUsername = await this.resolveUserIdToUsername(
+          mappedUser.roleUpdatedBy
+        );
+        if (roleUpdatedByUsername) {
+          mappedUser.roleUpdatedBy = roleUpdatedByUsername;
+        }
+      }
+
+      return mappedUser;
+    } catch (error) {
+      console.error('Error getting user by ID with privileges:', error);
+      return null;
+    }
+  }
+
   async getUserByEmail(email: string): Promise<User | null> {
     try {
       const user = await this.findUserByEmail(email);
@@ -185,6 +230,49 @@ export class UserDatabaseService implements UserServiceInterface {
         'Error getting user by username with resolved usernames:',
         error
       );
+      return null;
+    }
+  }
+
+  async getUserByUsernameWithPrivileges(
+    username: string,
+    includePrivilegedData: boolean
+  ): Promise<User | null> {
+    try {
+      const user = await this.usersCollection.findOne({
+        username: username,
+      });
+
+      if (!user) return null;
+
+      const mappedUser = this.mapUserToResponseWithPrivileges(
+        user,
+        includePrivilegedData
+      );
+
+      // Resolve bannedBy ID to username if it exists
+      if (mappedUser.bannedBy) {
+        const bannedByUsername = await this.resolveUserIdToUsername(
+          mappedUser.bannedBy
+        );
+        if (bannedByUsername) {
+          mappedUser.bannedBy = bannedByUsername;
+        }
+      }
+
+      // Resolve roleUpdatedBy ID to username if it exists
+      if (mappedUser.roleUpdatedBy) {
+        const roleUpdatedByUsername = await this.resolveUserIdToUsername(
+          mappedUser.roleUpdatedBy
+        );
+        if (roleUpdatedByUsername) {
+          mappedUser.roleUpdatedBy = roleUpdatedByUsername;
+        }
+      }
+
+      return mappedUser;
+    } catch (error) {
+      console.error('Error getting user by username with privileges:', error);
       return null;
     }
   }
@@ -336,18 +424,70 @@ export class UserDatabaseService implements UserServiceInterface {
         .find({})
         .sort({ createdAt: -1 })
         .toArray();
+      const mappedUsers = users.map((user) => this.mapUserToResponse(user));
 
+      return {
+        success: true,
+        users: mappedUsers,
+        message: `Retrieved ${mappedUsers.length} users`,
+      };
+    } catch (error) {
+      console.error('Error getting all users:', error);
+      return {
+        success: false,
+        users: [],
+        message: 'Failed to retrieve users',
+      };
+    }
+  }
+
+  async getAllUsersWithPrivileges(includePrivilegedData: boolean): Promise<{
+    success: boolean;
+    users: User[];
+    message: string;
+  }> {
+    try {
+      const users = await this.usersCollection.find({}).toArray();
+
+      // Map users with both privileges and resolved usernames
       const mappedUsers = await Promise.all(
-        users.map((user) => this.mapUserToResponseWithResolvedUsernames(user))
+        users.map(async (user) => {
+          const mappedUser = this.mapUserToResponseWithPrivileges(
+            user,
+            includePrivilegedData
+          );
+
+          // Resolve bannedBy ID to username if it exists
+          if (mappedUser.bannedBy) {
+            const bannedByUsername = await this.resolveUserIdToUsername(
+              mappedUser.bannedBy
+            );
+            if (bannedByUsername) {
+              mappedUser.bannedBy = bannedByUsername;
+            }
+          }
+
+          // Resolve roleUpdatedBy ID to username if it exists
+          if (mappedUser.roleUpdatedBy) {
+            const roleUpdatedByUsername = await this.resolveUserIdToUsername(
+              mappedUser.roleUpdatedBy
+            );
+            if (roleUpdatedByUsername) {
+              mappedUser.roleUpdatedBy = roleUpdatedByUsername;
+            }
+          }
+
+          return mappedUser;
+        })
       );
 
       return {
         success: true,
         users: mappedUsers,
-        message: 'All users retrieved successfully',
+        message: `Retrieved ${mappedUsers.length} users`,
       };
     } catch (error) {
-      console.error('Error getting all users:', error);
+      console.error('Error getting all users with privileges:', error);
       return {
         success: false,
         users: [],
@@ -935,14 +1075,17 @@ export class UserDatabaseService implements UserServiceInterface {
     });
   }
 
-  private async createNewUser(email: string): Promise<any> {
-    const newUser = await this.createUserData(email);
+  private async createNewUser(email: string, clientIp?: string): Promise<any> {
+    const newUser = await this.createUserData(email, clientIp);
     const result = await this.usersCollection.insertOne(newUser);
     return { ...newUser, _id: result.insertedId };
   }
 
-  private async updateExistingUser(userId: ObjectId): Promise<any> {
-    const updateData = this.createUserUpdateData();
+  private async updateExistingUser(
+    userId: ObjectId,
+    clientIp?: string
+  ): Promise<any> {
+    const updateData = this.createUserUpdateData(clientIp);
 
     await this.usersCollection.updateOne({ _id: userId }, { $set: updateData });
 
@@ -1015,7 +1158,7 @@ export class UserDatabaseService implements UserServiceInterface {
     );
   }
 
-  private async createUserData(email: string): Promise<any> {
+  private async createUserData(email: string, clientIp?: string): Promise<any> {
     const timestamp = this.createTimestamp();
     const username = await this.generateUniqueUsername();
     const avatarUrl = generateAvatarForUsername(username);
@@ -1029,6 +1172,9 @@ export class UserDatabaseService implements UserServiceInterface {
       role = 'admin';
     }
 
+    // Initialize IP addresses array with current IP if provided
+    const ipAddresses = clientIp ? [clientIp] : [];
+
     const userData = {
       email: normalizedEmail,
       username,
@@ -1040,18 +1186,24 @@ export class UserDatabaseService implements UserServiceInterface {
       lastLoginAt: timestamp,
       createdAt: timestamp,
       updatedAt: timestamp,
+      ipAddresses,
     };
 
     // Apply business logic to ensure data consistency
     return applyUserBusinessLogic(userData);
   }
 
-  private createUserUpdateData(): any {
-    const updateData = {
+  private createUserUpdateData(clientIp?: string): any {
+    const updateData: any = {
       isVerified: true,
       lastLoginAt: this.createTimestamp(),
       updatedAt: this.createTimestamp(),
     };
+
+    // Add IP address to the array if provided and not already present
+    if (clientIp) {
+      updateData.$addToSet = { ipAddresses: clientIp };
+    }
 
     // Apply business logic to ensure data consistency
     return applyUserBusinessLogic(updateData);
@@ -1271,6 +1423,23 @@ export class UserDatabaseService implements UserServiceInterface {
   }
 
   /**
+   * Maps user data to response format with IP addresses included for privileged users
+   */
+  private mapUserToResponseWithPrivileges(
+    user: any,
+    includePrivilegedData: boolean = false
+  ): User {
+    const mappedUser = this.mapUserToResponse(user);
+
+    // Include IP addresses only for privileged users
+    if (includePrivilegedData && user.ipAddresses) {
+      mappedUser.ipAddresses = user.ipAddresses;
+    }
+
+    return mappedUser;
+  }
+
+  /**
    * Maps user data to response format with resolved usernames for bannedBy and roleUpdatedBy fields
    */
   private async mapUserToResponseWithResolvedUsernames(
@@ -1423,7 +1592,10 @@ export class UserDatabaseService implements UserServiceInterface {
   /**
    * Processes user authentication, handling new users, reactivation, and existing users
    */
-  private async processUserAuthentication(email: string): Promise<{
+  private async processUserAuthentication(
+    email: string,
+    clientIp?: string
+  ): Promise<{
     success: boolean;
     message?: string;
     user?: any;
@@ -1434,7 +1606,7 @@ export class UserDatabaseService implements UserServiceInterface {
 
     if (!user) {
       // Create new user
-      const newUserResult = await this.handleNewUserCreation(email);
+      const newUserResult = await this.handleNewUserCreation(email, clientIp);
       if (!newUserResult.success) {
         return { success: false, message: newUserResult.message };
       }
@@ -1442,7 +1614,7 @@ export class UserDatabaseService implements UserServiceInterface {
       isNewUser = true;
     } else {
       // Handle existing user
-      const existingUserResult = await this.handleExistingUser(user);
+      const existingUserResult = await this.handleExistingUser(user, clientIp);
       if (!existingUserResult.success) {
         return { success: false, message: existingUserResult.message };
       }
@@ -1455,13 +1627,16 @@ export class UserDatabaseService implements UserServiceInterface {
   /**
    * Handles the creation of a new user
    */
-  private async handleNewUserCreation(email: string): Promise<{
+  private async handleNewUserCreation(
+    email: string,
+    clientIp?: string
+  ): Promise<{
     success: boolean;
     message?: string;
     user?: any;
   }> {
     try {
-      const user = await this.createNewUser(email);
+      const user = await this.createNewUser(email, clientIp);
       await emailService.sendWelcomeEmail(email);
       return { success: true, user };
     } catch (error) {
@@ -1473,7 +1648,10 @@ export class UserDatabaseService implements UserServiceInterface {
   /**
    * Handles authentication for existing users, including reactivation logic
    */
-  private async handleExistingUser(user: any): Promise<{
+  private async handleExistingUser(
+    user: any,
+    clientIp?: string
+  ): Promise<{
     success: boolean;
     message?: string;
     user?: any;
@@ -1497,7 +1675,7 @@ export class UserDatabaseService implements UserServiceInterface {
       }
 
       // Update existing user (last login, etc.)
-      const updatedUser = await this.updateExistingUser(user._id);
+      const updatedUser = await this.updateExistingUser(user._id, clientIp);
       return { success: true, user: updatedUser };
     } catch (error) {
       console.error('Error handling existing user:', error);
