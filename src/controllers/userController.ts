@@ -769,6 +769,40 @@ export class UserController {
     }
   }
 
+  static async getUserById(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { userId } = req.params;
+
+      if (!userId || userId.trim() === '') {
+        ResponseUtil.badRequest(res, 'User ID is required');
+        return;
+      }
+
+      // Validate that userId is a valid MongoDB ObjectId
+      const objectIdRegex = /^[0-9a-fA-F]{24}$/;
+      if (!objectIdRegex.test(userId.trim())) {
+        ResponseUtil.badRequest(res, 'Invalid user ID format');
+        return;
+      }
+
+      const user = await userService.getUserById(userId.trim());
+
+      if (!user) {
+        ResponseUtil.notFound(res, 'User not found');
+        return;
+      }
+
+      // Since this endpoint requires elevated permissions, always return complete user information
+      ResponseUtil.success(res, { user }, 'User retrieved successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async checkUsernameAvailability(
     req: Request,
     res: Response,

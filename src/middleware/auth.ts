@@ -337,6 +337,60 @@ export const validateBanPermission = async (
   }
 };
 
+// Middleware to require elevated permissions (moderator, admin, superadmin)
+export const requireElevatedPermissions = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Authentication required',
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    const user = await userService.getUserById(req.user.userId);
+    if (!user || user.isBanned) {
+      res.status(401).json({
+        success: false,
+        error: 'Unauthorized',
+        message: user?.isBanned
+          ? 'User account has been banned'
+          : 'User account not found',
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // Check if user has elevated permissions (moderator, admin, superadmin)
+    if (user.role === 'user') {
+      res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        message:
+          'Elevated permissions required (moderator, admin, or superadmin)',
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    next();
+  } catch (error) {
+    console.error('Elevated permissions check error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal Server Error',
+      message: 'Elevated permissions check failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
 // Middleware to check profile access permissions
 export const checkProfileAccess = async (
   req: Request,
