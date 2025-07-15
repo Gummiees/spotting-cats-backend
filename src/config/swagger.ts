@@ -169,13 +169,13 @@ const swaggerOptions: Options = {
                 type: 'string',
               },
               description:
-                'Array of IP addresses used for authentication (only visible to privileged users)',
+                'Array of IP addresses used for authentication (only visible to admin and superadmin users)',
               example: ['192.168.1.1', '10.0.0.1'],
             },
             lastIpAddress: {
               type: 'string',
               description:
-                'Last IP address used for authentication (only visible to privileged users)',
+                'Last IP address used for authentication (only visible to admin and superadmin users)',
               example: '192.168.1.1',
             },
           },
