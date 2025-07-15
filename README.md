@@ -71,7 +71,6 @@ erDiagram
         DateTime usernameUpdatedAt
         DateTime avatarUpdatedAt
         DateTime deactivatedAt
-        DateTime deletedAt
         DateTime bannedAt
     }
     PROTECTOR ||--o{ CAT : belongs

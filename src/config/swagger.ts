@@ -142,10 +142,6 @@ const swaggerOptions: Options = {
               type: 'string',
               format: 'date-time',
             },
-            deletedAt: {
-              type: 'string',
-              format: 'date-time',
-            },
             bannedAt: {
               type: 'string',
               format: 'date-time',

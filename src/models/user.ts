@@ -19,7 +19,6 @@ export interface User {
   usernameUpdatedAt?: Date;
   avatarUpdatedAt?: Date;
   deactivatedAt?: Date;
-  deletedAt?: Date;
   bannedAt?: Date;
   roleUpdatedAt?: Date;
   roleUpdatedBy?: string; // ID of the user who updated the role
@@ -40,7 +39,6 @@ export interface CreateUser {
   usernameUpdatedAt?: Date;
   avatarUpdatedAt?: Date;
   deactivatedAt?: Date;
-  deletedAt?: Date;
   bannedAt?: Date;
   roleUpdatedAt?: Date;
   roleUpdatedBy?: string;

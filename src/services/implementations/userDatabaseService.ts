@@ -1183,7 +1183,6 @@ export class UserDatabaseService implements UserServiceInterface {
       updatedAt: user.updatedAt,
       lastLoginAt: user.lastLoginAt,
       deactivatedAt: user.deactivatedAt,
-      deletedAt: user.deletedAt,
       bannedAt: user.bannedAt,
       username: user.username,
       usernameUpdatedAt: user.usernameUpdatedAt,

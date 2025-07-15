@@ -288,7 +288,6 @@ The application uses JWT tokens for authentication with the following payload st
   updatedAt: Date,
   lastLoginAt: Date,
   deactivatedAt: Date (optional),
-  deletedAt: Date (optional),
   bannedAt: Date (optional)
 }
 ```

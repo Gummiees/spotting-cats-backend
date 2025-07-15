@@ -137,7 +137,6 @@ The API implements a secure two-step email change process:
   "emailUpdatedAt": "2024-01-05T12:00:00.000Z",
   "usernameUpdatedAt": "2024-01-10T15:20:00.000Z",
   "deactivatedAt": null,
-  "deletedAt": null,
   "bannedAt": null
 }
 ```
