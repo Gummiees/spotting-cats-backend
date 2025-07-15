@@ -887,7 +887,7 @@ router.post(
  *       - **Superadmins** can ban users, moderators, and admins (but not other superadmins)
  *       - **Admins** can ban users and moderators (but not admins or superadmins)
  *       - **Moderators** can only ban users (but not moderators, admins, or superadmins)
- *       - If any user with a higher role shares the same IP, the entire operation is blocked
+ *       - If any user with an equal or higher role shares the same IP, the entire operation is blocked
  *       - TODO: Future enhancement will include more complex role hierarchy rules
  *     tags: [Admin]
  *     security:
@@ -924,6 +924,7 @@ router.post(
  *           - User not found
  *           - No IP addresses to ban
  *           - No users can be banned due to role hierarchy restrictions
+ *           - IP ban blocked due to users with equal or higher roles sharing the same IP
  *         content:
  *           application/json:
  *             schema:

@@ -16,17 +16,22 @@ export class IpBanValidationService {
     message?: string;
   }> {
     // TODO: Implement more complex role hierarchy system for IP banning
-    // Current implementation: Block entire IP ban if any affected user has higher role than banning user
+    // Current implementation: Block entire IP ban if any affected user has equal or higher role than banning user
     // Future enhancement: Allow configurable rules, partial IP bans, role-specific exceptions
 
     const { ROLE_HIERARCHY } = await import('@/models/user');
     const blockingUsers: any[] = [];
 
     for (const user of allAffectedUsers) {
+      // Skip the banning user themselves
+      if (user._id === banningUser._id) {
+        continue;
+      }
+
       if (
         ROLE_HIERARCHY[
           user.role as 'user' | 'moderator' | 'admin' | 'superadmin'
-        ] >
+        ] >=
         ROLE_HIERARCHY[
           banningUser.role as 'user' | 'moderator' | 'admin' | 'superadmin'
         ]
@@ -42,7 +47,7 @@ export class IpBanValidationService {
       return {
         canProceed: false,
         blockingUsers,
-        message: `IP ban blocked: Would affect users with higher roles (${blockingUsernames}). Users with higher roles than the banning user are protected from IP bans.`,
+        message: `IP ban blocked: Would affect users with equal or higher roles (${blockingUsernames}). Users with equal or higher roles than the banning user are protected from IP bans.`,
       };
     }
 
