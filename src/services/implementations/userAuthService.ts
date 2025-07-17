@@ -104,9 +104,13 @@ export class UserAuthService {
       );
 
       // Step 4: Generate authentication token
-      const token = this.utilityService.generateTokenFromDbUser(
-        userResult.user!
-      );
+      let token: string;
+      try {
+        token = this.utilityService.generateTokenFromDbUser(userResult.user!);
+      } catch (error) {
+        console.error('Error generating token from user:', error);
+        return { success: false, message: 'Authentication failed' };
+      }
 
       return {
         success: true,
@@ -139,13 +143,19 @@ export class UserAuthService {
 
       if (timeUntilExpiry <= REFRESH_THRESHOLD) {
         // Token is close to expiring, generate a new one
-        const user = await this.getUserById(decoded.userId);
+        const user = await this.dbOps.findUserById(decoded.userId);
         if (!user) {
           return { shouldRefresh: false };
         }
 
         // Generate new token
-        const newToken = this.utilityService.generateTokenFromDbUser(user);
+        let newToken: string;
+        try {
+          newToken = this.utilityService.generateTokenFromDbUser(user);
+        } catch (error) {
+          console.error('Error generating refresh token:', error);
+          return { shouldRefresh: false };
+        }
         return { shouldRefresh: true, newToken };
       }
 
@@ -228,7 +238,10 @@ export class UserAuthService {
       }
     }
 
-    let user = await this.dbOps.findUserByEmail(email);
+    // Encrypt email before searching in database
+    const normalizedEmail = this.utilityService.normalizeEmail(email);
+    const encryptedEmail = encryptEmail(normalizedEmail);
+    let user = await this.dbOps.findUserByEmail(encryptedEmail);
     let isNewUser = false;
 
     if (!user) {

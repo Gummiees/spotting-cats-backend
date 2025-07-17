@@ -32,9 +32,8 @@ export class UserDatabaseOperations {
   }
 
   async findUserByEmail(email: string): Promise<any> {
-    const normalizedEmail = email.toLowerCase();
     return this.usersCollection.findOne({
-      email: normalizedEmail,
+      email: email,
     });
   }
 
@@ -192,9 +191,8 @@ export class UserDatabaseOperations {
     email: string,
     excludeUserId?: string
   ): Promise<boolean> {
-    const normalizedEmail = email.toLowerCase();
     const query: any = {
-      email: normalizedEmail,
+      email: email,
     };
 
     if (excludeUserId) {

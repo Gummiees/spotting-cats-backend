@@ -170,9 +170,14 @@ export function encryptEmail(email: string): string {
 
 export function decryptEmail(encrypted: string): string {
   if (!EMAIL_ENCRYPTION_KEY) throw new Error('EMAIL_ENCRYPTION_KEY not set');
-  const [iv, tag, data] = encrypted
-    .split(':')
-    .map((x) => Buffer.from(x, 'base64'));
+  if (!encrypted || typeof encrypted !== 'string') {
+    throw new Error('Invalid encrypted email: must be a non-empty string');
+  }
+  const parts = encrypted.split(':');
+  if (parts.length !== 3) {
+    throw new Error('Invalid encrypted email format: expected iv:tag:data');
+  }
+  const [iv, tag, data] = parts.map((x) => Buffer.from(x, 'base64'));
   const decipher = crypto.createDecipheriv(
     'aes-256-gcm',
     EMAIL_ENCRYPTION_KEY,

@@ -88,6 +88,9 @@ export class UserUtilityService {
 
   generateTokenFromDbUser(dbUser: any): string {
     // Decrypt email only for JWT token generation
+    if (!dbUser || !dbUser.email) {
+      throw new Error('Invalid user object: missing email field');
+    }
     const decryptedEmail = decryptEmail(dbUser.email);
     return this.createToken(
       dbUser._id.toString(),
