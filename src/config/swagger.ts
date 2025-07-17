@@ -174,10 +174,10 @@ const swaggerOptions: Options = {
             },
           },
         },
-        PublicUser: {
+        BasicUser: {
           type: 'object',
           description:
-            'Public user information returned by user endpoints (excludes email, IP addresses, and user ID)',
+            'Basic user information returned by user endpoints (excludes email, IP addresses, and user ID)',
           properties: {
             username: {
               type: 'string',
@@ -195,25 +195,15 @@ const swaggerOptions: Options = {
               description: 'User role in the system',
               example: 'user',
             },
-            isActive: {
+            isInactive: {
               type: 'boolean',
-              description: 'Whether the user account is active',
-              example: true,
+              description: 'Whether the user account is inactive',
+              example: false,
             },
             isBanned: {
               type: 'boolean',
               description: 'Whether the user is banned',
               example: false,
-            },
-            banReason: {
-              type: 'string',
-              description: 'Reason for the ban (if banned)',
-              example: 'Violation of community guidelines',
-            },
-            bannedBy: {
-              type: 'string',
-              description: 'Username of the user who banned this user',
-              example: 'admin_user',
             },
             lastLoginAt: {
               type: 'string',
@@ -247,75 +237,9 @@ const swaggerOptions: Options = {
               format: 'date-time',
               description: 'When avatar was last updated',
             },
-            deactivatedAt: {
-              type: 'string',
-              format: 'date-time',
-              description: 'When account was deactivated',
-            },
-            bannedAt: {
-              type: 'string',
-              format: 'date-time',
-              description: 'When user was banned',
-            },
-            roleUpdatedAt: {
-              type: 'string',
-              format: 'date-time',
-              description: 'When the user role was last updated',
-            },
-            roleUpdatedBy: {
-              type: 'string',
-              description:
-                'Username of the user who last updated this user role',
-              example: 'superadmin_user',
-            },
           },
         },
-        PublicUserByUsername: {
-          type: 'object',
-          description:
-            'Public user information returned by getUserByUsername endpoint (no ID included)',
-          properties: {
-            username: {
-              type: 'string',
-              description: 'User username (mandatory)',
-              example: 'johndoe',
-            },
-            avatarUrl: {
-              type: 'string',
-              description: 'User avatar URL (optional)',
-              example: 'https://example.com/avatar.jpg',
-            },
-            role: {
-              type: 'string',
-              enum: ['user', 'moderator', 'admin', 'superadmin'],
-              description: 'User role in the system',
-              example: 'user',
-            },
-            isInactive: {
-              type: 'boolean',
-              description: 'True if user is not active or banned or deleted',
-              example: false,
-            },
-            isBanned: {
-              type: 'boolean',
-              description: 'Whether the user is banned',
-              example: false,
-            },
-            lastLoginAt: {
-              type: 'string',
-              format: 'date-time',
-              description:
-                'Last login timestamp (set to creation time for new users)',
-              example: '2024-01-15T10:30:00.000Z',
-            },
-            createdAt: {
-              type: 'string',
-              format: 'date-time',
-              description: 'Account creation timestamp',
-              example: '2024-01-01T00:00:00.000Z',
-            },
-          },
-        },
+
         UsernameAvailabilityResponse: {
           type: 'object',
           description: 'Response for username availability check',
@@ -827,6 +751,68 @@ const swaggerOptions: Options = {
               format: 'date-time',
             },
           },
+        },
+        AdminUserResponse: {
+          type: 'object',
+          description:
+            'Admin user response with sensitive information and notes',
+          allOf: [
+            {
+              $ref: '#/components/schemas/BasicUser',
+            },
+            {
+              type: 'object',
+              properties: {
+                banType: {
+                  type: 'string',
+                  enum: ['manual', 'ip', 'automatic'],
+                  description: 'Type of ban',
+                  example: 'manual',
+                },
+                banReason: {
+                  type: 'string',
+                  description: 'Reason for the ban (if banned)',
+                  example: 'Violation of community guidelines',
+                },
+                bannedBy: {
+                  type: 'string',
+                  description: 'Username of the user who banned this user',
+                  example: 'admin_user',
+                },
+                bannedAt: {
+                  type: 'string',
+                  format: 'date-time',
+                  description: 'When user was banned',
+                  example: '2024-01-15T10:30:00.000Z',
+                },
+                roleUpdatedBy: {
+                  type: 'string',
+                  description:
+                    'Username of the user who last updated this user role',
+                  example: 'superadmin_user',
+                },
+                roleUpdatedAt: {
+                  type: 'string',
+                  format: 'date-time',
+                  description: 'When the user role was last updated',
+                  example: '2024-01-15T10:30:00.000Z',
+                },
+                deactivatedAt: {
+                  type: 'string',
+                  format: 'date-time',
+                  description: 'When account was deactivated',
+                  example: '2024-01-15T10:30:00.000Z',
+                },
+                notes: {
+                  type: 'array',
+                  items: {
+                    $ref: '#/components/schemas/NoteResponse',
+                  },
+                  description: 'Notes written by this user',
+                },
+              },
+            },
+          ],
         },
       },
     },

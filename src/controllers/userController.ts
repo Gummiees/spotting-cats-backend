@@ -72,15 +72,15 @@ export class UserController {
       if (result.success && result.token) {
         UserController.setAuthCookie(res, result.token);
 
-        // Get public user data instead of full user data
-        const publicUser = result.user
-          ? await userService.getUserByIdPublic(result.user.id!)
+        // Get basic user data instead of full user data
+        const basicUser = result.user
+          ? await userService.getBasicUserById(result.user.id!)
           : null;
 
         ResponseUtil.success(
           res,
           {
-            user: publicUser,
+            user: basicUser,
             isNewUser: result.isNewUser,
           },
           result.message
@@ -105,7 +105,7 @@ export class UserController {
         return;
       }
 
-      const user = await userService.getUserByIdPublic(req.user!.userId);
+      const user = await userService.getBasicUserById(req.user!.userId);
 
       if (!user) {
         ResponseUtil.notFound(res, 'User not found');
@@ -686,24 +686,6 @@ export class UserController {
     }
   }
 
-  static async getAllUsers(
-    req: AuthRequest,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
-    try {
-      const result = await userService.getAllUsersPublic();
-
-      if (result.success) {
-        ResponseUtil.success(res, { users: result.users }, result.message);
-      } else {
-        ResponseUtil.error(res, 'Internal Server Error', result.message, 500);
-      }
-    } catch (error) {
-      next(error);
-    }
-  }
-
   static async ensureAllUsersHaveAvatars(
     req: AuthRequest,
     res: Response,
@@ -734,7 +716,7 @@ export class UserController {
     try {
       const { username } = req.params;
 
-      const user = await userService.getUserByUsernamePublic(username.trim());
+      const user = await userService.getBasicUserByUsername(username.trim());
 
       if (!user) {
         ResponseUtil.notFound(res, 'User not found');
@@ -742,6 +724,31 @@ export class UserController {
       }
 
       ResponseUtil.success(res, { user }, 'User retrieved successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getUserByUsernameAdmin(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { username } = req.params;
+
+      const user = await userService.getUserByUsernameForAdmin(username.trim());
+
+      if (!user) {
+        ResponseUtil.notFound(res, 'User not found');
+        return;
+      }
+
+      ResponseUtil.success(
+        res,
+        { user },
+        'Admin user data retrieved successfully'
+      );
     } catch (error) {
       next(error);
     }
@@ -766,7 +773,10 @@ export class UserController {
         return;
       }
 
-      const user = await userService.getUserByIdPublic(userId.trim());
+      const user = await userService.getUserByIdWithPrivileges(
+        userId.trim(),
+        false
+      );
 
       if (!user) {
         ResponseUtil.notFound(res, 'User not found');

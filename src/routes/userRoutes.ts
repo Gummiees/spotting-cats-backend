@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
 import { UserController } from '@/controllers/userController';
 import {
   authRateLimit,
@@ -151,7 +151,7 @@ router.post(
  *                   type: object
  *                   properties:
  *                     user:
- *                       $ref: '#/components/schemas/PublicUser'
+ *                       $ref: '#/components/schemas/BasicUser'
  *                     isNewUser:
  *                       type: boolean
  *                       example: false
@@ -256,7 +256,7 @@ router.post('/refresh-token', authMiddleware, UserController.refreshToken);
  *                   type: object
  *                   properties:
  *                     user:
- *                       $ref: '#/components/schemas/PublicUser'
+ *                       $ref: '#/components/schemas/BasicUser'
  *                 message:
  *                   type: string
  *                   example: "User profile retrieved successfully"
@@ -385,7 +385,7 @@ router.get('/check-email', UserController.checkEmailAvailability);
  *                   type: object
  *                   properties:
  *                     user:
- *                       $ref: '#/components/schemas/PublicUser'
+ *                       $ref: '#/components/schemas/BasicUser'
  *                 message:
  *                   type: string
  *                   example: "User retrieved successfully"
@@ -426,7 +426,7 @@ router.get(
  * /api/v1/users/{username}:
  *   get:
  *     summary: Get user by username (public access)
- *     description: Retrieve public user information by username. Returns user data excluding email and IP addresses for privacy and security.
+ *     description: Retrieve basic user information by username. Returns essential user data including ban status for security purposes.
  *     tags: [Users]
  *     parameters:
  *       - in: path
@@ -451,7 +451,48 @@ router.get(
  *                   type: object
  *                   properties:
  *                     user:
- *                       $ref: '#/components/schemas/PublicUser'
+ *                       type: object
+ *                       properties:
+ *                         username:
+ *                           type: string
+ *                           example: "john_doe"
+ *                         avatarUrl:
+ *                           type: string
+ *                           example: "https://api.dicebear.com/7.x/avataaars/svg?seed=john_doe"
+ *                         role:
+ *                           type: string
+ *                           enum: [user, moderator, admin, superadmin]
+ *                           example: "user"
+ *                         isInactive:
+ *                           type: boolean
+ *                           example: false
+ *                         isBanned:
+ *                           type: boolean
+ *                           example: false
+ *                         lastLoginAt:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2023-01-01T00:00:00.000Z"
+ *                         createdAt:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2023-01-01T00:00:00.000Z"
+ *                         updatedAt:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2023-01-01T00:00:00.000Z"
+ *                         emailUpdatedAt:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2023-01-01T00:00:00.000Z"
+ *                         usernameUpdatedAt:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2023-01-01T00:00:00.000Z"
+ *                         avatarUpdatedAt:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2023-01-01T00:00:00.000Z"
  *                 message:
  *                   type: string
  *                   example: "User retrieved successfully"
@@ -469,6 +510,67 @@ router.get(
  *               $ref: '#/components/schemas/Error'
  */
 router.get('/:username', checkProfileAccess, UserController.getUserByUsername);
+
+/**
+ * @swagger
+ * /api/v1/users/admin/:username:
+ *   get:
+ *     summary: Get user by username for admin view
+ *     description: Get detailed user information including notes written by the user. This endpoint requires admin privileges and returns sensitive information like email and IP addresses.
+ *     tags: [Admin]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: username
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Username of the user to retrieve
+ *     responses:
+ *       200:
+ *         description: Admin user data retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/AdminUserResponse'
+ *                 message:
+ *                   type: string
+ *                   example: "Admin user data retrieved successfully"
+ *       401:
+ *         description: Unauthorized - No valid authentication token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - Admin privileges required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get(
+  '/admin/:username',
+  authMiddleware,
+  requireElevatedPermissions,
+  UserController.getUserByUsernameAdmin
+);
 
 /**
  * @swagger
@@ -918,16 +1020,16 @@ router.post(
  *                   type: object
  *                   properties:
  *                     targetUser:
- *                       $ref: '#/components/schemas/PublicUser'
+ *                       $ref: '#/components/schemas/BasicUser'
  *                     affectedUsers:
  *                       type: array
  *                       items:
- *                         $ref: '#/components/schemas/PublicUser'
+ *                         $ref: '#/components/schemas/BasicUser'
  *                       description: All users that were banned in the comprehensive operation
  *                     protectedUsers:
  *                       type: array
  *                       items:
- *                         $ref: '#/components/schemas/PublicUser'
+ *                         $ref: '#/components/schemas/BasicUser'
  *                       description: Users protected by role hierarchy (if any)
  *                     bannedIps:
  *                       type: array
@@ -1021,11 +1123,11 @@ router.post(
  *                   type: object
  *                   properties:
  *                     targetUser:
- *                       $ref: '#/components/schemas/PublicUser'
+ *                       $ref: '#/components/schemas/BasicUser'
  *                     affectedUsers:
  *                       type: array
  *                       items:
- *                         $ref: '#/components/schemas/PublicUser'
+ *                         $ref: '#/components/schemas/BasicUser'
  *                       description: All users that were unbanned in the comprehensive operation
  *                     unbannedIps:
  *                       type: array
@@ -1177,61 +1279,6 @@ router.post(
   '/role/whitelist',
   whitelistRoleUpdateRateLimit,
   UserController.updateUserRoleByWhitelist
-);
-
-/**
- * @swagger
- * /api/v1/users/admin/all:
- *   get:
- *     summary: Get all users (Admin only - returns public data)
- *     tags: [Admin]
- *     security:
- *       - cookieAuth: []
- *     responses:
- *       200:
- *         description: All users retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   type: object
- *                   properties:
- *                     users:
- *                       type: array
- *                       items:
- *                         $ref: '#/components/schemas/PublicUser'
- *                 message:
- *                   type: string
- *                   example: "All users retrieved successfully"
- *       401:
- *         description: Unauthorized - No valid authentication token
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       403:
- *         description: Forbidden - Admin access required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       501:
- *         description: Not implemented yet
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-router.get(
-  '/admin/all',
-  authMiddleware,
-  requireAdmin,
-  UserController.getAllUsers
 );
 
 /**

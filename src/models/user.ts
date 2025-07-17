@@ -1,4 +1,5 @@
 import { ObjectId } from 'mongodb';
+import { NoteResponse } from './note';
 
 export type UserRole = 'user' | 'moderator' | 'admin' | 'superadmin';
 
@@ -65,7 +66,7 @@ export interface UserSession {
   exp: number;
 }
 
-export interface PublicUserByUsername {
+export interface BasicUser {
   username: string;
   avatarUrl: string;
   role: UserRole;
@@ -73,27 +74,21 @@ export interface PublicUserByUsername {
   isBanned: boolean;
   lastLoginAt: Date;
   createdAt: Date;
-}
-
-export interface PublicUser {
-  username: string;
-  avatarUrl: string;
-  role: UserRole;
-  isActive: boolean;
-  isBanned: boolean;
-  banReason?: string;
-  banType?: BanType;
-  bannedBy?: string;
-  lastLoginAt: Date;
-  createdAt: Date;
   updatedAt?: Date;
   emailUpdatedAt?: Date;
   usernameUpdatedAt?: Date;
   avatarUpdatedAt?: Date;
-  deactivatedAt?: Date;
+}
+
+export interface AdminUserResponse extends BasicUser {
+  banType?: BanType;
+  banReason?: string;
+  bannedBy?: string;
   bannedAt?: Date;
-  roleUpdatedAt?: Date;
   roleUpdatedBy?: string;
+  roleUpdatedAt?: Date;
+  deactivatedAt?: Date;
+  notes: NoteResponse[];
 }
 
 export function applyUserBusinessLogic(user: Partial<User>): Partial<User> {

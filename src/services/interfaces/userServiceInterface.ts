@@ -1,4 +1,10 @@
-import { User, UserSession, UserRole, PublicUser } from '@/models/user';
+import {
+  User,
+  UserSession,
+  UserRole,
+  BasicUser,
+  AdminUserResponse,
+} from '@/models/user';
 import { UserUpdateRequest } from '@/models/requests';
 
 export interface UserServiceInterface {
@@ -40,17 +46,16 @@ export interface UserServiceInterface {
     userId: string,
     includePrivilegedData: boolean
   ): Promise<User | null>;
-  getUserByIdPublic(userId: string): Promise<PublicUser | null>;
+  getBasicUserById(userId: string): Promise<BasicUser | null>;
   getUserByEmail(email: string): Promise<User | null>;
   getUserByUsername(username: string): Promise<User | null>;
   getUserByUsernameWithResolvedUsernames(
     username: string
   ): Promise<User | null>;
-  getUserByUsernameWithPrivileges(
-    username: string,
-    includePrivilegedData: boolean
-  ): Promise<User | null>;
-  getUserByUsernamePublic(username: string): Promise<PublicUser | null>;
+  getBasicUserByUsername(username: string): Promise<BasicUser | null>;
+  getUserByUsernameForAdmin(
+    username: string
+  ): Promise<AdminUserResponse | null>;
   updateUser(
     userId: string,
     updates: UserUpdateRequest
@@ -70,14 +75,6 @@ export interface UserServiceInterface {
     updatedByUserId: string
   ): Promise<{ success: boolean; message: string; token?: string }>;
   getAllUsers(): Promise<{ success: boolean; users: User[]; message: string }>;
-  getAllUsersWithPrivileges(
-    includePrivilegedData: boolean
-  ): Promise<{ success: boolean; users: User[]; message: string }>;
-  getAllUsersPublic(): Promise<{
-    success: boolean;
-    users: PublicUser[];
-    message: string;
-  }>;
 
   // Utility methods
   cleanupExpiredCodes(): Promise<void>;

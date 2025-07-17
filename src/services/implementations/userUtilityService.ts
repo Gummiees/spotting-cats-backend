@@ -8,7 +8,7 @@ import {
   User,
   UserSession,
   applyUserBusinessLogic,
-  PublicUser,
+  BasicUser,
 } from '@/models/user';
 import { generateAvatarForUsername } from '@/utils/avatar';
 import { config } from '@/config';
@@ -159,45 +159,20 @@ export class UserUtilityService {
     };
   }
 
-  mapUserToPublicResponse(user: any): PublicUser {
+  mapUserToBasicResponse(user: any): BasicUser {
     return {
       username: user.username,
       avatarUrl: user.avatarUrl,
       role: user.role || 'user',
-      isActive: user.isActive,
+      isInactive: !user.isActive,
       isBanned: user.isBanned || false,
-      banReason: user.banReason,
-      bannedBy: user.bannedBy,
       lastLoginAt: user.lastLoginAt,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
       emailUpdatedAt: user.emailUpdatedAt,
       usernameUpdatedAt: user.usernameUpdatedAt,
       avatarUpdatedAt: user.avatarUpdatedAt,
-      deactivatedAt: user.deactivatedAt,
-      bannedAt: user.bannedAt,
-      roleUpdatedAt: user.roleUpdatedAt,
-      roleUpdatedBy: user.roleUpdatedBy,
     };
-  }
-
-  mapUserToResponseWithPrivileges(
-    user: any,
-    includePrivilegedData: boolean = false
-  ): User {
-    const mappedUser = this.mapUserToResponse(user);
-
-    // Include hashed IP addresses only for privileged users
-    if (includePrivilegedData) {
-      if (user.ipAddresses) {
-        mappedUser.ipAddresses = user.ipAddresses; // Already hashed in DB
-      }
-      if (user.banType) {
-        mappedUser.banType = user.banType;
-      }
-    }
-
-    return mappedUser;
   }
 
   // Data creation methods

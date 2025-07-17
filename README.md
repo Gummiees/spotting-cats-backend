@@ -360,7 +360,7 @@ The application implements a secure two-step email change process:
 
 ## Example Responses
 
-### User by Username Endpoint (Public)
+### User by Username Endpoint (Basic)
 ```json
 {
   "success": true,

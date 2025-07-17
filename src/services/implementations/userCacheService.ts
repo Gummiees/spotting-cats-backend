@@ -1,4 +1,4 @@
-import { User, PublicUser, UserSession } from '@/models/user';
+import { User, UserSession, BasicUser } from '@/models/user';
 import { UserServiceInterface } from '../interfaces/userServiceInterface';
 import { UserUpdateRequest } from '@/models/requests';
 import { connectToRedis, isRedisConfigured } from '@/utils/redis';
@@ -83,54 +83,21 @@ export class UserCacheService implements UserServiceInterface {
   }
 
   async getUserByIdWithResolvedUsernames(userId: string): Promise<User | null> {
-    try {
-      // For users with resolved usernames, we'll go directly to the database service
-      // since the cache doesn't store the resolved usernames
-      return await this.userService.getUserByIdWithResolvedUsernames(userId);
-    } catch (error) {
-      console.error(
-        'Error getting user by ID with resolved usernames from cache:',
-        error
-      );
-      // Fallback to database service
-      return this.userService.getUserByIdWithResolvedUsernames(userId);
-    }
+    return await this.userService.getUserByIdWithResolvedUsernames(userId);
   }
 
   async getUserByIdWithPrivileges(
     userId: string,
     includePrivilegedData: boolean
   ): Promise<User | null> {
-    try {
-      // For privileged data, we'll go directly to the database service
-      // since the cache doesn't store privileged information like IP addresses
-      return await this.userService.getUserByIdWithPrivileges(
-        userId,
-        includePrivilegedData
-      );
-    } catch (error) {
-      console.error(
-        'Error getting user by ID with privileges from cache:',
-        error
-      );
-      // Fallback to database service
-      return this.userService.getUserByIdWithPrivileges(
-        userId,
-        includePrivilegedData
-      );
-    }
+    return await this.userService.getUserByIdWithPrivileges(
+      userId,
+      includePrivilegedData
+    );
   }
 
-  async getUserByIdPublic(userId: string): Promise<PublicUser | null> {
-    try {
-      // For public user data, we'll go directly to the database service
-      // since the cache doesn't store the public user format
-      return await this.userService.getUserByIdPublic(userId);
-    } catch (error) {
-      console.error('Error getting public user by ID from cache:', error);
-      // Fallback to database service
-      return this.userService.getUserByIdPublic(userId);
-    }
+  async getBasicUserById(userId: string): Promise<BasicUser | null> {
+    return await this.userService.getBasicUserById(userId);
   }
 
   async getUserByEmail(email: string): Promise<User | null> {
@@ -161,70 +128,23 @@ export class UserCacheService implements UserServiceInterface {
   }
 
   async getUserByUsername(username: string): Promise<User | null> {
-    try {
-      // For username lookups, we'll go directly to the database service
-      // since usernames are not cached in the same way as emails
-      return await this.userService.getUserByUsername(username);
-    } catch (error) {
-      console.error('Error getting user by username from cache:', error);
-      // Fallback to database service
-      return this.userService.getUserByUsername(username);
-    }
+    return await this.userService.getUserByUsername(username);
   }
 
   async getUserByUsernameWithResolvedUsernames(
     username: string
   ): Promise<User | null> {
-    try {
-      // For username lookups with resolved usernames, we'll go directly to the database service
-      // since usernames are not cached in the same way as emails
-      return await this.userService.getUserByUsernameWithResolvedUsernames(
-        username
-      );
-    } catch (error) {
-      console.error(
-        'Error getting user by username with resolved usernames from cache:',
-        error
-      );
-      // Fallback to database service
-      return this.userService.getUserByUsernameWithResolvedUsernames(username);
-    }
+    return await this.userService.getUserByUsernameWithResolvedUsernames(
+      username
+    );
   }
 
-  async getUserByUsernameWithPrivileges(
-    username: string,
-    includePrivilegedData: boolean
-  ): Promise<User | null> {
-    try {
-      // For privileged data, we'll go directly to the database service
-      // since the cache doesn't store privileged information like IP addresses
-      return await this.userService.getUserByUsernameWithPrivileges(
-        username,
-        includePrivilegedData
-      );
-    } catch (error) {
-      console.error(
-        'Error getting user by username with privileges from cache:',
-        error
-      );
-      // Fallback to database service
-      return this.userService.getUserByUsernameWithPrivileges(
-        username,
-        includePrivilegedData
-      );
-    }
+  async getBasicUserByUsername(username: string): Promise<BasicUser | null> {
+    return await this.userService.getBasicUserByUsername(username);
   }
 
-  async getUserByUsernamePublic(username: string): Promise<PublicUser | null> {
-    try {
-      // For public user data, we'll go directly to the database service
-      // since the cache doesn't store the public user format
-      return await this.userService.getUserByUsernamePublic(username);
-    } catch (error) {
-      console.error('Error getting public user by username from cache:', error);
-      // Fallback to database service
-      return this.userService.getUserByUsernamePublic(username);
-    }
+  async getUserByUsernameForAdmin(username: string): Promise<any> {
+    return this.userService.getUserByUsernameForAdmin(username);
   }
 
   async updateUser(
@@ -340,8 +260,6 @@ export class UserCacheService implements UserServiceInterface {
     username: string,
     excludeUserId?: string
   ): Promise<{ available: boolean; message: string }> {
-    // For availability checks, we go directly to the database service
-    // since these are real-time checks and don't benefit from caching
     return this.userService.checkUsernameAvailability(username, excludeUserId);
   }
 
@@ -349,8 +267,6 @@ export class UserCacheService implements UserServiceInterface {
     email: string,
     excludeUserId?: string
   ): Promise<{ available: boolean; message: string; statusCode?: string }> {
-    // For availability checks, we go directly to the database service
-    // since these are real-time checks and don't benefit from caching
     return this.userService.checkEmailAvailability(email, excludeUserId);
   }
 
@@ -378,52 +294,7 @@ export class UserCacheService implements UserServiceInterface {
     users: User[];
     message: string;
   }> {
-    try {
-      // For getting all users, we'll go directly to the database service
-      // since caching all users would be inefficient
-      return await this.userService.getAllUsers();
-    } catch (error) {
-      console.error('Error getting all users from cache:', error);
-      // Fallback to database service
-      return this.userService.getAllUsers();
-    }
-  }
-
-  async getAllUsersWithPrivileges(includePrivilegedData: boolean): Promise<{
-    success: boolean;
-    users: User[];
-    message: string;
-  }> {
-    try {
-      // For privileged data, we'll go directly to the database service
-      // since the cache doesn't store privileged information like IP addresses
-      return await this.userService.getAllUsersWithPrivileges(
-        includePrivilegedData
-      );
-    } catch (error) {
-      console.error(
-        'Error getting all users with privileges from cache:',
-        error
-      );
-      // Fallback to database service
-      return this.userService.getAllUsersWithPrivileges(includePrivilegedData);
-    }
-  }
-
-  async getAllUsersPublic(): Promise<{
-    success: boolean;
-    users: PublicUser[];
-    message: string;
-  }> {
-    try {
-      // For public user data, we'll go directly to the database service
-      // since the cache doesn't store the public user format
-      return await this.userService.getAllUsersPublic();
-    } catch (error) {
-      console.error('Error getting all public users from cache:', error);
-      // Fallback to database service
-      return this.userService.getAllUsersPublic();
-    }
+    return await this.userService.getAllUsers();
   }
 
   // Cache management methods

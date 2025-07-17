@@ -1,4 +1,4 @@
-import { User, UserSession, PublicUser } from '@/models/user';
+import { User, UserSession, BasicUser } from '@/models/user';
 import { UserServiceInterface } from '@/services/interfaces/userServiceInterface';
 import { UserDatabaseOperations } from './userDatabaseOperations';
 import { UserUtilityService } from './userUtilityService';
@@ -6,6 +6,7 @@ import { UserAuthService } from './userAuthService';
 import { UserEmailService } from './userEmailService';
 import { UserManagementService } from './userManagementService';
 import { UserIpBanService } from './userIpBanService';
+import { UserAdminService } from './userAdminService';
 
 export class UserDatabaseService implements UserServiceInterface {
   private dbOps: UserDatabaseOperations;
@@ -14,6 +15,7 @@ export class UserDatabaseService implements UserServiceInterface {
   private emailService: UserEmailService;
   private managementService: UserManagementService;
   private ipBanService: UserIpBanService;
+  private adminService: UserAdminService;
 
   constructor() {
     this.dbOps = new UserDatabaseOperations();
@@ -29,6 +31,7 @@ export class UserDatabaseService implements UserServiceInterface {
       this.dbOps,
       this.utilityService
     );
+    this.adminService = new UserAdminService();
   }
 
   // Authentication methods
@@ -80,10 +83,8 @@ export class UserDatabaseService implements UserServiceInterface {
       const user = await this.dbOps.findUserById(userId);
       if (!user) return null;
 
-      const mappedUser = this.utilityService.mapUserToResponseWithPrivileges(
-        user,
-        includePrivilegedData
-      );
+      // Always return basic user info without privileged data
+      const mappedUser = this.utilityService.mapUserToResponse(user);
 
       // Resolve bannedBy ID to username if it exists
       if (mappedUser.bannedBy) {
@@ -112,36 +113,14 @@ export class UserDatabaseService implements UserServiceInterface {
     }
   }
 
-  async getUserByIdPublic(userId: string): Promise<PublicUser | null> {
+  async getBasicUserById(userId: string): Promise<BasicUser | null> {
     try {
       const user = await this.dbOps.findUserById(userId);
       if (!user) return null;
 
-      const mappedUser = this.utilityService.mapUserToPublicResponse(user);
-
-      // Resolve bannedBy ID to username if it exists
-      if (mappedUser.bannedBy) {
-        const bannedByUsername = await this.resolveUserIdToUsername(
-          mappedUser.bannedBy
-        );
-        if (bannedByUsername) {
-          mappedUser.bannedBy = bannedByUsername;
-        }
-      }
-
-      // Resolve roleUpdatedBy ID to username if it exists
-      if (mappedUser.roleUpdatedBy) {
-        const roleUpdatedByUsername = await this.resolveUserIdToUsername(
-          mappedUser.roleUpdatedBy
-        );
-        if (roleUpdatedByUsername) {
-          mappedUser.roleUpdatedBy = roleUpdatedByUsername;
-        }
-      }
-
-      return mappedUser;
+      return this.utilityService.mapUserToBasicResponse(user);
     } catch (error) {
-      console.error('Error getting public user by ID:', error);
+      console.error('Error getting basic user by ID:', error);
       return null;
     }
   }
@@ -169,48 +148,20 @@ export class UserDatabaseService implements UserServiceInterface {
     );
   }
 
-  async getUserByUsernameWithPrivileges(
-    username: string,
-    includePrivilegedData: boolean
-  ): Promise<User | null> {
-    return this.managementService.getUserByUsernameWithPrivileges(
-      username,
-      includePrivilegedData
-    );
-  }
-
-  async getUserByUsernamePublic(username: string): Promise<PublicUser | null> {
+  async getBasicUserByUsername(username: string): Promise<BasicUser | null> {
     try {
       const user = await this.dbOps.findUserByUsername(username);
       if (!user) return null;
 
-      const mappedUser = this.utilityService.mapUserToPublicResponse(user);
-
-      // Resolve bannedBy ID to username if it exists
-      if (mappedUser.bannedBy) {
-        const bannedByUsername = await this.resolveUserIdToUsername(
-          mappedUser.bannedBy
-        );
-        if (bannedByUsername) {
-          mappedUser.bannedBy = bannedByUsername;
-        }
-      }
-
-      // Resolve roleUpdatedBy ID to username if it exists
-      if (mappedUser.roleUpdatedBy) {
-        const roleUpdatedByUsername = await this.resolveUserIdToUsername(
-          mappedUser.roleUpdatedBy
-        );
-        if (roleUpdatedByUsername) {
-          mappedUser.roleUpdatedBy = roleUpdatedByUsername;
-        }
-      }
-
-      return mappedUser;
+      return this.utilityService.mapUserToBasicResponse(user);
     } catch (error) {
-      console.error('Error getting public user by username:', error);
+      console.error('Error getting basic user by username:', error);
       return null;
     }
+  }
+
+  async getUserByUsernameForAdmin(username: string): Promise<any> {
+    return this.adminService.getUserByUsernameForAdmin(username);
   }
 
   // User management methods
@@ -239,22 +190,6 @@ export class UserDatabaseService implements UserServiceInterface {
     message: string;
   }> {
     return this.managementService.getAllUsers();
-  }
-
-  async getAllUsersWithPrivileges(
-    includePrivilegedData: boolean
-  ): Promise<{ success: boolean; users: User[]; message: string }> {
-    return this.managementService.getAllUsersWithPrivileges(
-      includePrivilegedData
-    );
-  }
-
-  async getAllUsersPublic(): Promise<{
-    success: boolean;
-    users: PublicUser[];
-    message: string;
-  }> {
-    return this.managementService.getAllUsersPublic();
   }
 
   async deactivateUser(

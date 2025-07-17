@@ -1,4 +1,4 @@
-import { User, PublicUser } from '@/models/user';
+import { User, BasicUser } from '@/models/user';
 import { emailService } from '@/services/emailService';
 import { UserDatabaseOperations } from './userDatabaseOperations';
 import { UserUtilityService } from './userUtilityService';
@@ -168,46 +168,18 @@ export class UserManagementService {
     }
   }
 
-  async getAllUsersWithPrivileges(includePrivilegedData: boolean): Promise<{
+  async getAllBasicUsers(): Promise<{
     success: boolean;
-    users: User[];
+    users: BasicUser[];
     message: string;
   }> {
     try {
       const users = await this.dbOps.findAllUsersWithPrivileges();
 
-      // Map users with both privileges and resolved usernames
-      const mappedUsers = await Promise.all(
-        users.map(async (user) => {
-          const mappedUser =
-            this.utilityService.mapUserToResponseWithPrivileges(
-              user,
-              includePrivilegedData
-            );
-
-          // Resolve bannedBy ID to username if it exists
-          if (mappedUser.bannedBy) {
-            const bannedByUsername = await this.resolveUserIdToUsername(
-              mappedUser.bannedBy
-            );
-            if (bannedByUsername) {
-              mappedUser.bannedBy = bannedByUsername;
-            }
-          }
-
-          // Resolve roleUpdatedBy ID to username if it exists
-          if (mappedUser.roleUpdatedBy) {
-            const roleUpdatedByUsername = await this.resolveUserIdToUsername(
-              mappedUser.roleUpdatedBy
-            );
-            if (roleUpdatedByUsername) {
-              mappedUser.roleUpdatedBy = roleUpdatedByUsername;
-            }
-          }
-
-          return mappedUser;
-        })
-      );
+      // Map users to basic format
+      const mappedUsers = users.map((user) => {
+        return this.utilityService.mapUserToBasicResponse(user);
+      });
 
       return {
         success: true,
@@ -215,59 +187,7 @@ export class UserManagementService {
         message: `Retrieved ${mappedUsers.length} users`,
       };
     } catch (error) {
-      console.error('Error getting all users with privileges:', error);
-      return {
-        success: false,
-        users: [],
-        message: 'Failed to retrieve users',
-      };
-    }
-  }
-
-  async getAllUsersPublic(): Promise<{
-    success: boolean;
-    users: PublicUser[];
-    message: string;
-  }> {
-    try {
-      const users = await this.dbOps.findAllUsersWithPrivileges();
-
-      // Map users to public format with resolved usernames
-      const mappedUsers = await Promise.all(
-        users.map(async (user) => {
-          const mappedUser = this.utilityService.mapUserToPublicResponse(user);
-
-          // Resolve bannedBy ID to username if it exists
-          if (mappedUser.bannedBy) {
-            const bannedByUsername = await this.resolveUserIdToUsername(
-              mappedUser.bannedBy
-            );
-            if (bannedByUsername) {
-              mappedUser.bannedBy = bannedByUsername;
-            }
-          }
-
-          // Resolve roleUpdatedBy ID to username if it exists
-          if (mappedUser.roleUpdatedBy) {
-            const roleUpdatedByUsername = await this.resolveUserIdToUsername(
-              mappedUser.roleUpdatedBy
-            );
-            if (roleUpdatedByUsername) {
-              mappedUser.roleUpdatedBy = roleUpdatedByUsername;
-            }
-          }
-
-          return mappedUser;
-        })
-      );
-
-      return {
-        success: true,
-        users: mappedUsers,
-        message: `Retrieved ${mappedUsers.length} users`,
-      };
-    } catch (error) {
-      console.error('Error getting all public users:', error);
+      console.error('Error getting all basic users:', error);
       return {
         success: false,
         users: [],
@@ -299,46 +219,6 @@ export class UserManagementService {
         'Error getting user by username with resolved usernames:',
         error
       );
-      return null;
-    }
-  }
-
-  async getUserByUsernameWithPrivileges(
-    username: string,
-    includePrivilegedData: boolean
-  ): Promise<User | null> {
-    try {
-      const user = await this.dbOps.findUserByUsername(username);
-      if (!user) return null;
-
-      const mappedUser = this.utilityService.mapUserToResponseWithPrivileges(
-        user,
-        includePrivilegedData
-      );
-
-      // Resolve bannedBy ID to username if it exists
-      if (mappedUser.bannedBy) {
-        const bannedByUsername = await this.resolveUserIdToUsername(
-          mappedUser.bannedBy
-        );
-        if (bannedByUsername) {
-          mappedUser.bannedBy = bannedByUsername;
-        }
-      }
-
-      // Resolve roleUpdatedBy ID to username if it exists
-      if (mappedUser.roleUpdatedBy) {
-        const roleUpdatedByUsername = await this.resolveUserIdToUsername(
-          mappedUser.roleUpdatedBy
-        );
-        if (roleUpdatedByUsername) {
-          mappedUser.roleUpdatedBy = roleUpdatedByUsername;
-        }
-      }
-
-      return mappedUser;
-    } catch (error) {
-      console.error('Error getting user by username with privileges:', error);
       return null;
     }
   }
