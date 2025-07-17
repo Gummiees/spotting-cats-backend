@@ -167,24 +167,23 @@ export class UserEmailService {
       }
 
       const normalizedEmail = this.utilityService.normalizeEmail(email);
+      const encryptedEmail = encryptEmail(normalizedEmail);
 
-      // If excludeUserId is provided, check if the email is the same as the current user's email
+      // If excludeUserId is provided, first check if the email is the same as the current user's email
       if (excludeUserId) {
         const currentUser = await this.dbOps.findUserById(excludeUserId);
-        if (currentUser) {
-          const encryptedNormalizedEmail = encryptEmail(normalizedEmail);
-          if (currentUser.email === encryptedNormalizedEmail) {
-            return {
-              available: false,
-              message: 'Email is the same as your current email',
-              statusCode: 'EMAIL_SAME_AS_CURRENT',
-            };
-          }
+        if (currentUser && currentUser.email === encryptedEmail) {
+          return {
+            available: false,
+            message: 'Email is the same as your current email',
+            statusCode: 'EMAIL_SAME_AS_CURRENT',
+          };
         }
       }
 
+      // Check if the email is already in use by other users (excluding current user)
       const isAvailable = !(await this.dbOps.checkEmailExists(
-        normalizedEmail,
+        encryptedEmail,
         excludeUserId
       ));
 
