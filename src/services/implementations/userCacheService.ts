@@ -1,7 +1,7 @@
 import { User, PublicUser, UserSession } from '@/models/user';
 import { UserServiceInterface } from '../interfaces/userServiceInterface';
 import { UserUpdateRequest } from '@/models/requests';
-import { getRedisClient } from '@/utils/redis';
+import { connectToRedis, isRedisConfigured } from '@/utils/redis';
 import { encryptEmail } from '@/utils/security';
 
 export class UserCacheService implements UserServiceInterface {
@@ -431,8 +431,13 @@ export class UserCacheService implements UserServiceInterface {
     user: User,
     encryptedEmail?: string
   ): Promise<void> {
+    if (!isRedisConfigured()) {
+      console.warn('Redis not configured, skipping user cache');
+      return;
+    }
+
     try {
-      const redisClient = getRedisClient();
+      const redisClient = await connectToRedis();
       const userKey = `${this.USER_CACHE_PREFIX}${user.id}`;
 
       // Cache user data
@@ -449,8 +454,12 @@ export class UserCacheService implements UserServiceInterface {
   }
 
   private async getUserFromCache(userId: string): Promise<User | null> {
+    if (!isRedisConfigured()) {
+      return null;
+    }
+
     try {
-      const redisClient = getRedisClient();
+      const redisClient = await connectToRedis();
       const userKey = `${this.USER_CACHE_PREFIX}${userId}`;
       const cachedData = await redisClient.get(userKey);
 
@@ -466,8 +475,12 @@ export class UserCacheService implements UserServiceInterface {
   }
 
   private async getUserIdFromEmailCache(email: string): Promise<string | null> {
+    if (!isRedisConfigured()) {
+      return null;
+    }
+
     try {
-      const redisClient = getRedisClient();
+      const redisClient = await connectToRedis();
       const encryptedEmail = encryptEmail(email);
       const emailKey = `${this.USER_EMAIL_CACHE_PREFIX}${encryptedEmail}`;
       return await redisClient.get(emailKey);
@@ -478,8 +491,12 @@ export class UserCacheService implements UserServiceInterface {
   }
 
   private async invalidateUserCache(userId: string): Promise<void> {
+    if (!isRedisConfigured()) {
+      return;
+    }
+
     try {
-      const redisClient = getRedisClient();
+      const redisClient = await connectToRedis();
       const userKey = `${this.USER_CACHE_PREFIX}${userId}`;
 
       // Delete user data cache
@@ -498,8 +515,12 @@ export class UserCacheService implements UserServiceInterface {
   }
 
   private async invalidateAllUserCaches(): Promise<void> {
+    if (!isRedisConfigured()) {
+      return;
+    }
+
     try {
-      const redisClient = getRedisClient();
+      const redisClient = await connectToRedis();
 
       // Get all keys matching the user cache patterns
       const userKeys = await redisClient.keys(`${this.USER_CACHE_PREFIX}*`);

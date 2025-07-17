@@ -1,6 +1,8 @@
 import 'module-alias/register';
 import app from '@/app';
 import { config } from '@/config';
+import { disconnectRedis } from '@/utils/redis';
+import { disconnectMongo } from '@/utils/mongo';
 
 const startServer = (): void => {
   const server = app.listen(config.port, () => {
@@ -15,19 +17,30 @@ const startServer = (): void => {
   });
 
   // Graceful shutdown
-  process.on('SIGTERM', () => {
-    console.log('SIGTERM received, shutting down gracefully');
-    server.close(() => {
-      console.log('Process terminated');
-    });
-  });
+  const gracefulShutdown = async (signal: string) => {
+    console.log(`${signal} received, shutting down gracefully`);
+    server.close(async () => {
+      try {
+        await disconnectRedis();
+        console.log('✅ Redis disconnected');
+      } catch (error) {
+        console.error('❌ Error disconnecting Redis:', error);
+      }
 
-  process.on('SIGINT', () => {
-    console.log('SIGINT received, shutting down gracefully');
-    server.close(() => {
+      try {
+        await disconnectMongo();
+        console.log('✅ MongoDB disconnected');
+      } catch (error) {
+        console.error('❌ Error disconnecting MongoDB:', error);
+      }
+
       console.log('Process terminated');
+      process.exit(0);
     });
-  });
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 };
 
 startServer();

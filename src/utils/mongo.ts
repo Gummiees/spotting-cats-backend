@@ -40,3 +40,11 @@ export function isMongoConfigured(): boolean {
 export function getDatabaseName(): string {
   return dbName || 'default';
 }
+
+export async function disconnectMongo(): Promise<void> {
+  if (client) {
+    await client.close();
+    client = undefined as any;
+    db = undefined as any;
+  }
+}

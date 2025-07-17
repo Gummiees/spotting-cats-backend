@@ -9,11 +9,40 @@ import cors from 'cors';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import { cleanupService } from '@/services/cleanupService';
+import { connectToRedis, isRedisConfigured } from '@/utils/redis';
+import { connectToMongo, isMongoConfigured } from '@/utils/mongo';
 
 const app = express();
 
-// Initialize cleanup service (cron jobs)
-cleanupService.initialize();
+// Initialize Redis connection early
+async function initializeServices() {
+  try {
+    // Initialize cleanup service (cron jobs)
+    cleanupService.initialize();
+
+    // Initialize MongoDB if configured
+    if (isMongoConfigured()) {
+      await connectToMongo();
+      console.log('✅ MongoDB initialized successfully');
+    } else {
+      console.log('⚠️  MongoDB not configured');
+    }
+
+    // Initialize Redis if configured
+    if (isRedisConfigured()) {
+      await connectToRedis();
+      console.log('✅ Redis initialized successfully');
+    } else {
+      console.log('⚠️  Redis not configured, running without cache');
+    }
+  } catch (error) {
+    console.error('❌ Error initializing services:', error);
+    // Don't throw here - allow the app to start even if services fail
+  }
+}
+
+// Initialize services
+initializeServices();
 
 // Security middleware (must be first)
 configureSecurityMiddleware(app);
