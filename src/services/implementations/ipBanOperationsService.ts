@@ -35,7 +35,8 @@ export class IpBanOperationsService {
       const bannedUserIds = allAffectedUsers.map((user) => user._id);
       const banUpdate = {
         isBanned: true,
-        banReason: `IP ban: ${reason}`,
+        banReason: reason,
+        banType: 'ip',
         bannedBy: bannedByUserId,
         bannedAt: this.utilityService.createTimestamp(),
         updatedAt: this.utilityService.createTimestamp(),
@@ -182,7 +183,8 @@ export class IpBanOperationsService {
 
       const banUpdate = {
         isBanned: true,
-        banReason: `IP ban: ${reason}`,
+        banReason: reason,
+        banType: 'ip',
         bannedBy: bannedByUserId,
         bannedAt: this.utilityService.createTimestamp(),
         updatedAt: this.utilityService.createTimestamp(),

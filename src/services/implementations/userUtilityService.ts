@@ -192,6 +192,9 @@ export class UserUtilityService {
       if (user.ipAddresses) {
         mappedUser.ipAddresses = user.ipAddresses; // Already hashed in DB
       }
+      if (user.banType) {
+        mappedUser.banType = user.banType;
+      }
     }
 
     return mappedUser;

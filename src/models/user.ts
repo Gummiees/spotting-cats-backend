@@ -2,6 +2,8 @@ import { ObjectId } from 'mongodb';
 
 export type UserRole = 'user' | 'moderator' | 'admin' | 'superadmin';
 
+export type BanType = 'manual' | 'ip' | 'automatic';
+
 export interface User {
   id?: string;
   username: string;
@@ -10,6 +12,7 @@ export interface User {
   isActive: boolean;
   isBanned: boolean;
   banReason?: string;
+  banType?: BanType; // Type of ban: manual, ip, or automatic
   bannedBy?: string; // ID of the user who banned them (in database) or username (when returned to frontend)
   lastLoginAt: Date;
   createdAt: Date;
@@ -31,6 +34,7 @@ export interface CreateUser {
   isActive?: boolean;
   isBanned?: boolean;
   banReason?: string;
+  banType?: BanType;
   lastLoginAt?: Date;
   createdAt: Date;
   updatedAt?: Date;
@@ -78,6 +82,7 @@ export interface PublicUser {
   isActive: boolean;
   isBanned: boolean;
   banReason?: string;
+  banType?: BanType;
   bannedBy?: string;
   lastLoginAt: Date;
   createdAt: Date;

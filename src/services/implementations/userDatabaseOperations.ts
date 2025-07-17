@@ -69,7 +69,7 @@ export class UserDatabaseOperations {
             ipAddresses: { $in: ipAddresses },
           },
           {
-            banReason: { $regex: /^IP ban:/, $options: 'i' },
+            banType: 'ip',
           },
         ],
       })
