@@ -1,6 +1,6 @@
 import { User } from '@/models/user';
-import { UserDatabaseOperations } from './userDatabaseOperations';
-import { UserUtilityService } from './userUtilityService';
+import { UserDatabaseOperations } from '../user/userDatabaseOperations';
+import { UserUtilityService } from '../user/userUtilityService';
 
 export class IpBanOperationsService {
   constructor(

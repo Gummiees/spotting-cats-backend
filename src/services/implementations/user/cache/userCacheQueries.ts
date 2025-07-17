@@ -1,5 +1,5 @@
 import { User, BasicUser } from '@/models/user';
-import { UserServiceInterface } from '../../interfaces/userServiceInterface';
+import { UserServiceInterface } from '../../../interfaces/userServiceInterface';
 import { UserCacheCore } from './userCacheCore';
 
 export class UserCacheQueries extends UserCacheCore {

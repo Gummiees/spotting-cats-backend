@@ -1,7 +1,7 @@
 import { User } from '@/models/user';
 import { UserDatabaseOperations } from './userDatabaseOperations';
 import { UserUtilityService } from './userUtilityService';
-import { UserIpBanService } from './userIpBanService';
+import { UserIpBanService } from '../ip-ban/userIpBanService';
 import { decryptEmail } from '@/utils/security';
 import { emailService } from '@/services/emailService';
 

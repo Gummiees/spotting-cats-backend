@@ -1,5 +1,5 @@
-import { UserDatabaseService } from './implementations/userDatabaseService';
-import { UserCacheService } from './implementations/userCacheService';
+import { UserDatabaseService } from './implementations/user/userDatabaseService';
+import { UserCacheService } from './implementations/user/userCacheService';
 import { UserServiceInterface } from './interfaces/userServiceInterface';
 
 // Create database service instance

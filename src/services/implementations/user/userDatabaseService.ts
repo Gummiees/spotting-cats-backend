@@ -5,7 +5,7 @@ import { UserUtilityService } from './userUtilityService';
 import { UserAuthService } from './userAuthService';
 import { UserEmailService } from './userEmailService';
 import { UserManagementService } from './userManagementService';
-import { UserIpBanService } from './userIpBanService';
+import { UserIpBanService } from '../ip-ban/userIpBanService';
 import { UserAdminService } from './userAdminService';
 
 export class UserDatabaseService implements UserServiceInterface {

@@ -1,16 +1,13 @@
 import { AdminUserResponse } from '@/models/user';
 import { UserDatabaseOperations } from './userDatabaseOperations';
-import { UserUtilityService } from './userUtilityService';
-import { NoteCacheService } from './noteCacheService';
+import { NoteCacheService } from '../note/noteCacheService';
 
 export class UserAdminService {
   private dbOps: UserDatabaseOperations;
-  private utilityService: UserUtilityService;
   private noteService: NoteCacheService;
 
   constructor() {
     this.dbOps = new UserDatabaseOperations();
-    this.utilityService = new UserUtilityService();
     this.noteService = new NoteCacheService();
   }
 

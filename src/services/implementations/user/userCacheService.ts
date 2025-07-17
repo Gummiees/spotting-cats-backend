@@ -1,5 +1,5 @@
 import { User, UserSession, BasicUser } from '@/models/user';
-import { UserServiceInterface } from '../interfaces/userServiceInterface';
+import { UserServiceInterface } from '../../interfaces/userServiceInterface';
 import { UserUpdateRequest } from '@/models/requests';
 import { UserCacheQueries } from './cache/userCacheQueries';
 import { UserCacheOperations } from './cache/userCacheOperations';

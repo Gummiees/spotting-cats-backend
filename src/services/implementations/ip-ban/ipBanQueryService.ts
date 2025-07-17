@@ -1,4 +1,4 @@
-import { UserDatabaseOperations } from './userDatabaseOperations';
+import { UserDatabaseOperations } from '../user/userDatabaseOperations';
 
 export class IpBanQueryService {
   constructor(private dbOps: UserDatabaseOperations) {}

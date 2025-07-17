@@ -1,5 +1,5 @@
 import { UserSession } from '@/models/user';
-import { UserServiceInterface } from '../../interfaces/userServiceInterface';
+import { UserServiceInterface } from '../../../interfaces/userServiceInterface';
 
 export class UserCacheDelegates {
   constructor(private userService: UserServiceInterface) {}

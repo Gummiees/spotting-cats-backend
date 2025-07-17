@@ -1,6 +1,6 @@
 import { User } from '@/models/user';
 import { UserUpdateRequest } from '@/models/requests';
-import { UserServiceInterface } from '../../interfaces/userServiceInterface';
+import { UserServiceInterface } from '../../../interfaces/userServiceInterface';
 import { UserCacheInvalidation } from './userCacheInvalidation';
 
 export class UserCacheOperations {
