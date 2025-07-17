@@ -23,7 +23,6 @@ export interface User {
   roleUpdatedAt?: Date;
   roleUpdatedBy?: string; // ID of the user who updated the role (in database) or username (when returned to frontend)
   ipAddresses?: string[]; // Array of IP addresses used for authentication
-  lastIpAddress?: string | null; // Last IP address used for authentication (privileged users only)
 }
 
 export interface CreateUser {
@@ -45,7 +44,6 @@ export interface CreateUser {
   roleUpdatedAt?: Date;
   roleUpdatedBy?: string;
   ipAddresses?: string[];
-  lastIpAddress?: string | null;
 }
 
 export interface UserWithObjectId extends Omit<User, 'id'> {

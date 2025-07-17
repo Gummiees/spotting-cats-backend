@@ -55,10 +55,7 @@ export class UserDatabaseOperations {
   async findUsersByIpAddresses(ipAddresses: string[]): Promise<any[]> {
     return this.usersCollection
       .find({
-        $or: [
-          { ipAddresses: { $in: ipAddresses } },
-          { lastIpAddress: { $in: ipAddresses } },
-        ],
+        ipAddresses: { $in: ipAddresses },
       })
       .toArray();
   }
@@ -70,10 +67,7 @@ export class UserDatabaseOperations {
       .find({
         $and: [
           {
-            $or: [
-              { ipAddresses: { $in: ipAddresses } },
-              { lastIpAddress: { $in: ipAddresses } },
-            ],
+            ipAddresses: { $in: ipAddresses },
           },
           {
             banReason: { $regex: /^IP ban:/, $options: 'i' },

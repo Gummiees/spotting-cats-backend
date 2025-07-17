@@ -178,13 +178,10 @@ export class UserUtilityService {
   ): User {
     const mappedUser = this.mapUserToResponse(user);
 
-    // Include IP addresses and last IP address only for privileged users
+    // Include IP addresses only for privileged users
     if (includePrivilegedData) {
       if (user.ipAddresses) {
         mappedUser.ipAddresses = user.ipAddresses;
-      }
-      if (user.lastIpAddress) {
-        mappedUser.lastIpAddress = user.lastIpAddress;
       }
     }
 
@@ -221,7 +218,6 @@ export class UserUtilityService {
       createdAt: timestamp,
       updatedAt: timestamp,
       ipAddresses,
-      lastIpAddress: clientIp || null,
     };
 
     // Apply business logic to ensure data consistency
@@ -242,8 +238,6 @@ export class UserUtilityService {
     if (clientIp) {
       // Use $addToSet to add IP address only if it's not already in the array
       processedData.$addToSet = { ipAddresses: clientIp };
-      // Update the last IP address
-      processedData.lastIpAddress = clientIp;
     }
 
     return processedData;
