@@ -183,13 +183,8 @@ const swaggerOptions: Options = {
         PublicUser: {
           type: 'object',
           description:
-            'Public user information returned by user endpoints (excludes email and IP addresses)',
+            'Public user information returned by user endpoints (excludes email, IP addresses, and user ID)',
           properties: {
-            id: {
-              type: 'string',
-              description: 'User ID',
-              example: '507f1f77bcf86cd799439011',
-            },
             username: {
               type: 'string',
               description: 'User username (mandatory)',

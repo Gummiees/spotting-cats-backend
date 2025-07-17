@@ -152,7 +152,6 @@ export class UserUtilityService {
 
   mapUserToPublicResponse(user: any): PublicUser {
     return {
-      id: user._id.toString(),
       username: user.username,
       avatarUrl: user.avatarUrl,
       role: user.role || 'user',

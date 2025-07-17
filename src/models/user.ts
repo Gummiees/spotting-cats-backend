@@ -76,7 +76,6 @@ export interface PublicUserByUsername {
 }
 
 export interface PublicUser {
-  id?: string;
   username: string;
   avatarUrl: string;
   role: UserRole;
