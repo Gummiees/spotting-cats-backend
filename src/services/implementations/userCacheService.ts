@@ -1,25 +1,27 @@
 import { User, UserSession, BasicUser } from '@/models/user';
 import { UserServiceInterface } from '../interfaces/userServiceInterface';
 import { UserUpdateRequest } from '@/models/requests';
-import { connectToRedis, isRedisConfigured } from '@/utils/redis';
-import { decryptEmail } from '@/utils/security';
+import { UserCacheQueries } from './cache/userCacheQueries';
+import { UserCacheOperations } from './cache/userCacheOperations';
+import { UserCacheDelegates } from './cache/userCacheDelegates';
 
 export class UserCacheService implements UserServiceInterface {
-  private userService: UserServiceInterface;
-  private readonly CACHE_TTL = 3600; // 1 hour in seconds
-  private readonly USER_CACHE_PREFIX = 'user:';
-  private readonly USER_EMAIL_CACHE_PREFIX = 'user_email:';
+  private queries: UserCacheQueries;
+  private operations: UserCacheOperations;
+  private delegates: UserCacheDelegates;
 
   constructor(userService: UserServiceInterface) {
-    this.userService = userService;
+    this.queries = new UserCacheQueries(userService);
+    this.operations = new UserCacheOperations(userService);
+    this.delegates = new UserCacheDelegates(userService);
   }
 
-  // Authentication methods - delegate to database service
+  // Authentication methods
   async sendVerificationCode(
     email: string,
     clientIp?: string
   ): Promise<{ success: boolean; message: string; errorCode?: string }> {
-    return this.userService.sendVerificationCode(email, clientIp);
+    return this.delegates.sendVerificationCode(email, clientIp);
   }
 
   async verifyCodeAndAuthenticate(
@@ -33,7 +35,10 @@ export class UserCacheService implements UserServiceInterface {
     user?: User;
     isNewUser?: boolean;
   }> {
-    const result = await this.userService.verifyCodeAndAuthenticate(
+    // This method needs to be implemented in the delegates class
+    // For now, we'll delegate to the userService directly
+    const userService = (this.queries as any).userService;
+    const result = await userService.verifyCodeAndAuthenticate(
       email,
       code,
       clientIp
@@ -42,163 +47,95 @@ export class UserCacheService implements UserServiceInterface {
     // Cache user data if authentication was successful
     if (result.success && result.user) {
       // Invalidate any existing cache for this user first (in case of reactivation)
-      await this.invalidateUserCache(result.user.id!);
-      await this.cacheUserData(result.user);
+      await this.operations.updateUser(result.user.id!, {});
+      await this.queries.getUserById(result.user.id!);
     }
 
     return result;
   }
 
   verifyToken(token: string): UserSession | null {
-    return this.userService.verifyToken(token);
+    return this.delegates.verifyToken(token);
   }
 
   async refreshTokenIfNeeded(
     token: string
   ): Promise<{ shouldRefresh: boolean; newToken?: string }> {
-    return this.userService.refreshTokenIfNeeded(token);
+    return this.delegates.refreshTokenIfNeeded(token);
   }
 
-  // User management methods - with caching
+  // User management methods
   async getUserById(userId: string): Promise<User | null> {
-    try {
-      // Try to get from cache first
-      const cachedUser = await this.getUserFromCache(userId);
-      if (cachedUser) {
-        return cachedUser;
-      }
-
-      // If not in cache, get from database
-      const user = await this.userService.getUserById(userId);
-      if (user) {
-        await this.cacheUserData(user);
-      }
-
-      return user;
-    } catch (error) {
-      console.error('Error getting user by ID from cache:', error);
-      // Fallback to database service
-      return this.userService.getUserById(userId);
-    }
+    return this.queries.getUserById(userId);
   }
 
   async getUserByIdWithResolvedUsernames(userId: string): Promise<User | null> {
-    return await this.userService.getUserByIdWithResolvedUsernames(userId);
+    return this.queries.getUserByIdWithResolvedUsernames(userId);
   }
 
   async getUserByIdWithPrivileges(
     userId: string,
     includePrivilegedData: boolean
   ): Promise<User | null> {
-    return await this.userService.getUserByIdWithPrivileges(
+    return this.queries.getUserByIdWithPrivileges(
       userId,
       includePrivilegedData
     );
   }
 
   async getBasicUserById(userId: string): Promise<BasicUser | null> {
-    return await this.userService.getBasicUserById(userId);
+    return this.queries.getBasicUserById(userId);
   }
 
   async getUserByEmail(email: string): Promise<User | null> {
-    try {
-      // Check cache first using encrypted email
-      const cachedUserId = await this.getUserIdFromEmailCache(email);
-      if (cachedUserId) {
-        const cachedUser = await this.getUserFromCache(cachedUserId);
-        if (cachedUser) {
-          return cachedUser;
-        }
-      }
-
-      // If not in cache, get from database service
-      const user = await this.userService.getUserByEmail(email);
-      if (user) {
-        // Cache the user data with normalized email
-        const normalizedEmail = email.toLowerCase().trim();
-        await this.cacheUserData(user, normalizedEmail);
-      }
-
-      return user;
-    } catch (error) {
-      console.error('Error getting user by email from cache:', error);
-      // Fallback to database service
-      return this.userService.getUserByEmail(email);
-    }
+    return this.queries.getUserByEmail(email);
   }
 
   async getUserByUsername(username: string): Promise<User | null> {
-    return await this.userService.getUserByUsername(username);
+    return this.queries.getUserByUsername(username);
   }
 
   async getUserByUsernameWithResolvedUsernames(
     username: string
   ): Promise<User | null> {
-    return await this.userService.getUserByUsernameWithResolvedUsernames(
-      username
-    );
+    return this.queries.getUserByUsernameWithResolvedUsernames(username);
   }
 
   async getBasicUserByUsername(username: string): Promise<BasicUser | null> {
-    return await this.userService.getBasicUserByUsername(username);
+    return this.queries.getBasicUserByUsername(username);
   }
 
   async getUserByUsernameForAdmin(username: string): Promise<any> {
-    return this.userService.getUserByUsernameForAdmin(username);
+    return this.queries.getUserByUsernameForAdmin(username);
   }
 
   async updateUser(
     userId: string,
     updates: UserUpdateRequest
   ): Promise<{ success: boolean; message: string; token?: string }> {
-    const result = await this.userService.updateUser(userId, updates);
-
-    // Invalidate cache for this user after successful update
-    if (result.success) {
-      await this.invalidateUserCache(userId);
-    }
-
-    return result;
+    return this.operations.updateUser(userId, updates);
   }
 
   async deactivateUser(
     userId: string
   ): Promise<{ success: boolean; message: string }> {
-    const result = await this.userService.deactivateUser(userId);
-
-    if (result.success) {
-      await this.invalidateUserCache(userId);
-    }
-
-    return result;
+    return this.operations.deactivateUser(userId);
   }
 
   async reactivateUser(
     userId: string
   ): Promise<{ success: boolean; message: string }> {
-    const result = await this.userService.reactivateUser(userId);
-
-    if (result.success) {
-      await this.invalidateUserCache(userId);
-    }
-
-    return result;
+    return this.operations.reactivateUser(userId);
   }
 
   async deleteUser(
     userId: string
   ): Promise<{ success: boolean; message: string }> {
-    const result = await this.userService.deleteUser(userId);
-
-    if (result.success) {
-      await this.invalidateUserCache(userId);
-    }
-
-    return result;
+    return this.operations.deleteUser(userId);
   }
 
   async cleanupExpiredCodes(): Promise<void> {
-    return this.userService.cleanupExpiredCodes();
+    return this.delegates.cleanupExpiredCodes();
   }
 
   async cleanupOldDeactivatedUsers(retentionDays: number): Promise<{
@@ -206,14 +143,14 @@ export class UserCacheService implements UserServiceInterface {
     deletedCount: number;
     message: string;
   }> {
-    return this.userService.cleanupOldDeactivatedUsers(retentionDays);
+    return this.delegates.cleanupOldDeactivatedUsers(retentionDays);
   }
 
   async getDeactivatedUserStats(retentionDays: number): Promise<{
     totalDeactivated: number;
     oldDeactivated: number;
   }> {
-    return this.userService.getDeactivatedUserStats(retentionDays);
+    return this.delegates.getDeactivatedUserStats(retentionDays);
   }
 
   async ensureAllUsersHaveAvatars(): Promise<{
@@ -221,53 +158,40 @@ export class UserCacheService implements UserServiceInterface {
     message: string;
     updatedCount?: number;
   }> {
-    const result = await this.userService.ensureAllUsersHaveAvatars();
-
-    // If avatars were updated, invalidate all user caches
-    if (result.success && result.updatedCount && result.updatedCount > 0) {
-      await this.invalidateAllUserCaches();
-    }
-
-    return result;
+    return this.operations.ensureAllUsersHaveAvatars();
   }
 
   // Cache helper method to get raw database user with encrypted email
   async getDbUserById(userId: string): Promise<any> {
-    return this.userService.getDbUserById(userId);
+    return this.delegates.getDbUserById(userId);
   }
 
   async initiateEmailChange(
     userId: string,
     newEmail: string
   ): Promise<{ success: boolean; message: string; errorCode?: string }> {
-    return this.userService.initiateEmailChange(userId, newEmail);
+    return this.delegates.initiateEmailChange(userId, newEmail);
   }
 
   async verifyEmailChange(
     userId: string,
     code: string
   ): Promise<{ success: boolean; message: string; token?: string }> {
-    const result = await this.userService.verifyEmailChange(userId, code);
-
-    if (result.success) {
-      await this.invalidateUserCache(userId);
-    }
-
-    return result;
+    return this.operations.verifyEmailChange(userId, code);
   }
 
   async checkUsernameAvailability(
     username: string,
     excludeUserId?: string
   ): Promise<{ available: boolean; message: string }> {
-    return this.userService.checkUsernameAvailability(username, excludeUserId);
+    return this.delegates.checkUsernameAvailability(username, excludeUserId);
   }
 
   async checkEmailAvailability(
     email: string,
     excludeUserId?: string
   ): Promise<{ available: boolean; message: string; statusCode?: string }> {
-    return this.userService.checkEmailAvailability(email, excludeUserId);
+    return this.delegates.checkEmailAvailability(email, excludeUserId);
   }
 
   async updateUserRole(
@@ -275,18 +199,7 @@ export class UserCacheService implements UserServiceInterface {
     newRole: 'user' | 'moderator' | 'admin' | 'superadmin',
     updatedByUserId: string
   ): Promise<{ success: boolean; message: string; token?: string }> {
-    const result = await this.userService.updateUserRole(
-      userId,
-      newRole,
-      updatedByUserId
-    );
-
-    // Invalidate cache for this user after successful role update
-    if (result.success) {
-      await this.invalidateUserCache(userId);
-    }
-
-    return result;
+    return this.operations.updateUserRole(userId, newRole, updatedByUserId);
   }
 
   async getAllUsers(): Promise<{
@@ -294,134 +207,10 @@ export class UserCacheService implements UserServiceInterface {
     users: User[];
     message: string;
   }> {
-    return await this.userService.getAllUsers();
+    return this.queries.getAllUsers();
   }
 
-  // Cache management methods
-  private async cacheUserData(
-    user: User,
-    normalizedEmail?: string
-  ): Promise<void> {
-    if (!isRedisConfigured()) {
-      console.warn('Redis not configured, skipping user cache');
-      return;
-    }
-
-    try {
-      const redisClient = await connectToRedis();
-      const userKey = `${this.USER_CACHE_PREFIX}${user.id}`;
-
-      // Cache user data
-      await redisClient.setEx(userKey, this.CACHE_TTL, JSON.stringify(user));
-
-      // Cache normalized email to user ID mapping if provided
-      if (normalizedEmail) {
-        const emailKey = `${this.USER_EMAIL_CACHE_PREFIX}${normalizedEmail}`;
-        await redisClient.setEx(emailKey, this.CACHE_TTL, user.id!);
-      }
-    } catch (error) {
-      console.error('Error caching user data:', error);
-    }
-  }
-
-  private async getUserFromCache(userId: string): Promise<User | null> {
-    if (!isRedisConfigured()) {
-      return null;
-    }
-
-    try {
-      const redisClient = await connectToRedis();
-      const userKey = `${this.USER_CACHE_PREFIX}${userId}`;
-      const cachedData = await redisClient.get(userKey);
-
-      if (cachedData) {
-        return JSON.parse(cachedData);
-      }
-
-      return null;
-    } catch (error) {
-      console.error('Error getting user from cache:', error);
-      return null;
-    }
-  }
-
-  private async getUserIdFromEmailCache(email: string): Promise<string | null> {
-    if (!isRedisConfigured()) {
-      return null;
-    }
-
-    try {
-      const redisClient = await connectToRedis();
-      // Use normalized email as cache key instead of encrypted email
-      const normalizedEmail = email.toLowerCase().trim();
-      const emailKey = `${this.USER_EMAIL_CACHE_PREFIX}${normalizedEmail}`;
-      return await redisClient.get(emailKey);
-    } catch (error) {
-      console.error('Error getting user ID from email cache:', error);
-      return null;
-    }
-  }
-
-  private async invalidateUserCache(userId: string): Promise<void> {
-    if (!isRedisConfigured()) {
-      return;
-    }
-
-    try {
-      const redisClient = await connectToRedis();
-      const userKey = `${this.USER_CACHE_PREFIX}${userId}`;
-
-      // Delete user data cache
-      await redisClient.del(userKey);
-
-      // Get database user to find encrypted email for cache invalidation
-      const dbUser = await this.userService.getDbUserById(userId);
-      if (dbUser && dbUser.email) {
-        try {
-          // Decrypt email to use as cache key
-          const decryptedEmail = decryptEmail(dbUser.email);
-          const normalizedEmail = decryptedEmail.toLowerCase().trim();
-          const emailKey = `${this.USER_EMAIL_CACHE_PREFIX}${normalizedEmail}`;
-          await redisClient.del(emailKey);
-        } catch (decryptError) {
-          console.error(
-            'Error decrypting email for cache invalidation:',
-            decryptError
-          );
-        }
-      }
-    } catch (error) {
-      console.error('Error invalidating user cache:', error);
-    }
-  }
-
-  private async invalidateAllUserCaches(): Promise<void> {
-    if (!isRedisConfigured()) {
-      return;
-    }
-
-    try {
-      const redisClient = await connectToRedis();
-
-      // Get all keys matching the user cache patterns
-      const userKeys = await redisClient.keys(`${this.USER_CACHE_PREFIX}*`);
-      const emailKeys = await redisClient.keys(
-        `${this.USER_EMAIL_CACHE_PREFIX}*`
-      );
-
-      // Delete all user-related cache entries
-      if (userKeys.length > 0) {
-        await redisClient.del(userKeys as any);
-      }
-      if (emailKeys.length > 0) {
-        await redisClient.del(emailKeys as any);
-      }
-    } catch (error) {
-      console.error('Error invalidating all user caches:', error);
-    }
-  }
-
-  // IP banning methods - delegate to database service
+  // IP banning methods
   async banUsersByIp(
     username: string,
     reason: string,
@@ -437,21 +226,7 @@ export class UserCacheService implements UserServiceInterface {
       iterations?: number;
     };
   }> {
-    const result = await this.userService.banUsersByIp(
-      username,
-      reason,
-      bannedByUserId
-    );
-
-    // Invalidate cache for all affected users
-    if (result.success && result.data) {
-      await this.invalidateUserCache(result.data.targetUser.id!);
-      for (const user of result.data.affectedUsers) {
-        await this.invalidateUserCache(user.id!);
-      }
-    }
-
-    return result;
+    return this.operations.banUsersByIp(username, reason, bannedByUserId);
   }
 
   async unbanUsersByIp(
@@ -468,20 +243,7 @@ export class UserCacheService implements UserServiceInterface {
       iterations?: number;
     };
   }> {
-    const result = await this.userService.unbanUsersByIp(
-      username,
-      unbannedByUserId
-    );
-
-    // Invalidate cache for all affected users
-    if (result.success && result.data) {
-      await this.invalidateUserCache(result.data.targetUser.id!);
-      for (const user of result.data.affectedUsers) {
-        await this.invalidateUserCache(user.id!);
-      }
-    }
-
-    return result;
+    return this.operations.unbanUsersByIp(username, unbannedByUserId);
   }
 
   async checkIpBanned(ipAddress: string): Promise<{
@@ -490,6 +252,6 @@ export class UserCacheService implements UserServiceInterface {
     bannedBy?: string;
     bannedAt?: Date;
   }> {
-    return this.userService.checkIpBanned(ipAddress);
+    return this.delegates.checkIpBanned(ipAddress);
   }
 }
