@@ -166,32 +166,9 @@ export class UserCacheQueries extends UserCacheCore {
   }
 
   async getUserByUsernameForAdmin(username: string): Promise<any> {
-    try {
-      // Check cache first using username
-      const cachedUserId = await this.getUserIdFromUsernameCache(username);
-      if (cachedUserId) {
-        const cachedUser = await this.getUserFromCache(cachedUserId);
-        if (cachedUser) {
-          return cachedUser;
-        }
-      }
-
-      // If not in cache, get from database service
-      const user = await this.userService.getUserByUsernameForAdmin(username);
-      if (user) {
-        // For admin responses, we don't cache them as they contain sensitive data
-        // Just return the response directly
-      }
-
-      return user;
-    } catch (error) {
-      console.error(
-        'Error getting user by username for admin from cache:',
-        error
-      );
-      // Fallback to database service
-      return this.userService.getUserByUsernameForAdmin(username);
-    }
+    // For admin responses, always bypass cache and go directly to the admin service
+    // This ensures proper resolution of user IDs to usernames and handles sensitive data correctly
+    return await this.userService.getUserByUsernameForAdmin(username);
   }
 
   async getAllUsers(): Promise<{
