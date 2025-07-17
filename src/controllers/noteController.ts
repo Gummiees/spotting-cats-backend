@@ -101,7 +101,7 @@ export class NoteController {
       if (!user) {
         return ResponseUtil.notFound(res, 'User not found');
       }
-      const notes = await noteService.getByForUserId(user.id!);
+      const notes = await noteService.getByForUserIdWithUsernames(user.id!);
       ResponseUtil.success(res, notes, 'Notes retrieved');
     } catch (err) {
       next(err);

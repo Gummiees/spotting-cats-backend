@@ -544,6 +544,42 @@ const swaggerOptions: Options = {
             },
           },
         },
+        NoteResponse: {
+          type: 'object',
+          description:
+            'Note response with resolved usernames instead of user IDs',
+          properties: {
+            id: {
+              type: 'string',
+              example: '507f1f77bcf86cd799439011',
+            },
+            forUser: {
+              type: 'string',
+              description: 'Username of the user the note is for',
+              example: 'john_doe',
+            },
+            byUser: {
+              type: 'string',
+              description: 'Username of the user who created the note',
+              example: 'admin_user',
+            },
+            note: {
+              type: 'string',
+              description: 'The note content',
+              example: 'User has been reported for inappropriate behavior',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'When the note was created',
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'When the note was last updated (optional)',
+            },
+          },
+        },
         HealthStatus: {
           type: 'object',
           properties: {

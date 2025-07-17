@@ -1,4 +1,4 @@
-import { Note, NoteFilters } from '@/models/note';
+import { Note, NoteFilters, NoteResponse } from '@/models/note';
 
 export interface INoteService {
   // CRUD operations
@@ -18,4 +18,29 @@ export interface INoteService {
     userId2: string,
     filters?: NoteFilters
   ): Promise<Note[]>;
+
+  // Response methods with resolved usernames
+  getAllWithUsernames(filters?: NoteFilters): Promise<NoteResponse[]>;
+  getByIdWithUsernames(id: string): Promise<NoteResponse | null>;
+  getByForUserIdWithUsernames(
+    forUserId: string,
+    filters?: NoteFilters
+  ): Promise<NoteResponse[]>;
+  getByFromUserIdWithUsernames(
+    fromUserId: string,
+    filters?: NoteFilters
+  ): Promise<NoteResponse[]>;
+  getNotesForUserWithUsernames(
+    userId: string,
+    filters?: NoteFilters
+  ): Promise<NoteResponse[]>;
+  getNotesFromUserWithUsernames(
+    userId: string,
+    filters?: NoteFilters
+  ): Promise<NoteResponse[]>;
+  getNotesBetweenUsersWithUsernames(
+    userId1: string,
+    userId2: string,
+    filters?: NoteFilters
+  ): Promise<NoteResponse[]>;
 }

@@ -1,5 +1,5 @@
 import { connectToRedis, isRedisConfigured } from '@/utils/redis';
-import { Note, NoteFilters } from '@/models/note';
+import { Note, NoteFilters, NoteResponse } from '@/models/note';
 import { NoteDatabaseService } from './noteDatabaseService';
 
 export class NoteCacheService extends NoteDatabaseService {
@@ -248,6 +248,51 @@ export class NoteCacheService extends NoteDatabaseService {
     }
 
     return notes;
+  }
+
+  // Response methods with resolved usernames
+  async getAllWithUsernames(filters?: NoteFilters): Promise<NoteResponse[]> {
+    return super.getAllWithUsernames(filters);
+  }
+
+  async getByIdWithUsernames(id: string): Promise<NoteResponse | null> {
+    return super.getByIdWithUsernames(id);
+  }
+
+  async getByForUserIdWithUsernames(
+    forUserId: string,
+    filters?: NoteFilters
+  ): Promise<NoteResponse[]> {
+    return super.getByForUserIdWithUsernames(forUserId, filters);
+  }
+
+  async getByFromUserIdWithUsernames(
+    fromUserId: string,
+    filters?: NoteFilters
+  ): Promise<NoteResponse[]> {
+    return super.getByFromUserIdWithUsernames(fromUserId, filters);
+  }
+
+  async getNotesForUserWithUsernames(
+    userId: string,
+    filters?: NoteFilters
+  ): Promise<NoteResponse[]> {
+    return super.getNotesForUserWithUsernames(userId, filters);
+  }
+
+  async getNotesFromUserWithUsernames(
+    userId: string,
+    filters?: NoteFilters
+  ): Promise<NoteResponse[]> {
+    return super.getNotesFromUserWithUsernames(userId, filters);
+  }
+
+  async getNotesBetweenUsersWithUsernames(
+    userId1: string,
+    userId2: string,
+    filters?: NoteFilters
+  ): Promise<NoteResponse[]> {
+    return super.getNotesBetweenUsersWithUsernames(userId1, userId2, filters);
   }
 
   private async invalidateNoteCache(id: string): Promise<void> {

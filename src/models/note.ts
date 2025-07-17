@@ -9,6 +9,15 @@ export interface Note {
   updatedAt?: Date; // DateTime
 }
 
+export interface NoteResponse {
+  id: string;
+  forUser: string; // Username of the user the note is for
+  byUser: string; // Username of the user who created the note
+  note: string;
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
 export interface CreateNote {
   forUserId: string;
   fromUserId: string;

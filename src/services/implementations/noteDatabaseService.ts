@@ -4,9 +4,11 @@ import {
   Note,
   NoteFilters,
   NoteWithObjectId,
+  NoteResponse,
   createNoteWithDefaults,
 } from '@/models/note';
 import { INoteService } from '@/services/interfaces/noteServiceInterface';
+import { userService } from '@/services/userService';
 
 export class NoteDatabaseService implements INoteService {
   private collection: Collection<NoteWithObjectId>;
@@ -247,5 +249,86 @@ export class NoteDatabaseService implements INoteService {
       console.error('Error getting notes between users:', error);
       throw new Error('Failed to get notes between users');
     }
+  }
+
+  // Helper method to resolve user ID to username
+  private async resolveUserIdToUsername(userId: string): Promise<string> {
+    try {
+      const user = await userService.getUserById(userId);
+      return user?.username || 'Unknown User';
+    } catch (error) {
+      console.error('Error resolving user ID to username:', error);
+      return 'Unknown User';
+    }
+  }
+
+  // Helper method to map Note to NoteResponse
+  private async mapNoteToResponse(note: Note): Promise<NoteResponse> {
+    const [forUser, byUser] = await Promise.all([
+      this.resolveUserIdToUsername(note.forUserId),
+      this.resolveUserIdToUsername(note.fromUserId),
+    ]);
+
+    return {
+      id: note.id!,
+      forUser,
+      byUser,
+      note: note.note,
+      createdAt: note.createdAt,
+      updatedAt: note.updatedAt,
+    };
+  }
+
+  // Response methods with resolved usernames
+  async getAllWithUsernames(filters?: NoteFilters): Promise<NoteResponse[]> {
+    const notes = await this.getAll(filters);
+    return Promise.all(notes.map((note) => this.mapNoteToResponse(note)));
+  }
+
+  async getByIdWithUsernames(id: string): Promise<NoteResponse | null> {
+    const note = await this.getById(id);
+    if (!note) return null;
+    return this.mapNoteToResponse(note);
+  }
+
+  async getByForUserIdWithUsernames(
+    forUserId: string,
+    filters?: NoteFilters
+  ): Promise<NoteResponse[]> {
+    const notes = await this.getByForUserId(forUserId, filters);
+    return Promise.all(notes.map((note) => this.mapNoteToResponse(note)));
+  }
+
+  async getByFromUserIdWithUsernames(
+    fromUserId: string,
+    filters?: NoteFilters
+  ): Promise<NoteResponse[]> {
+    const notes = await this.getByFromUserId(fromUserId, filters);
+    return Promise.all(notes.map((note) => this.mapNoteToResponse(note)));
+  }
+
+  async getNotesForUserWithUsernames(
+    userId: string,
+    filters?: NoteFilters
+  ): Promise<NoteResponse[]> {
+    const notes = await this.getNotesForUser(userId, filters);
+    return Promise.all(notes.map((note) => this.mapNoteToResponse(note)));
+  }
+
+  async getNotesFromUserWithUsernames(
+    userId: string,
+    filters?: NoteFilters
+  ): Promise<NoteResponse[]> {
+    const notes = await this.getNotesFromUser(userId, filters);
+    return Promise.all(notes.map((note) => this.mapNoteToResponse(note)));
+  }
+
+  async getNotesBetweenUsersWithUsernames(
+    userId1: string,
+    userId2: string,
+    filters?: NoteFilters
+  ): Promise<NoteResponse[]> {
+    const notes = await this.getNotesBetweenUsers(userId1, userId2, filters);
+    return Promise.all(notes.map((note) => this.mapNoteToResponse(note)));
   }
 }

@@ -270,7 +270,7 @@ router.delete(
  *                 data:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/Note'
+ *                     $ref: '#/components/schemas/NoteResponse'
  *                 message:
  *                   type: string
  *                   example: "Notes retrieved"
