@@ -348,7 +348,7 @@ export class UserCacheService implements UserServiceInterface {
   async checkEmailAvailability(
     email: string,
     excludeUserId?: string
-  ): Promise<{ available: boolean; message: string }> {
+  ): Promise<{ available: boolean; message: string; statusCode?: string }> {
     // For availability checks, we go directly to the database service
     // since these are real-time checks and don't benefit from caching
     return this.userService.checkEmailAvailability(email, excludeUserId);

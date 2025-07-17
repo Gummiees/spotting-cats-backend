@@ -24,17 +24,6 @@ export class UserEmailService {
         return { success: false, message: 'User not found' };
       }
 
-      // Compare encrypted emails instead of decrypting
-      const normalizedNewEmail = this.utilityService.normalizeEmail(newEmail);
-      const encryptedNewEmail = encryptEmail(normalizedNewEmail);
-      if (dbUser.email === encryptedNewEmail) {
-        return {
-          success: false,
-          message: 'New email must be different from current email',
-          errorCode: 'EMAIL_SAME_AS_CURRENT',
-        };
-      }
-
       // Check rate limiting for email change verification code requests
       const rateLimitCheck = await this.checkEmailChangeRateLimit(userId);
       if (!rateLimitCheck.allowed) {
@@ -55,13 +44,18 @@ export class UserEmailService {
         };
       }
 
-      // Check if new email is available by comparing encrypted emails
-      const isAvailable = await this.checkEmailAvailability(
-        encryptedNewEmail,
+      // Check if new email is available
+      const normalizedNewEmail = this.utilityService.normalizeEmail(newEmail);
+      const availabilityCheck = await this.checkEmailAvailability(
+        normalizedNewEmail,
         userId
       );
-      if (!isAvailable) {
-        return { success: false, message: 'Email is already in use' };
+      if (!availabilityCheck.available) {
+        return {
+          success: false,
+          message: availabilityCheck.message,
+          errorCode: availabilityCheck.statusCode,
+        };
       }
 
       const code = this.utilityService.generateVerificationCode();
@@ -162,16 +156,33 @@ export class UserEmailService {
   async checkEmailAvailability(
     email: string,
     excludeUserId?: string
-  ): Promise<{ available: boolean; message: string }> {
+  ): Promise<{ available: boolean; message: string; statusCode?: string }> {
     try {
       if (!this.utilityService.isValidEmail(email)) {
         return {
           available: false,
           message: 'Invalid email format',
+          statusCode: 'INVALID_EMAIL_FORMAT',
         };
       }
 
       const normalizedEmail = this.utilityService.normalizeEmail(email);
+
+      // If excludeUserId is provided, check if the email is the same as the current user's email
+      if (excludeUserId) {
+        const currentUser = await this.dbOps.findUserById(excludeUserId);
+        if (currentUser) {
+          const encryptedNormalizedEmail = encryptEmail(normalizedEmail);
+          if (currentUser.email === encryptedNormalizedEmail) {
+            return {
+              available: false,
+              message: 'Email is the same as your current email',
+              statusCode: 'EMAIL_SAME_AS_CURRENT',
+            };
+          }
+        }
+      }
+
       const isAvailable = !(await this.dbOps.checkEmailExists(
         normalizedEmail,
         excludeUserId
@@ -180,12 +191,14 @@ export class UserEmailService {
       return {
         available: isAvailable,
         message: isAvailable ? 'Email is available' : 'Email is already in use',
+        statusCode: isAvailable ? undefined : 'EMAIL_ALREADY_IN_USE',
       };
     } catch (error) {
       console.error('Error checking email availability:', error);
       return {
         available: false,
         message: 'Error checking email availability',
+        statusCode: 'INTERNAL_ERROR',
       };
     }
   }

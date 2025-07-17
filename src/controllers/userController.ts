@@ -835,6 +835,7 @@ export class UserController {
         {
           available: result.available,
           message: result.message,
+          statusCode: result.statusCode,
         },
         result.message
       );

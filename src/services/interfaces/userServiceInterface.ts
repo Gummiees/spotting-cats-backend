@@ -98,7 +98,7 @@ export interface UserServiceInterface {
   checkEmailAvailability(
     email: string,
     excludeUserId?: string
-  ): Promise<{ available: boolean; message: string }>;
+  ): Promise<{ available: boolean; message: string; statusCode?: string }>;
 
   // Cleanup methods for deactivated users
   cleanupOldDeactivatedUsers(retentionDays: number): Promise<{

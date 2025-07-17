@@ -293,7 +293,7 @@ export class UserDatabaseService implements UserServiceInterface {
   async checkEmailAvailability(
     email: string,
     excludeUserId?: string
-  ): Promise<{ available: boolean; message: string }> {
+  ): Promise<{ available: boolean; message: string; statusCode?: string }> {
     return this.emailService.checkEmailAvailability(email, excludeUserId);
   }
 
