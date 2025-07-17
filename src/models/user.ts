@@ -4,7 +4,6 @@ export type UserRole = 'user' | 'moderator' | 'admin' | 'superadmin';
 
 export interface User {
   id?: string;
-  email: string;
   username: string;
   avatarUrl: string;
   role: UserRole;
@@ -26,7 +25,6 @@ export interface User {
 }
 
 export interface CreateUser {
-  email: string;
   username: string;
   avatarUrl: string;
   role?: UserRole;
@@ -110,7 +108,6 @@ export function createUserWithDefaults(
   const createdAt = userData.createdAt ?? new Date();
   return {
     ...userData,
-    email: userData.email!,
     username: userData.username!,
     avatarUrl: userData.avatarUrl!,
     role: userData.role ?? 'user',

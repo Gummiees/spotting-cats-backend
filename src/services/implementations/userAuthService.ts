@@ -104,7 +104,9 @@ export class UserAuthService {
       );
 
       // Step 4: Generate authentication token
-      const token = this.utilityService.generateTokenForUser(mappedUser);
+      const token = this.utilityService.generateTokenFromDbUser(
+        userResult.user!
+      );
 
       return {
         success: true,
@@ -142,7 +144,8 @@ export class UserAuthService {
           return { shouldRefresh: false };
         }
 
-        const newToken = this.utilityService.generateTokenForUser(user);
+        // Generate new token
+        const newToken = this.utilityService.generateTokenFromDbUser(user);
         return { shouldRefresh: true, newToken };
       }
 

@@ -19,15 +19,15 @@ export class UserEmailService {
         return { success: false, message: 'Invalid email format' };
       }
 
-      const currentUser = await this.getUserById(userId);
-      if (!currentUser) {
+      const dbUser = await this.dbOps.findUserById(userId);
+      if (!dbUser) {
         return { success: false, message: 'User not found' };
       }
 
       // Compare encrypted emails instead of decrypting
       const normalizedNewEmail = this.utilityService.normalizeEmail(newEmail);
       const encryptedNewEmail = encryptEmail(normalizedNewEmail);
-      if (currentUser.email === encryptedNewEmail) {
+      if (dbUser.email === encryptedNewEmail) {
         return {
           success: false,
           message: 'New email must be different from current email',
@@ -45,6 +45,8 @@ export class UserEmailService {
         };
       }
 
+      // Map to User object for eligibility check
+      const currentUser = this.utilityService.mapUserToResponse(dbUser);
       const eligibility = await this.checkEmailUpdateEligibility(currentUser);
       if (!eligibility.eligible) {
         return {
@@ -136,8 +138,13 @@ export class UserEmailService {
         };
       }
 
-      // Generate new JWT token with updated email
-      const newToken = this.utilityService.generateTokenForUser(updatedUser);
+      // Generate new token for the updated user
+      const dbUser = await this.dbOps.findUserById(userId);
+      if (!dbUser) {
+        return { success: false, message: 'Failed to retrieve updated user' };
+      }
+
+      const newToken = this.utilityService.generateTokenFromDbUser(dbUser);
 
       await this.dbOps.cleanupEmailChangeRequest(userId);
 

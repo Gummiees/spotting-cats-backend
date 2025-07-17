@@ -1,7 +1,8 @@
-import { UserServiceInterface } from '@/services/interfaces/userServiceInterface';
-import { User, UserSession, PublicUser } from '@/models/user';
+import { User, PublicUser, UserSession } from '@/models/user';
+import { UserServiceInterface } from '../interfaces/userServiceInterface';
 import { UserUpdateRequest } from '@/models/requests';
 import { getRedisClient } from '@/utils/redis';
+import { encryptEmail } from '@/utils/security';
 
 export class UserCacheService implements UserServiceInterface {
   private userService: UserServiceInterface;
@@ -134,16 +135,21 @@ export class UserCacheService implements UserServiceInterface {
 
   async getUserByEmail(email: string): Promise<User | null> {
     try {
-      // Try to get user ID from email cache first
-      const userId = await this.getUserIdFromEmailCache(email);
-      if (userId) {
-        return await this.getUserById(userId);
+      // Check cache first using encrypted email
+      const cachedUserId = await this.getUserIdFromEmailCache(email);
+      if (cachedUserId) {
+        const cachedUser = await this.getUserFromCache(cachedUserId);
+        if (cachedUser) {
+          return cachedUser;
+        }
       }
 
-      // If not in cache, get from database
+      // If not in cache, get from database service
       const user = await this.userService.getUserByEmail(email);
       if (user) {
-        await this.cacheUserData(user);
+        // Cache the user data with encrypted email
+        const encryptedEmail = encryptEmail(email);
+        await this.cacheUserData(user, encryptedEmail);
       }
 
       return user;
@@ -305,6 +311,11 @@ export class UserCacheService implements UserServiceInterface {
     return result;
   }
 
+  // Cache helper method to get raw database user with encrypted email
+  async getDbUserById(userId: string): Promise<any> {
+    return this.userService.getDbUserById(userId);
+  }
+
   async initiateEmailChange(
     userId: string,
     newEmail: string
@@ -416,17 +427,22 @@ export class UserCacheService implements UserServiceInterface {
   }
 
   // Cache management methods
-  private async cacheUserData(user: User): Promise<void> {
+  private async cacheUserData(
+    user: User,
+    encryptedEmail?: string
+  ): Promise<void> {
     try {
       const redisClient = getRedisClient();
       const userKey = `${this.USER_CACHE_PREFIX}${user.id}`;
-      const emailKey = `${this.USER_EMAIL_CACHE_PREFIX}${user.email}`;
 
       // Cache user data
       await redisClient.setEx(userKey, this.CACHE_TTL, JSON.stringify(user));
 
-      // Cache email to user ID mapping
-      await redisClient.setEx(emailKey, this.CACHE_TTL, user.id!);
+      // Cache encrypted email to user ID mapping if provided
+      if (encryptedEmail) {
+        const emailKey = `${this.USER_EMAIL_CACHE_PREFIX}${encryptedEmail}`;
+        await redisClient.setEx(emailKey, this.CACHE_TTL, user.id!);
+      }
     } catch (error) {
       console.error('Error caching user data:', error);
     }
@@ -452,7 +468,8 @@ export class UserCacheService implements UserServiceInterface {
   private async getUserIdFromEmailCache(email: string): Promise<string | null> {
     try {
       const redisClient = getRedisClient();
-      const emailKey = `${this.USER_EMAIL_CACHE_PREFIX}${email}`;
+      const encryptedEmail = encryptEmail(email);
+      const emailKey = `${this.USER_EMAIL_CACHE_PREFIX}${encryptedEmail}`;
       return await redisClient.get(emailKey);
     } catch (error) {
       console.error('Error getting user ID from email cache:', error);
@@ -463,14 +480,16 @@ export class UserCacheService implements UserServiceInterface {
   private async invalidateUserCache(userId: string): Promise<void> {
     try {
       const redisClient = getRedisClient();
-      // Get user data to find email for invalidation
-      const user = await this.userService.getUserById(userId);
-      if (user) {
-        const userKey = `${this.USER_CACHE_PREFIX}${userId}`;
-        const emailKey = `${this.USER_EMAIL_CACHE_PREFIX}${user.email}`;
+      const userKey = `${this.USER_CACHE_PREFIX}${userId}`;
 
-        // Delete both user data and email mapping
-        await redisClient.del(userKey);
+      // Delete user data cache
+      await redisClient.del(userKey);
+
+      // Get database user to find encrypted email for cache invalidation
+      const dbUser = await this.userService.getDbUserById(userId);
+      if (dbUser && dbUser.email) {
+        // Delete email cache using the encrypted email
+        const emailKey = `${this.USER_EMAIL_CACHE_PREFIX}${dbUser.email}`;
         await redisClient.del(emailKey);
       }
     } catch (error) {

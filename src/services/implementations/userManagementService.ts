@@ -76,7 +76,11 @@ export class UserManagementService {
       if (shouldRegenerateToken) {
         updatedUser = await this.getUserById(userId);
         if (updatedUser) {
-          newToken = this.utilityService.generateTokenForUser(updatedUser);
+          // Get the database user object for token generation
+          const dbUser = await this.dbOps.findUserById(userId);
+          if (dbUser) {
+            newToken = this.utilityService.generateTokenFromDbUser(dbUser);
+          }
         }
       }
 
@@ -120,12 +124,12 @@ export class UserManagementService {
       }
 
       // Generate new token for the updated user
-      const updatedUser = await this.getUserById(userId);
-      if (!updatedUser) {
+      const dbUser = await this.dbOps.findUserById(userId);
+      if (!dbUser) {
         return { success: false, message: 'Failed to retrieve updated user' };
       }
 
-      const newToken = this.utilityService.generateTokenForUser(updatedUser);
+      const newToken = this.utilityService.generateTokenFromDbUser(dbUser);
 
       return {
         success: true,
@@ -343,25 +347,22 @@ export class UserManagementService {
     userId: string
   ): Promise<{ success: boolean; message: string }> {
     try {
-      // Get user details before deactivation
-      const user = await this.getUserById(userId);
-      if (!user) {
+      const dbUser = await this.dbOps.findUserById(userId);
+      if (!dbUser) {
         return { success: false, message: 'User not found' };
       }
 
-      // Deactivate the user
       const result = await this.updateUser(userId, { isActive: false });
 
       if (result.success) {
-        // Send deactivation email
         try {
+          const decryptedEmail = decryptEmail(dbUser.email);
           await emailService.sendAccountDeactivationEmail(
-            user.email,
-            user.username
+            decryptedEmail,
+            dbUser.username
           );
         } catch (emailError) {
           console.error('Failed to send deactivation email:', emailError);
-          // Don't fail the deactivation if email fails
         }
       }
 

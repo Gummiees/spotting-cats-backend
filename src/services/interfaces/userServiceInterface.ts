@@ -87,6 +87,9 @@ export interface UserServiceInterface {
     updatedCount?: number;
   }>;
 
+  // Cache helper method to get raw database user with encrypted email
+  getDbUserById(userId: string): Promise<any>;
+
   // Validation methods
   checkUsernameAvailability(
     username: string,

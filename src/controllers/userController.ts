@@ -16,7 +16,7 @@ import {
 } from '@/models/requests';
 import { isValidDiceBearUrl } from '@/utils/avatar';
 import { config } from '@/config';
-import { getClientIp } from '@/utils/security';
+import { getClientIp, decryptEmail } from '@/utils/security';
 
 export class UserController {
   static async sendVerificationCode(
@@ -996,26 +996,33 @@ export class UserController {
         }
       }
 
+      // Check superadmin users against whitelist
       for (const user of superadminUsers) {
-        const userEmail = user.email.toLowerCase();
-        const isInSuperadminWhitelist =
-          config.admin.superadminEmailWhitelist.includes(userEmail);
+        // Get database user to access encrypted email
+        const dbUser = await userService.getDbUserById(user.id!);
+        if (dbUser && dbUser.email) {
+          // Decrypt email for whitelist comparison
+          const decryptedEmail = decryptEmail(dbUser.email);
+          const userEmail = decryptedEmail.toLowerCase();
+          const isInSuperadminWhitelist =
+            config.admin.superadminEmailWhitelist.includes(userEmail);
 
-        if (!isInSuperadminWhitelist) {
-          const result = await userService.updateUserRole(
-            user.id!,
-            'user',
-            'system-whitelist-update'
-          );
+          if (!isInSuperadminWhitelist) {
+            const result = await userService.updateUserRole(
+              user.id!,
+              'user',
+              'system-whitelist-update'
+            );
 
-          updates.push({
-            email: userEmail,
-            previousRole: user.role,
-            newRole: 'user',
-            updated: result.success,
-            userFound: true,
-            action: 'demoted',
-          });
+            updates.push({
+              email: userEmail,
+              previousRole: user.role,
+              newRole: 'user',
+              updated: result.success,
+              userFound: true,
+              action: 'demoted',
+            });
+          }
         }
       }
 

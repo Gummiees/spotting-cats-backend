@@ -86,9 +86,15 @@ export class UserUtilityService {
     return `${baseUsername}${randomSuffix}`;
   }
 
-  // Token methods
-  generateTokenForUser(user: User): string {
-    return this.createToken(user.id!, user.email, user.username, user.role);
+  generateTokenFromDbUser(dbUser: any): string {
+    // Decrypt email only for JWT token generation
+    const decryptedEmail = decryptEmail(dbUser.email);
+    return this.createToken(
+      dbUser._id.toString(),
+      decryptedEmail,
+      dbUser.username,
+      dbUser.role
+    );
   }
 
   createToken(
@@ -130,7 +136,6 @@ export class UserUtilityService {
   mapUserToResponse(user: any): User {
     return {
       id: user._id.toString(),
-      email: decryptEmail(user.email), // Decrypt email when returning to client
       isActive: user.isActive,
       isBanned: user.isBanned || false,
       createdAt: user.createdAt,

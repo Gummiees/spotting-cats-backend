@@ -380,6 +380,11 @@ export class UserDatabaseService implements UserServiceInterface {
     return this.managementService.ensureAllUsersHaveAvatars();
   }
 
+  // Cache helper method to get raw database user with encrypted email
+  async getDbUserById(userId: string): Promise<any> {
+    return this.dbOps.findUserById(userId);
+  }
+
   // Private helper methods
   private async resolveUserIdToUsername(
     userId: string
