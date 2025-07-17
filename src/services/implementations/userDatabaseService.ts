@@ -321,6 +321,7 @@ export class UserDatabaseService implements UserServiceInterface {
       affectedUsers: User[];
       bannedIps: string[];
       totalBanned: number;
+      iterations?: number;
     };
   }> {
     return this.ipBanService.banUsersByIp(username, reason, bannedByUserId);
@@ -337,6 +338,7 @@ export class UserDatabaseService implements UserServiceInterface {
       affectedUsers: User[];
       unbannedIps: string[];
       totalUnbanned: number;
+      iterations?: number;
     };
   }> {
     return this.ipBanService.unbanUsersByIp(username, unbannedByUserId);

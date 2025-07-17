@@ -33,6 +33,7 @@ export class UserIpBanService {
       protectedUsers?: User[];
       bannedIps: string[];
       totalBanned: number;
+      iterations?: number;
     };
   }> {
     try {
@@ -60,15 +61,14 @@ export class UserIpBanService {
         };
       }
 
-      // Get IP addresses and find affected users (already hashed in DB)
+      // Get IP addresses and find initial affected users (already hashed in DB)
       const targetIps = this.queryService.getTargetUserIps(targetUser);
-      const allAffectedUsers = await this.queryService.findUsersByIpAddresses(
-        targetIps
-      );
+      const initialAffectedUsers =
+        await this.queryService.findUsersByIpAddresses(targetIps);
 
-      // Validate role hierarchy
+      // Validate role hierarchy for initial users
       const validation = await this.validationService.validateIpBanOperation(
-        allAffectedUsers,
+        initialAffectedUsers,
         banningUser
       );
       if (!validation.canProceed) {
@@ -78,13 +78,15 @@ export class UserIpBanService {
         };
       }
 
-      // Execute the ban operation
-      const operationResult = await this.operationsService.executeIpBan(
-        allAffectedUsers,
-        targetIps,
-        reason,
-        bannedByUserId
-      );
+      // Execute the comprehensive ban operation
+      const operationResult =
+        await this.operationsService.executeComprehensiveIpBan(
+          initialAffectedUsers,
+          targetIps,
+          reason,
+          bannedByUserId,
+          this.queryService
+        );
 
       if (!operationResult.success) {
         return {
@@ -108,6 +110,7 @@ export class UserIpBanService {
           ),
           bannedIps: operationResult.data!.bannedIps,
           totalBanned: operationResult.data!.totalBanned,
+          iterations: operationResult.data!.iterations,
         },
       };
     } catch (error) {
@@ -130,6 +133,7 @@ export class UserIpBanService {
       affectedUsers: User[];
       unbannedIps: string[];
       totalUnbanned: number;
+      iterations?: number;
     };
   }> {
     try {
@@ -144,16 +148,18 @@ export class UserIpBanService {
         };
       }
 
-      // Get IP addresses and find affected users (already hashed in DB)
+      // Get IP addresses and find initial affected users (already hashed in DB)
       const targetIps = this.queryService.getTargetUserIps(targetUser);
-      const affectedUsers =
+      const initialAffectedUsers =
         await this.queryService.findUsersByIpAddressesAndBanReason(targetIps);
 
-      // Execute the unban operation
-      const operationResult = await this.operationsService.executeIpUnban(
-        affectedUsers,
-        targetIps
-      );
+      // Execute the comprehensive unban operation
+      const operationResult =
+        await this.operationsService.executeComprehensiveIpUnban(
+          initialAffectedUsers,
+          targetIps,
+          this.queryService
+        );
 
       if (!operationResult.success) {
         return {
@@ -174,6 +180,7 @@ export class UserIpBanService {
           affectedUsers: operationResult.data!.affectedUsers,
           unbannedIps: operationResult.data!.unbannedIps,
           totalUnbanned: operationResult.data!.totalUnbanned,
+          iterations: operationResult.data!.iterations,
         },
       };
     } catch (error) {

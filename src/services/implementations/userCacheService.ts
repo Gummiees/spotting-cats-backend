@@ -563,6 +563,7 @@ export class UserCacheService implements UserServiceInterface {
       affectedUsers: User[];
       bannedIps: string[];
       totalBanned: number;
+      iterations?: number;
     };
   }> {
     const result = await this.userService.banUsersByIp(
@@ -593,6 +594,7 @@ export class UserCacheService implements UserServiceInterface {
       affectedUsers: User[];
       unbannedIps: string[];
       totalUnbanned: number;
+      iterations?: number;
     };
   }> {
     const result = await this.userService.unbanUsersByIp(

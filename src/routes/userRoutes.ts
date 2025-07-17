@@ -865,14 +865,23 @@ router.post(
  * @swagger
  * /api/v1/users/ban-ip:
  *   post:
- *     summary: Ban all users from the same IP addresses as the target user (Admin/Superadmin only)
+ *     summary: Comprehensively ban all users connected by IP addresses (Admin/Superadmin only)
  *     description: |
- *       Ban all users sharing IP addresses with the target user, with role hierarchy protection:
+ *       Recursively ban all users connected by IP addresses, with role hierarchy protection:
+ *       1. Starts with the target user's IP addresses
+ *       2. Bans all users sharing those IPs (respecting role hierarchy)
+ *       3. Finds all IP addresses from those newly banned users
+ *       4. Repeats the process recursively until no more connected users are found
+ *       5. Includes safety limits to prevent infinite loops (max 10 iterations)
+ *
+ *       Role hierarchy protection:
  *       - **Superadmins** can ban users, moderators, and admins (but not other superadmins)
  *       - **Admins** can ban users and moderators (but not admins or superadmins)
  *       - **Moderators** can only ban users (but not moderators, admins, or superadmins)
  *       - If any user with an equal or higher role shares the same IP, the entire operation is blocked
- *       - TODO: Future enhancement will include more complex role hierarchy rules
+ *
+ *       This ensures that when you ban by IP, you ban the entire connected network
+ *       of users, not just those sharing the initial IPs.
  *     tags: [Admin]
  *     security:
  *       - cookieAuth: []
@@ -896,11 +905,44 @@ router.post(
  *                 description: Reason for banning the IP addresses
  *     responses:
  *       200:
- *         description: IP ban successful (some users may be protected by role hierarchy)
+ *         description: Comprehensive IP ban successful (some users may be protected by role hierarchy)
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/IpBanResponse'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     targetUser:
+ *                       $ref: '#/components/schemas/PublicUser'
+ *                     affectedUsers:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/PublicUser'
+ *                       description: All users that were banned in the comprehensive operation
+ *                     protectedUsers:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/PublicUser'
+ *                       description: Users protected by role hierarchy (if any)
+ *                     bannedIps:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       description: All IP addresses that were banned
+ *                     totalBanned:
+ *                       type: number
+ *                       description: Total number of users banned
+ *                     iterations:
+ *                       type: number
+ *                       description: Number of recursive iterations performed
+ *                 message:
+ *                   type: string
+ *                   example: "Successfully banned 5 users from 3 IP addresses in 2 iterations"
  *       400:
  *         description: |
  *           Invalid request:
@@ -937,7 +979,17 @@ router.post(
  * @swagger
  * /api/v1/users/unban-ip:
  *   post:
- *     summary: Unban all users from the same IP addresses as the target user (Admin/Superadmin only)
+ *     summary: Comprehensively unban all users connected by IP addresses (Admin/Superadmin only)
+ *     description: |
+ *       Recursively unban all users connected by IP addresses. This operation:
+ *       1. Starts with the target user's IP addresses
+ *       2. Unbans all users sharing those IPs who were banned due to IP ban
+ *       3. Finds all IP addresses from those newly unbanned users
+ *       4. Repeats the process recursively until no more connected users are found
+ *       5. Includes safety limits to prevent infinite loops (max 10 iterations)
+ *
+ *       This ensures that when you unban by IP, you unban the entire connected network
+ *       of users who were banned together, not just those sharing the initial IPs.
  *     tags: [Admin]
  *     security:
  *       - cookieAuth: []
@@ -956,11 +1008,39 @@ router.post(
  *                 description: Username of the user whose IP addresses will be unbanned
  *     responses:
  *       200:
- *         description: IP unban successful
+ *         description: Comprehensive IP unban successful
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/IpUnbanResponse'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     targetUser:
+ *                       $ref: '#/components/schemas/PublicUser'
+ *                     affectedUsers:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/PublicUser'
+ *                       description: All users that were unbanned in the comprehensive operation
+ *                     unbannedIps:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       description: All IP addresses that were unbanned
+ *                     totalUnbanned:
+ *                       type: number
+ *                       description: Total number of users unbanned
+ *                     iterations:
+ *                       type: number
+ *                       description: Number of recursive iterations performed
+ *                 message:
+ *                   type: string
+ *                   example: "Successfully unbanned 5 users from 3 IP addresses in 2 iterations"
  *       400:
  *         description: Invalid request, missing username, user not found, or no IP addresses to unban
  *         content:

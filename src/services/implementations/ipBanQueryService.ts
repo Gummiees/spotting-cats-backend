@@ -86,4 +86,13 @@ export class IpBanQueryService {
   getTargetUserIps(targetUser: any): string[] {
     return targetUser.ipAddresses || [];
   }
+
+  /**
+   * Finds all IP addresses from a set of users
+   * @param userIds - Array of user IDs
+   * @returns Array of unique IP addresses
+   */
+  async findIpAddressesFromUsers(userIds: string[]): Promise<string[]> {
+    return await this.dbOps.findIpAddressesFromUsers(userIds);
+  }
 }

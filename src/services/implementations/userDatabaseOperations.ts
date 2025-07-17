@@ -76,6 +76,25 @@ export class UserDatabaseOperations {
       .toArray();
   }
 
+  /**
+   * Finds all IP addresses from a set of users
+   * @param userIds - Array of user IDs
+   * @returns Array of unique IP addresses
+   */
+  async findIpAddressesFromUsers(userIds: string[]): Promise<string[]> {
+    const objectIds = userIds.map((id) => this.createObjectId(id));
+    const users = await this.usersCollection
+      .find({ _id: { $in: objectIds } }, { projection: { ipAddresses: 1 } })
+      .toArray();
+
+    // Extract and flatten all IP addresses, then remove duplicates
+    const allIps = users
+      .flatMap((user) => user.ipAddresses || [])
+      .filter((ip) => ip); // Remove null/undefined values
+
+    return [...new Set(allIps)]; // Remove duplicates
+  }
+
   async findDeactivatedUsersBefore(cutoffDate: Date): Promise<any[]> {
     return this.usersCollection
       .find({

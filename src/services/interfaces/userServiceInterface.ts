@@ -138,6 +138,7 @@ export interface UserServiceInterface {
       affectedUsers: User[];
       unbannedIps: string[];
       totalUnbanned: number;
+      iterations?: number;
     };
   }>;
   checkIpBanned(ipAddress: string): Promise<{
