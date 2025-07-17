@@ -73,16 +73,6 @@ export class UserCacheService implements UserServiceInterface {
     return this.queries.getUserByIdWithResolvedUsernames(userId);
   }
 
-  async getUserByIdWithPrivileges(
-    userId: string,
-    includePrivilegedData: boolean
-  ): Promise<User | null> {
-    return this.queries.getUserByIdWithPrivileges(
-      userId,
-      includePrivilegedData
-    );
-  }
-
   async getBasicUserById(userId: string): Promise<BasicUser | null> {
     return this.queries.getBasicUserById(userId);
   }

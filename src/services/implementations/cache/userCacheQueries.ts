@@ -56,40 +56,6 @@ export class UserCacheQueries extends UserCacheCore {
     }
   }
 
-  async getUserByIdWithPrivileges(
-    userId: string,
-    includePrivilegedData: boolean
-  ): Promise<User | null> {
-    try {
-      // Try to get from cache first
-      const cachedUser = await this.getUserFromCache(userId);
-      if (cachedUser) {
-        return cachedUser;
-      }
-
-      // If not in cache, get from database
-      const user = await this.userService.getUserByIdWithPrivileges(
-        userId,
-        includePrivilegedData
-      );
-      if (user) {
-        await this.cacheUserData(user);
-      }
-
-      return user;
-    } catch (error) {
-      console.error(
-        'Error getting user by ID with privileges from cache:',
-        error
-      );
-      // Fallback to database service
-      return this.userService.getUserByIdWithPrivileges(
-        userId,
-        includePrivilegedData
-      );
-    }
-  }
-
   async getBasicUserById(userId: string): Promise<BasicUser | null> {
     try {
       // Try to get from cache first

@@ -754,41 +754,6 @@ export class UserController {
     }
   }
 
-  static async getUserById(
-    req: AuthRequest,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
-    try {
-      const { userId } = req.params;
-
-      if (!userId || userId.trim() === '') {
-        ResponseUtil.badRequest(res, 'User ID is required');
-        return;
-      }
-
-      const objectIdRegex = /^[0-9a-fA-F]{24}$/;
-      if (!objectIdRegex.test(userId.trim())) {
-        ResponseUtil.badRequest(res, 'Invalid user ID format');
-        return;
-      }
-
-      const user = await userService.getUserByIdWithPrivileges(
-        userId.trim(),
-        false
-      );
-
-      if (!user) {
-        ResponseUtil.notFound(res, 'User not found');
-        return;
-      }
-
-      ResponseUtil.success(res, { user }, 'User retrieved successfully');
-    } catch (error) {
-      next(error);
-    }
-  }
-
   static async checkUsernameAvailability(
     req: Request,
     res: Response,

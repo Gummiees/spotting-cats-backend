@@ -75,44 +75,6 @@ export class UserDatabaseService implements UserServiceInterface {
     return this.managementService.getUserByIdWithResolvedUsernames(userId);
   }
 
-  async getUserByIdWithPrivileges(
-    userId: string,
-    includePrivilegedData: boolean
-  ): Promise<User | null> {
-    try {
-      const user = await this.dbOps.findUserById(userId);
-      if (!user) return null;
-
-      // Always return basic user info without privileged data
-      const mappedUser = this.utilityService.mapUserToResponse(user);
-
-      // Resolve bannedBy ID to username if it exists
-      if (mappedUser.bannedBy) {
-        const bannedByUsername = await this.resolveUserIdToUsername(
-          mappedUser.bannedBy
-        );
-        if (bannedByUsername) {
-          mappedUser.bannedBy = bannedByUsername;
-        }
-      }
-
-      // Resolve roleUpdatedBy ID to username if it exists
-      if (mappedUser.roleUpdatedBy) {
-        const roleUpdatedByUsername = await this.resolveUserIdToUsername(
-          mappedUser.roleUpdatedBy
-        );
-        if (roleUpdatedByUsername) {
-          mappedUser.roleUpdatedBy = roleUpdatedByUsername;
-        }
-      }
-
-      return mappedUser;
-    } catch (error) {
-      console.error('Error getting user by ID with privileges:', error);
-      return null;
-    }
-  }
-
   async getBasicUserById(userId: string): Promise<BasicUser | null> {
     try {
       const user = await this.dbOps.findUserById(userId);
