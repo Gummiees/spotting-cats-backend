@@ -69,10 +69,6 @@ export class UserCacheService implements UserServiceInterface {
     return this.queries.getUserById(userId);
   }
 
-  async getUserByIdWithResolvedUsernames(userId: string): Promise<User | null> {
-    return this.queries.getUserByIdWithResolvedUsernames(userId);
-  }
-
   async getBasicUserById(userId: string): Promise<BasicUser | null> {
     return this.queries.getBasicUserById(userId);
   }
@@ -83,12 +79,6 @@ export class UserCacheService implements UserServiceInterface {
 
   async getUserByUsername(username: string): Promise<User | null> {
     return this.queries.getUserByUsername(username);
-  }
-
-  async getUserByUsernameWithResolvedUsernames(
-    username: string
-  ): Promise<User | null> {
-    return this.queries.getUserByUsernameWithResolvedUsernames(username);
   }
 
   async getBasicUserByUsername(username: string): Promise<BasicUser | null> {

@@ -4,7 +4,7 @@ import { ResponseUtil } from '@/utils/response';
 
 export class CacheController {
   static async flushCache(
-    req: Request,
+    _req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void> {

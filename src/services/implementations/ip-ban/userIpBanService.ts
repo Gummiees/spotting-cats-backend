@@ -124,7 +124,7 @@ export class UserIpBanService {
 
   async unbanUsersByIp(
     username: string,
-    unbannedByUserId: string
+    _unbannedByUserId: string
   ): Promise<{
     success: boolean;
     message: string;

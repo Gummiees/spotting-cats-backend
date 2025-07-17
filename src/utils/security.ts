@@ -135,7 +135,7 @@ export function getClientIp(req: Request): string {
 }
 
 // Middleware to check for suspicious requests
-export const securityCheck = (req: Request, res: any, next: any): void => {
+export const securityCheck = (req: Request, _res: any, next: any): void => {
   if (SecurityMonitor.isSuspiciousRequest(req)) {
     SecurityMonitor.logSecurityEvent({
       timestamp: new Date().toISOString(),

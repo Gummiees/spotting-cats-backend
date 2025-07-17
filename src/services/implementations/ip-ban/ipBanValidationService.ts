@@ -1,5 +1,3 @@
-import { User } from '@/models/user';
-
 export class IpBanValidationService {
   /**
    * Validates if an IP ban operation can proceed based on role hierarchy

@@ -1,5 +1,4 @@
 import nodemailer from 'nodemailer';
-import { config } from '@/config';
 
 export interface EmailOptions {
   from: string;

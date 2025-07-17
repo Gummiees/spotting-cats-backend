@@ -5,7 +5,7 @@ import { ResponseUtil } from '@/utils/response';
 
 export class HealthController {
   static async getHealth(
-    req: Request,
+    _req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void> {
@@ -18,7 +18,7 @@ export class HealthController {
   }
 
   static async getDetailedHealth(
-    req: Request,
+    _req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void> {
@@ -48,7 +48,7 @@ export class HealthController {
   }
 
   static async getDatabaseStatus(
-    req: Request,
+    _req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void> {

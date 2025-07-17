@@ -29,33 +29,6 @@ export class UserCacheQueries extends UserCacheCore {
     }
   }
 
-  async getUserByIdWithResolvedUsernames(userId: string): Promise<User | null> {
-    try {
-      // Try to get from cache first
-      const cachedUser = await this.getUserFromCache(userId);
-      if (cachedUser) {
-        return cachedUser;
-      }
-
-      // If not in cache, get from database
-      const user = await this.userService.getUserByIdWithResolvedUsernames(
-        userId
-      );
-      if (user) {
-        await this.cacheUserData(user);
-      }
-
-      return user;
-    } catch (error) {
-      console.error(
-        'Error getting user by ID with resolved usernames from cache:',
-        error
-      );
-      // Fallback to database service
-      return this.userService.getUserByIdWithResolvedUsernames(userId);
-    }
-  }
-
   async getBasicUserById(userId: string): Promise<BasicUser | null> {
     try {
       // Try to get from cache first
@@ -146,39 +119,6 @@ export class UserCacheQueries extends UserCacheCore {
       console.error('Error getting user by username from cache:', error);
       // Fallback to database service
       return this.userService.getUserByUsername(username);
-    }
-  }
-
-  async getUserByUsernameWithResolvedUsernames(
-    username: string
-  ): Promise<User | null> {
-    try {
-      // Check cache first using username
-      const cachedUserId = await this.getUserIdFromUsernameCache(username);
-      if (cachedUserId) {
-        const cachedUser = await this.getUserFromCache(cachedUserId);
-        if (cachedUser) {
-          return cachedUser;
-        }
-      }
-
-      // If not in cache, get from database service
-      const user =
-        await this.userService.getUserByUsernameWithResolvedUsernames(username);
-      if (user) {
-        // Cache the user data with username
-        const normalizedUsername = username.toLowerCase().trim();
-        await this.cacheUserData(user, undefined, normalizedUsername);
-      }
-
-      return user;
-    } catch (error) {
-      console.error(
-        'Error getting user by username with resolved usernames from cache:',
-        error
-      );
-      // Fallback to database service
-      return this.userService.getUserByUsernameWithResolvedUsernames(username);
     }
   }
 

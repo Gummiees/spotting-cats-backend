@@ -196,33 +196,6 @@ export class UserManagementService {
     }
   }
 
-  async getUserByIdWithResolvedUsernames(userId: string): Promise<User | null> {
-    try {
-      const user = await this.dbOps.findUserById(userId);
-      if (!user) return null;
-      return await this.mapUserToResponseWithResolvedUsernames(user);
-    } catch (error) {
-      console.error('Error getting user by ID with resolved usernames:', error);
-      return null;
-    }
-  }
-
-  async getUserByUsernameWithResolvedUsernames(
-    username: string
-  ): Promise<User | null> {
-    try {
-      const user = await this.dbOps.findUserByUsername(username);
-      if (!user) return null;
-      return await this.mapUserToResponseWithResolvedUsernames(user);
-    } catch (error) {
-      console.error(
-        'Error getting user by username with resolved usernames:',
-        error
-      );
-      return null;
-    }
-  }
-
   async deactivateUser(
     userId: string
   ): Promise<{ success: boolean; message: string }> {
@@ -535,7 +508,7 @@ export class UserManagementService {
 
   private async handleAvatarUpdate(
     userId: string,
-    avatarUrl: string
+    _avatarUrl: string
   ): Promise<{ success: boolean; message?: string }> {
     const currentUser = await this.getUserById(userId);
     if (!currentUser) {
@@ -567,46 +540,6 @@ export class UserManagementService {
       await this.orphanUserData(user._id.toString());
       // Clean up email change requests for users being deleted
       await this.dbOps.cleanupEmailChangeRequest(user._id.toString());
-    }
-  }
-
-  private async mapUserToResponseWithResolvedUsernames(
-    user: any
-  ): Promise<User> {
-    const mappedUser = this.utilityService.mapUserToResponse(user);
-
-    // Resolve bannedBy ID to username if it exists
-    if (mappedUser.bannedBy) {
-      const bannedByUsername = await this.resolveUserIdToUsername(
-        mappedUser.bannedBy
-      );
-      if (bannedByUsername) {
-        mappedUser.bannedBy = bannedByUsername;
-      }
-    }
-
-    // Resolve roleUpdatedBy ID to username if it exists
-    if (mappedUser.roleUpdatedBy) {
-      const roleUpdatedByUsername = await this.resolveUserIdToUsername(
-        mappedUser.roleUpdatedBy
-      );
-      if (roleUpdatedByUsername) {
-        mappedUser.roleUpdatedBy = roleUpdatedByUsername;
-      }
-    }
-
-    return mappedUser;
-  }
-
-  private async resolveUserIdToUsername(
-    userId: string
-  ): Promise<string | null> {
-    try {
-      const user = await this.dbOps.findUserById(userId);
-      return user?.username || null;
-    } catch (error) {
-      console.error('Error resolving user ID to username:', error);
-      return null;
     }
   }
 }

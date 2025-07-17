@@ -17,7 +17,7 @@ export class HelloController {
     }
   }
 
-  static getWelcome(req: Request, res: Response, next: NextFunction): void {
+  static getWelcome(_req: Request, res: Response, next: NextFunction): void {
     try {
       const welcomeMessage = HelloService.getWelcomeMessage();
       ResponseUtil.success(

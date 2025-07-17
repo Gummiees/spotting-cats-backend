@@ -123,7 +123,7 @@ export class UserController {
   }
 
   static async logout(
-    req: AuthRequest,
+    _req: AuthRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> {
@@ -687,7 +687,7 @@ export class UserController {
   }
 
   static async ensureAllUsersHaveAvatars(
-    req: AuthRequest,
+    _req: AuthRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> {
@@ -857,7 +857,7 @@ export class UserController {
   }
 
   static async updateUserRoleByWhitelist(
-    req: Request,
+    _req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void> {

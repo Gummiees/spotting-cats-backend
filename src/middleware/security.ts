@@ -60,7 +60,7 @@ export const configureSecurityMiddleware = (app: Express): void => {
   });
 
   // Remove sensitive headers
-  app.use((req: Request, res: Response, next: NextFunction): void => {
+  app.use((_req: Request, res: Response, next: NextFunction): void => {
     res.removeHeader('X-Powered-By');
     next();
   });
@@ -76,7 +76,7 @@ export const strictRateLimit =
         standardHeaders: true,
         legacyHeaders: false,
       })
-    : (req: Request, res: Response, next: NextFunction) => next(); // No-op in non-production
+    : (_req: Request, _res: Response, next: NextFunction) => next(); // No-op in non-production
 
 export const authRateLimit =
   config.nodeEnv === 'production'
@@ -87,7 +87,7 @@ export const authRateLimit =
         standardHeaders: true,
         legacyHeaders: false,
       })
-    : (req: Request, res: Response, next: NextFunction) => next(); // No-op in non-production
+    : (_req: Request, _res: Response, next: NextFunction) => next(); // No-op in non-production
 
 export const cleanupRateLimit =
   config.nodeEnv === 'production'
@@ -98,7 +98,7 @@ export const cleanupRateLimit =
         standardHeaders: true,
         legacyHeaders: false,
       })
-    : (req: Request, res: Response, next: NextFunction) => next(); // No-op in non-production
+    : (_req: Request, _res: Response, next: NextFunction) => next(); // No-op in non-production
 
 export const whitelistRoleUpdateRateLimit =
   config.nodeEnv === 'production'
@@ -109,7 +109,7 @@ export const whitelistRoleUpdateRateLimit =
         standardHeaders: true,
         legacyHeaders: false,
       })
-    : (req: Request, res: Response, next: NextFunction) => next(); // No-op in non-production
+    : (_req: Request, _res: Response, next: NextFunction) => next(); // No-op in non-production
 
 export const verificationCodeRateLimit = rateLimit({
   windowMs: 60 * 1000, // 60 seconds

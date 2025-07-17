@@ -300,7 +300,11 @@ export class UserAuthService {
     user?: any;
   }> {
     try {
-      const username = await this.utilityService.generateUniqueUsername();
+      const username = await this.utilityService.generateUniqueUsername(
+        async (username: string) => {
+          return await this.dbOps.checkUsernameExists(username);
+        }
+      );
       const userData = this.utilityService.createUserData(
         email,
         clientIp,

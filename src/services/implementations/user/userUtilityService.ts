@@ -58,7 +58,9 @@ export class UserUtilityService {
     return generateAvatarForUsername(username);
   }
 
-  async generateUniqueUsername(): Promise<string> {
+  async generateUniqueUsername(
+    checkUsernameExists?: (username: string) => Promise<boolean>
+  ): Promise<string> {
     let attempts = 0;
     const maxAttempts = 10;
 
@@ -70,8 +72,17 @@ export class UserUtilityService {
         style: 'lowerCase',
       });
 
-      // Note: This would need to be injected or passed as a dependency
-      // For now, we'll assume it's available
+      // Check if username is available if check function is provided
+      if (checkUsernameExists) {
+        const exists = await checkUsernameExists(username);
+        if (!exists) {
+          return username; // Username is available
+        }
+      } else {
+        // If no check function provided, assume it's available
+        return username;
+      }
+
       attempts++;
     }
 
@@ -83,7 +94,17 @@ export class UserUtilityService {
       style: 'lowerCase',
     });
     const randomSuffix = Math.floor(Math.random() * 10000);
-    return `${baseUsername}${randomSuffix}`;
+    const fallbackUsername = `${baseUsername}${randomSuffix}`;
+
+    // Check the fallback username if check function is provided
+    if (checkUsernameExists) {
+      const exists = await checkUsernameExists(fallbackUsername);
+      if (!exists) {
+        return fallbackUsername;
+      }
+    }
+
+    return fallbackUsername;
   }
 
   generateTokenFromDbUser(dbUser: any): string {

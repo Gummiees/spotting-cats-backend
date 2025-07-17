@@ -71,10 +71,6 @@ export class UserDatabaseService implements UserServiceInterface {
     return this.authService.getUserById(userId);
   }
 
-  async getUserByIdWithResolvedUsernames(userId: string): Promise<User | null> {
-    return this.managementService.getUserByIdWithResolvedUsernames(userId);
-  }
-
   async getBasicUserById(userId: string): Promise<BasicUser | null> {
     try {
       const user = await this.dbOps.findUserById(userId);
@@ -100,14 +96,6 @@ export class UserDatabaseService implements UserServiceInterface {
       console.error('Error getting user by username:', error);
       return null;
     }
-  }
-
-  async getUserByUsernameWithResolvedUsernames(
-    username: string
-  ): Promise<User | null> {
-    return this.managementService.getUserByUsernameWithResolvedUsernames(
-      username
-    );
   }
 
   async getBasicUserByUsername(username: string): Promise<BasicUser | null> {
@@ -282,18 +270,5 @@ export class UserDatabaseService implements UserServiceInterface {
   // Cache helper method to get raw database user with encrypted email
   async getDbUserById(userId: string): Promise<any> {
     return this.dbOps.findUserById(userId);
-  }
-
-  // Private helper methods
-  private async resolveUserIdToUsername(
-    userId: string
-  ): Promise<string | null> {
-    try {
-      const user = await this.dbOps.findUserById(userId);
-      return user?.username || null;
-    } catch (error) {
-      console.error('Error resolving user ID to username:', error);
-      return null;
-    }
   }
 }

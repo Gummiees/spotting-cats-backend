@@ -1,6 +1,5 @@
 import cron from 'node-cron';
 import { userService } from '@/services/userService';
-import { config } from '@/config';
 
 export class CleanupService {
   private static instance: CleanupService;

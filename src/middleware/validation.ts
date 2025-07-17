@@ -248,7 +248,7 @@ export const getCatsQueryValidation = [
 // Generic sanitization for query parameters
 export const sanitizeQueryParams = (
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ): void => {
   if (req.query) {
@@ -264,7 +264,7 @@ export const sanitizeQueryParams = (
 // Generic sanitization for request body
 export const sanitizeRequestBody = (
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ): void => {
   if (req.body) {

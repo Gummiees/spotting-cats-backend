@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { NoteCacheService } from '@/services/implementations/note/noteCacheService';
 import { ResponseUtil } from '@/utils/response';
 import { AuthRequest } from '@/models/requests';

@@ -69,7 +69,7 @@ app.use('/api-docs', swaggerMiddleware);
 app.use(securityCheck);
 
 // Request logging middleware (for security monitoring)
-app.use((req, res, next) => {
+app.use((req, _res, next) => {
   const timestamp = new Date().toISOString();
   const ip = req.ip || req.connection.remoteAddress;
   const userAgent = req.get('User-Agent') || 'Unknown';

@@ -41,13 +41,9 @@ export interface UserServiceInterface {
 
   // User management methods
   getUserById(userId: string): Promise<User | null>;
-  getUserByIdWithResolvedUsernames(userId: string): Promise<User | null>;
   getBasicUserById(userId: string): Promise<BasicUser | null>;
   getUserByEmail(email: string): Promise<User | null>;
   getUserByUsername(username: string): Promise<User | null>;
-  getUserByUsernameWithResolvedUsernames(
-    username: string
-  ): Promise<User | null>;
   getBasicUserByUsername(username: string): Promise<BasicUser | null>;
   getUserByUsernameForAdmin(
     username: string
