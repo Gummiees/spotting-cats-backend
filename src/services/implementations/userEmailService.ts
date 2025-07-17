@@ -1,7 +1,8 @@
 import { User } from '@/models/user';
-import { emailService } from '@/services/emailService';
 import { UserDatabaseOperations } from './userDatabaseOperations';
 import { UserUtilityService } from './userUtilityService';
+import { encryptEmail, decryptEmail } from '@/utils/security';
+import { emailService } from '@/services/emailService';
 
 export class UserEmailService {
   constructor(
@@ -23,7 +24,10 @@ export class UserEmailService {
         return { success: false, message: 'User not found' };
       }
 
-      if (currentUser.email.toLowerCase() === newEmail.toLowerCase()) {
+      // Compare encrypted emails instead of decrypting
+      const normalizedNewEmail = this.utilityService.normalizeEmail(newEmail);
+      const encryptedNewEmail = encryptEmail(normalizedNewEmail);
+      if (currentUser.email === encryptedNewEmail) {
         return {
           success: false,
           message: 'New email must be different from current email',
@@ -49,25 +53,28 @@ export class UserEmailService {
         };
       }
 
-      const isAvailable = await this.checkEmailAvailability(newEmail, userId);
+      // Check if new email is available by comparing encrypted emails
+      const isAvailable = await this.checkEmailAvailability(
+        encryptedNewEmail,
+        userId
+      );
       if (!isAvailable) {
         return { success: false, message: 'Email is already in use' };
       }
 
       const code = this.utilityService.generateVerificationCode();
-      const normalizedEmail = this.utilityService.normalizeEmail(newEmail);
 
       await this.dbOps.invalidatePreviousEmailChangeRequests(userId);
       await this.dbOps.insertEmailChangeRequest(
         this.utilityService.createEmailChangeRequest(
           userId,
-          normalizedEmail,
+          normalizedNewEmail, // Store unencrypted email in change request for verification
           code
         )
       );
 
       const emailSent = await emailService.sendEmailChangeVerificationCode(
-        normalizedEmail,
+        normalizedNewEmail,
         code
       );
       if (!emailSent) {

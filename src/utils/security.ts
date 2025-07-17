@@ -1,4 +1,5 @@
 import { Request } from 'express';
+import crypto from 'crypto';
 
 export interface SecurityEvent {
   timestamp: string;
@@ -151,3 +152,44 @@ export const securityCheck = (req: Request, res: any, next: any): void => {
   }
   next();
 };
+
+// --- EMAIL ENCRYPTION (AES-256-GCM) ---
+const EMAIL_ENCRYPTION_KEY = process.env.EMAIL_ENCRYPTION_KEY
+  ? Buffer.from(process.env.EMAIL_ENCRYPTION_KEY, 'hex')
+  : undefined; // Must be 32 bytes (64 hex chars)
+
+export function encryptEmail(email: string): string {
+  if (!EMAIL_ENCRYPTION_KEY) throw new Error('EMAIL_ENCRYPTION_KEY not set');
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', EMAIL_ENCRYPTION_KEY, iv);
+  let encrypted = cipher.update(email, 'utf8', 'base64');
+  encrypted += cipher.final('base64');
+  const tag = cipher.getAuthTag();
+  return `${iv.toString('base64')}:${tag.toString('base64')}:${encrypted}`;
+}
+
+export function decryptEmail(encrypted: string): string {
+  if (!EMAIL_ENCRYPTION_KEY) throw new Error('EMAIL_ENCRYPTION_KEY not set');
+  const [iv, tag, data] = encrypted
+    .split(':')
+    .map((x) => Buffer.from(x, 'base64'));
+  const decipher = crypto.createDecipheriv(
+    'aes-256-gcm',
+    EMAIL_ENCRYPTION_KEY,
+    iv
+  );
+  decipher.setAuthTag(tag);
+  let decrypted = decipher.update(data).toString('utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
+}
+
+// --- IP HASHING (HMAC-SHA256) ---
+const IP_HASH_KEY = process.env.IP_HASH_KEY
+  ? Buffer.from(process.env.IP_HASH_KEY, 'hex')
+  : undefined; // Must be 32 bytes (64 hex chars)
+
+export function hashIp(ip: string): string {
+  if (!IP_HASH_KEY) throw new Error('IP_HASH_KEY not set');
+  return crypto.createHmac('sha256', IP_HASH_KEY).update(ip).digest('hex');
+}

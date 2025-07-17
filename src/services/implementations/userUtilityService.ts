@@ -12,6 +12,7 @@ import {
 } from '@/models/user';
 import { generateAvatarForUsername } from '@/utils/avatar';
 import { config } from '@/config';
+import { encryptEmail, decryptEmail, hashIp } from '@/utils/security';
 
 export class UserUtilityService {
   private readonly JWT_SECRET: string;
@@ -129,7 +130,7 @@ export class UserUtilityService {
   mapUserToResponse(user: any): User {
     return {
       id: user._id.toString(),
-      email: user.email,
+      email: decryptEmail(user.email), // Decrypt email when returning to client
       isActive: user.isActive,
       isBanned: user.isBanned || false,
       createdAt: user.createdAt,
@@ -178,10 +179,10 @@ export class UserUtilityService {
   ): User {
     const mappedUser = this.mapUserToResponse(user);
 
-    // Include IP addresses only for privileged users
+    // Include hashed IP addresses only for privileged users
     if (includePrivilegedData) {
       if (user.ipAddresses) {
-        mappedUser.ipAddresses = user.ipAddresses;
+        mappedUser.ipAddresses = user.ipAddresses; // Already hashed in DB
       }
     }
 
@@ -203,11 +204,11 @@ export class UserUtilityService {
       role = 'admin';
     }
 
-    // Initialize IP addresses array with current IP if provided
-    const ipAddresses = clientIp ? [clientIp] : [];
+    // Initialize IP addresses array with current IP if provided (hashed)
+    const ipAddresses = clientIp ? [hashIp(clientIp)] : [];
 
     const userData = {
-      email: normalizedEmail,
+      email: encryptEmail(normalizedEmail), // Encrypt email before storing
       username: finalUsername,
       avatarUrl,
       role,
@@ -234,10 +235,10 @@ export class UserUtilityService {
     // Apply business logic to ensure data consistency for regular fields
     const processedData: any = applyUserBusinessLogic(updateData);
 
-    // Add IP address to the array if provided and not already present
+    // Add hashed IP address to the array if provided and not already present
     if (clientIp) {
-      // Use $addToSet to add IP address only if it's not already in the array
-      processedData.$addToSet = { ipAddresses: clientIp };
+      // Use $addToSet to add hashed IP address only if it's not already in the array
+      processedData.$addToSet = { ipAddresses: hashIp(clientIp) };
     }
 
     return processedData;
@@ -319,7 +320,7 @@ export class UserUtilityService {
 
   // Utility methods
   normalizeEmail(email: string): string {
-    return email.toLowerCase();
+    return email.toLowerCase().trim();
   }
 
   createTimestamp(): Date {

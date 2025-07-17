@@ -2,6 +2,7 @@ import { User, PublicUser } from '@/models/user';
 import { emailService } from '@/services/emailService';
 import { UserDatabaseOperations } from './userDatabaseOperations';
 import { UserUtilityService } from './userUtilityService';
+import { encryptEmail, decryptEmail, hashIp } from '@/utils/security';
 
 export class UserManagementService {
   constructor(
@@ -41,7 +42,9 @@ export class UserManagementService {
           return { success: false, message: emailCheck.message! };
         }
 
-        updateData.email = this.utilityService.normalizeEmail(email);
+        updateData.email = encryptEmail(
+          this.utilityService.normalizeEmail(email)
+        );
         updateData.emailUpdatedAt = this.utilityService.createTimestamp();
         shouldRegenerateToken = true; // Email is in JWT token
       }
@@ -626,7 +629,13 @@ export class UserManagementService {
       };
     }
 
-    const isAvailable = !(await this.dbOps.checkEmailExists(email, userId));
+    // Check if email is already in use by comparing encrypted emails
+    const normalizedEmail = this.utilityService.normalizeEmail(email);
+    const encryptedEmail = encryptEmail(normalizedEmail);
+    const isAvailable = !(await this.dbOps.checkEmailExists(
+      encryptedEmail,
+      userId
+    ));
     if (!isAvailable) {
       return { success: false, message: 'Email is already in use' };
     }

@@ -1,8 +1,9 @@
 import { User } from '@/models/user';
-import { emailService } from '@/services/emailService';
 import { UserDatabaseOperations } from './userDatabaseOperations';
 import { UserUtilityService } from './userUtilityService';
 import { UserIpBanService } from './userIpBanService';
+import { encryptEmail, decryptEmail } from '@/utils/security';
+import { emailService } from '@/services/emailService';
 
 export class UserAuthService {
   constructor(
@@ -32,7 +33,9 @@ export class UserAuthService {
         }
       }
 
-      const existingUser = await this.dbOps.findUserByEmail(email);
+      const normalizedEmail = this.utilityService.normalizeEmail(email);
+      const encryptedEmail = encryptEmail(normalizedEmail);
+      const existingUser = await this.dbOps.findUserByEmail(encryptedEmail);
 
       // Check if existing user is banned
       if (existingUser && existingUser.isBanned) {
@@ -46,12 +49,15 @@ export class UserAuthService {
 
       const code = this.utilityService.generateVerificationCode();
 
-      await this.dbOps.invalidatePreviousCodes(email);
+      await this.dbOps.invalidatePreviousCodes(normalizedEmail);
       await this.dbOps.insertAuthCode(
-        this.utilityService.createAuthCode(email, code)
+        this.utilityService.createAuthCode(normalizedEmail, code)
       );
 
-      const emailSent = await emailService.sendVerificationCode(email, code);
+      const emailSent = await emailService.sendVerificationCode(
+        normalizedEmail,
+        code
+      );
       if (!emailSent) {
         return { success: false, message: 'Failed to send verification email' };
       }
@@ -160,7 +166,9 @@ export class UserAuthService {
 
   async getUserByEmail(email: string): Promise<User | null> {
     try {
-      const user = await this.dbOps.findUserByEmail(email);
+      const normalizedEmail = this.utilityService.normalizeEmail(email);
+      const encryptedEmail = encryptEmail(normalizedEmail);
+      const user = await this.dbOps.findUserByEmail(encryptedEmail);
       if (!user || user.isBanned) return null;
       return this.utilityService.mapUserToResponse(user);
     } catch (error) {

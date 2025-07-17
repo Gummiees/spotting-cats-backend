@@ -17,6 +17,39 @@ This project now includes a secure user authentication system using email-based 
 - **Secure email changes**: Two-step email change process with verification codes
 - **Admin controls**: Role-based endpoints for user management
 - **Email whitelist**: Users with emails in whitelists automatically get appropriate roles
+- **Data encryption**: Email addresses are encrypted in the database
+- **IP hashing**: IP addresses are hashed for privacy and security
+
+## Data Security
+
+### Email Encryption
+- **Method**: AES-256-GCM encryption
+- **Purpose**: Protect user email addresses in the database
+- **Reversible**: Yes, for sending emails and user operations
+- **Key Storage**: Environment variable `EMAIL_ENCRYPTION_KEY` (32 bytes, hex format)
+- **Usage**: All email operations automatically encrypt/decrypt as needed
+
+### IP Address Hashing
+- **Method**: HMAC-SHA256 hashing
+- **Purpose**: Protect user IP addresses while maintaining ban functionality
+- **Reversible**: No, but can still ban/check IPs by hashing input
+- **Key Storage**: Environment variable `IP_HASH_KEY` (32 bytes, hex format)
+- **Usage**: IP addresses are hashed before storage, but ban operations work normally
+
+### Environment Variables Required
+```env
+# Email encryption key (32 bytes = 64 hex characters)
+EMAIL_ENCRYPTION_KEY=your_32_byte_encryption_key_here_as_hex
+
+# IP hashing key (32 bytes = 64 hex characters)  
+IP_HASH_KEY=your_32_byte_hashing_key_here_as_hex
+```
+
+### Security Benefits
+- **Email Protection**: Encrypted emails prevent data breaches from exposing user emails
+- **IP Privacy**: Hashed IPs prevent user tracking while maintaining security features
+- **Compliance**: Meets GDPR and other privacy regulation requirements
+- **Key Management**: Separate keys for different data types allow for independent rotation
 
 ## Role System
 
@@ -43,193 +76,151 @@ This project now includes a secure user authentication system using email-based 
 #### Moderator
 - Can ban/unban regular users only
 - Cannot ban or modify moderators, admins, or superadmins
-- Cannot promote users to any role
 
 #### User
-- Standard user permissions
-- Cannot ban or modify any users
-- Cannot promote users to any role
+- Basic user permissions
+- Cannot ban or modify other users
 
-## Environment Variables Required
+## Authentication Flow
 
-Create a `.env` file in the root directory with the following variables:
+### 1. Email Verification Request
+1. User submits email address
+2. System validates email format
+3. System checks if IP is banned
+4. System generates verification code
+5. System sends email with verification code
+6. System stores encrypted email and hashed IP in database
 
-```env
-# Server Configuration
-PORT=3000
-NODE_ENV=development
+### 2. Code Verification and Authentication
+1. User submits email and verification code
+2. System validates verification code
+3. System creates new user or updates existing user
+4. System generates JWT token with user information
+5. System sets secure HTTP-only cookie
+6. System returns user data (email decrypted for client)
 
-# MongoDB Configuration
-MONGO_URL=mongodb://localhost:27017/your-database-name
-MONGO_DB_NAME=your-database-name
+### 3. Session Management
+- JWT tokens include user ID, email, username, and role
+- Tokens expire after 7 days
+- Automatic token refresh when within 24 hours of expiration
+- Secure cookie settings for production environments
 
-# Redis Configuration (optional)
-REDIS_URL=redis://localhost:6379
+## Database Schema
 
-# JWT Configuration
-JWT_SECRET=your-super-secret-jwt-key-change-in-production
-
-# Email Configuration (SMTP)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-password
-SMTP_FROM=your-email@gmail.com
-
-# CORS Configuration
-CORS_ORIGINS=http://localhost:3000,http://localhost:3001
-
-# Role Configuration
-ADMIN_EMAIL_WHITELIST=admin@example.com,superuser@example.com
-SUPERADMIN_EMAIL_WHITELIST=superadmin@example.com,owner@example.com
-```
-
-## API Endpoints
-
-### Public Endpoints (No Authentication Required)
-
-#### Send Verification Code
-```
-POST /api/v1/users/send-code
-Content-Type: application/json
-
+### Users Collection
+```javascript
 {
-  "email": "user@example.com"
+  _id: ObjectId,
+  email: String (encrypted with AES-256-GCM),
+  username: String (unique),
+  usernameUpdatedAt: Date (optional),
+  avatarUrl: String (optional),
+  avatarUpdatedAt: Date (optional),
+  role: String (enum: 'user', 'moderator', 'admin', 'superadmin'),
+  roleUpdatedAt: Date (optional),
+  roleUpdatedBy: String (optional, ObjectId of user who updated role),
+  isVerified: Boolean,
+  isActive: Boolean,
+  isDeleted: Boolean,
+  isBanned: Boolean (default: false),
+  banReason: String (optional),
+  bannedBy: String (optional, ObjectId of user who banned them),
+  createdAt: Date,
+  updatedAt: Date,
+  lastLoginAt: Date,
+  deactivatedAt: Date (optional),
+  bannedAt: Date (optional),
+  ipAddresses: Array<String> (hashed with HMAC-SHA256)
 }
 ```
 
-#### Verify Code and Authenticate
-```
-POST /api/v1/users/verify-code
-Content-Type: application/json
+### IP Address Tracking
 
-{
-  "email": "user@example.com",
-  "code": "123456"
-}
-```
+The system automatically tracks IP addresses used for authentication:
 
-#### Logout
-```
-POST /api/v1/users/logout
-```
+- **New Users**: IP address is hashed and recorded when the account is created
+- **Existing Users**: Hashed IP address is added to the array when they log in (if not already present)
+- **Privacy**: IP addresses are hashed before storage for privacy
+- **Ban Operations**: IP banning works by comparing hashed IPs
+- **Storage**: Uses MongoDB's `$addToSet` operator to prevent duplicate hashed IP addresses
+- **Proxy Support**: Handles various proxy headers (X-Forwarded-For, X-Real-IP, CF-Connecting-IP)
 
-#### Refresh Token
-```
-POST /api/v1/users/refresh-token
-```
-*Automatically refreshes the authentication token if it expires within 24 hours. Useful for maintaining long-term sessions.*
+## Cleanup System
 
-### Protected Endpoints (Authentication Required)
+### Automatic Cleanup
+The system includes an automatic cleanup process that runs daily at 2:00 AM UTC:
 
-#### Get Current User Profile
-```
-GET /api/v1/users/profile
-```
+- **Deactivated User Cleanup**: Automatically deletes user accounts that have been deactivated for more than 30 days
+- **Expired Verification Codes**: Removes expired email verification codes
+- **Expired Email Change Requests**: Removes expired email change verification codes
 
-#### Update Username
-```
-PUT /api/v1/users/username
-Content-Type: application/json
-
-{
-  "username": "newusername"
-}
-```
-
-#### Initiate Email Change
-```
-PUT /api/v1/users/email
-Content-Type: application/json
-
-{
-  "email": "newemail@example.com"
-}
-```
-
-#### Verify Email Change
-```
-POST /api/v1/users/email/verify
-Content-Type: application/json
-
-{
-  "code": "123456"
-}
-```
-
-#### Deactivate Account
-```
-POST /api/v1/users/deactivate
-```
-
-#### Delete Account
-```
-POST /api/v1/users/delete
-```
-
-### Role Management Endpoints (Role-based Authentication Required)
-
-#### Update User Role
-```
-PUT /api/v1/users/role
-Content-Type: application/json
-
-{
-  "username": "johndoe",
-  "role": "moderator"
-}
-```
-*Admin/Superadmin only. Cannot update your own role.*
-
-#### Update User Roles by Whitelist (Open Endpoint)
-```
-POST /api/v1/users/role/whitelist
-```
-*No authentication required. Rate limited to 1 request per 15 minutes. Automatically promotes users whose emails are in admin/superadmin whitelists and demotes superadmins who are no longer in the superadmin whitelist.*
-
-#### Ban User
-```
-POST /api/v1/users/ban
-Body: { "username": "string", "reason": "string" }
-```
-*Role-based: Moderators can ban users, Admins can ban moderators and users, Superadmins can ban everyone except other superadmins.*
-
-#### Unban User
-```
-POST /api/v1/users/unban
-Body: { "username": "string" }
-```
-*Same role-based permissions as ban.*
-
-#### Get All Users
-```
-GET /api/v1/users/admin/all
-```
-*Admin/Superadmin only.*
-
-#### Manual Cleanup
-```
-POST /api/v1/users/admin/cleanup?days=30
-```
-*Admin/Superadmin only. Rate limited to 3 requests per hour. Deletes deactivated users older than specified days (default 30).*
+### Manual Cleanup
+- **Admin Triggered**: Admins can manually trigger cleanup with custom retention periods
+- **Rate Limited**: Manual cleanup is rate limited to prevent abuse
+- **Audit Trail**: All cleanup operations are logged for audit purposes
 
 ## Security Features
 
-1. **HTTP-only Cookies**: JWT tokens are stored in secure HTTP-only cookies
-2. **Rate Limiting**: Authentication endpoints are rate-limited to prevent brute force attacks (production only)
-3. **Email Validation**: Proper email format validation
-4. **Code Expiration**: Verification codes expire after 10 minutes
-5. **Secure Email Changes**: Two-step email change process with verification codes sent to new email address
-6. **Account Status Tracking**: Users can be active, deactivated, or banned
-7. **Account Deactivation**: Deactivated users are marked as inactive but not physically removed
-8. **Account Deletion**: Users can permanently delete their accounts (marked as deleted)
-9. **Automatic Cleanup**: Deactivated accounts are automatically deleted after 30 days via scheduled cron job
-10. **Role-based Banning**: Users can only ban users with roles they have permission to manage
-11. **Role Management**: Proper role hierarchy enforcement with permission checks
-12. **Secure Headers**: Helmet.js provides security headers
-13. **CORS Protection**: Configurable CORS settings
-14. **JWT Token Security**: Tokens include user ID, email, username, and role for complete user context
-15. **IP Address Tracking**: Automatic tracking of IP addresses used for authentication (visible only to privileged users)
+### Rate Limiting
+- **Email Verification**: Rate limited to prevent spam
+- **Login Attempts**: Rate limited to prevent brute force attacks
+- **Email Changes**: Rate limited to prevent abuse
+- **Admin Operations**: Rate limited to prevent abuse
+
+### Input Validation
+- **Email Format**: Strict email format validation
+- **Username Format**: Alphanumeric and underscore only, 3-20 characters
+- **Avatar URLs**: Must be valid HTTPS URLs from trusted sources
+- **XSS Protection**: Input sanitization and validation
+
+### Security Headers
+- **Helmet.js**: Comprehensive security headers
+- **CORS**: Configurable cross-origin resource sharing
+- **Content Security Policy**: XSS protection
+- **HSTS**: HTTP Strict Transport Security
+
+## API Endpoints
+
+### Authentication
+- `POST /api/v1/users/send-code` - Send verification code
+- `POST /api/v1/users/verify-code` - Verify code and authenticate
+- `POST /api/v1/users/logout` - Logout and clear cookie
+- `POST /api/v1/users/refresh-token` - Refresh authentication token
+
+### User Management
+- `GET /api/v1/users/profile` - Get current user profile
+- `PUT /api/v1/users/username` - Update username
+- `PUT /api/v1/users/email` - Initiate email change
+- `POST /api/v1/users/email/verify` - Verify email change
+- `PUT /api/v1/users/avatar` - Update avatar URL
+- `POST /api/v1/users/deactivate` - Deactivate account
+- `DELETE /api/v1/users/delete` - Permanently delete account
+
+### Admin Operations
+- `GET /api/v1/users/admin/all` - Get all users (admin only)
+- `POST /api/v1/users/admin/ban` - Ban user (admin only)
+- `POST /api/v1/users/admin/unban` - Unban user (admin only)
+- `POST /api/v1/users/admin/role` - Update user role (admin only)
+- `POST /api/v1/users/admin/ip-ban` - Ban users by IP (admin only)
+- `POST /api/v1/users/admin/ip-unban` - Unban users by IP (admin only)
+
+## Error Handling
+
+### Standard Error Response
+```json
+{
+  "success": false,
+  "error": "Error Type",
+  "message": "Human-readable error message",
+  "timestamp": "2024-01-15T10:30:00.000Z"
+}
+```
+
+### Specific Error Codes
+- `EMAIL_SAME_AS_CURRENT` - New email same as current email
+- `EMAIL_CHANGE_RATE_LIMITED` - Email change rate limit exceeded
+- `ACCOUNT_BANNED` - User account is banned
+- `IP_BANNED` - IP address is banned
 
 ## JWT Token Structure
 
@@ -238,7 +229,7 @@ The application uses JWT tokens for authentication with the following payload st
 ```javascript
 {
   userId: string,        // User's unique identifier
-  email: string,         // User's email address
+  email: string,         // User's email address (decrypted)
   username: string,      // User's username
   role: string,          // User's role (user, moderator, admin, superadmin)
   iat: number,          // Issued at timestamp (JWT standard)
@@ -266,142 +257,38 @@ The application uses JWT tokens for authentication with the following payload st
 - Users cannot modify their own roles
 - Role changes are tracked with timestamps and the ID of the user who made the change
 
-## Database Schema
+## Implementation Notes
 
-### Users Collection
-```javascript
-{
-  _id: ObjectId,
-  email: String (unique, lowercase),
-  username: String (unique),
-  usernameUpdatedAt: Date (optional),
-  avatarUrl: String (optional),
-  avatarUpdatedAt: Date (optional),
-  role: String (enum: 'user', 'moderator', 'admin', 'superadmin'),
-  roleUpdatedAt: Date (optional),
-  roleUpdatedBy: String (optional, ObjectId of user who updated role),
-  isVerified: Boolean,
-  isActive: Boolean,
-  isDeleted: Boolean,
-  isBanned: Boolean (default: false),
-  banReason: String (optional),
-  bannedBy: String (optional, ObjectId of user who banned them),
-  createdAt: Date,
-  updatedAt: Date,
-  lastLoginAt: Date,
-  deactivatedAt: Date (optional),
-  bannedAt: Date (optional),
-  ipAddresses: Array<String> (optional, array of IP addresses used for authentication)
-}
-```
+### Key Management
+- **Key Generation**: Use cryptographically secure random key generation
+- **Key Storage**: Store keys in environment variables or secure key management systems
+- **Key Rotation**: Plan for regular key rotation without service disruption
+- **Backup**: Ensure keys are backed up securely for disaster recovery
 
-### IP Address Tracking
+### Migration Considerations
+- **Existing Data**: Existing unencrypted emails and IPs will need migration
+- **Downtime**: Encryption migration may require brief service downtime
+- **Rollback Plan**: Maintain ability to rollback to unencrypted data if needed
+- **Testing**: Thoroughly test encryption/decryption in staging environment
 
-The system automatically tracks IP addresses used for authentication:
+### Performance Impact
+- **Email Operations**: Minimal performance impact from encryption/decryption
+- **IP Operations**: No performance impact from hashing
+- **Database Queries**: Encrypted email lookups require full table scans (consider indexing strategies)
+- **Caching**: User cache service handles encrypted data transparently
 
-- **New Users**: IP address is recorded when the account is created
-- **Existing Users**: IP address is added to the array when they log in (if not already present)
-- **Privacy**: IP addresses are only visible to users with elevated permissions (moderator, admin, superadmin)
-- **Storage**: Uses MongoDB's `$addToSet` operator to prevent duplicate IP addresses
-- **Proxy Support**: Handles various proxy headers (X-Forwarded-For, X-Real-IP, CF-Connecting-IP)
+## Compliance and Privacy
 
-## Cleanup System
+### GDPR Compliance
+- **Data Minimization**: Only collect necessary user data
+- **Encryption**: Sensitive data encrypted at rest
+- **Right to Deletion**: Users can permanently delete their accounts
+- **Data Portability**: Users can export their data
+- **Consent Management**: Clear consent for data collection and processing
 
-### Automatic Cleanup
-The system includes an automatic cleanup process that runs daily at 2:00 AM UTC:
-
-- **Deactivated User Cleanup**: Automatically deletes user accounts that have been deactivated for more than 30 days
-- **Expired Code Cleanup**: Removes expired verification codes every hour
-- **Data Orphaning**: Before deleting users, related data (cats, etc.) is properly orphaned to maintain data integrity
-
-### Manual Cleanup
-Admins and Superadmins can manually trigger the cleanup process using the admin endpoint:
-
-```bash
-# Default cleanup (30 days retention)
-POST /api/v1/users/admin/cleanup
-
-# Custom retention period
-POST /api/v1/users/admin/cleanup?days=7
-```
-
-**Rate Limiting**: Manual cleanup is rate-limited to 3 requests per hour per IP address in production.
-
-### Cleanup Process Details
-1. **User Identification**: Finds users with `isActive: false` and `deactivatedAt` older than retention period
-2. **Data Orphaning**: Removes user references from related collections (cats, etc.)
-3. **User Deletion**: Permanently removes user records from the database
-4. **Banned Users**: Banned users are excluded from cleanup to prevent accidental deletion
-5. **Logging**: All cleanup operations are logged for audit purposes
-
-### Configuration
-- **Retention Period**: 30 days (configurable via manual endpoint)
-- **Schedule**: Daily at 2:00 AM UTC
-- **Timezone**: UTC (configurable in cleanup service)
-
-### Auth Codes Collection
-```javascript
-{
-  _id: ObjectId,
-  email: String,
-  code: String,
-  expiresAt: Date,
-  used: Boolean,
-  createdAt: Date
-}
-```
-
-## Usage Flow
-
-1. **Registration/Login**: User provides email
-2. **Code Generation**: System generates 6-digit verification code
-3. **Email Sending**: Code is sent to user's email
-4. **Code Verification**: User enters the code
-5. **Account Creation/Login**: System creates account or logs in existing user
-6. **Role Assignment**: User gets appropriate role based on email whitelists
-7. **Cookie Setting**: JWT token is set as HTTP-only cookie
-8. **Authentication**: Subsequent requests use the cookie for authentication
-
-## Email Setup
-
-### Gmail Configuration
-For Gmail, you'll need to:
-1. Enable 2-factor authentication on your Google account
-2. Generate an App Password (Google Account → Security → App Passwords)
-3. Use the App Password in `SMTP_PASS`
-
-### SMTP_FROM Configuration
-The `SMTP_FROM` environment variable specifies the sender email address that will appear in the "From" field of emails. This should be:
-- The same as `SMTP_USER` for most cases
-- A verified email address that your SMTP provider allows you to send from
-- Properly configured to avoid email delivery issues
-
-**Note**: The `SMTP_FROM` field is required by most SMTP servers. If not set, it defaults to the `SMTP_USER` value.
-
-## Development
-
-```bash
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Start production server
-npm start
-```
-
-## Security Considerations
-
-- Change JWT_SECRET in production
-- Use HTTPS in production
-- Configure proper CORS origins
-- Set up proper email service
-- Monitor rate limiting
-- Regularly clean up expired verification codes
-- Review role assignments regularly
-- Monitor role change logs for security
-- Ensure superadmin emails are secure and limited 
+### Security Best Practices
+- **Defense in Depth**: Multiple layers of security controls
+- **Principle of Least Privilege**: Users only have necessary permissions
+- **Secure by Default**: Security features enabled by default
+- **Regular Audits**: Security reviews and penetration testing
+- **Incident Response**: Plan for security incident handling 

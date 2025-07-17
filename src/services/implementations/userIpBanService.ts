@@ -4,6 +4,7 @@ import { UserUtilityService } from './userUtilityService';
 import { IpBanValidationService } from './ipBanValidationService';
 import { IpBanOperationsService } from './ipBanOperationsService';
 import { IpBanQueryService } from './ipBanQueryService';
+import { hashIp } from '@/utils/security';
 
 export class UserIpBanService {
   private validationService: IpBanValidationService;
@@ -29,6 +30,7 @@ export class UserIpBanService {
     data?: {
       targetUser: User;
       affectedUsers: User[];
+      protectedUsers?: User[];
       bannedIps: string[];
       totalBanned: number;
     };
@@ -58,7 +60,7 @@ export class UserIpBanService {
         };
       }
 
-      // Get IP addresses and find affected users
+      // Get IP addresses and find affected users (already hashed in DB)
       const targetIps = this.queryService.getTargetUserIps(targetUser);
       const allAffectedUsers = await this.queryService.findUsersByIpAddresses(
         targetIps
@@ -101,6 +103,9 @@ export class UserIpBanService {
         data: {
           targetUser: mappedTargetUser,
           affectedUsers: operationResult.data!.affectedUsers,
+          protectedUsers: validation.blockingUsers?.map((user: any) =>
+            this.utilityService.mapUserToResponse(user)
+          ),
           bannedIps: operationResult.data!.bannedIps,
           totalBanned: operationResult.data!.totalBanned,
         },
@@ -139,7 +144,7 @@ export class UserIpBanService {
         };
       }
 
-      // Get IP addresses and find affected users
+      // Get IP addresses and find affected users (already hashed in DB)
       const targetIps = this.queryService.getTargetUserIps(targetUser);
       const affectedUsers =
         await this.queryService.findUsersByIpAddressesAndBanReason(targetIps);
@@ -186,6 +191,8 @@ export class UserIpBanService {
     bannedBy?: string;
     bannedAt?: Date;
   }> {
-    return await this.queryService.checkIpBanStatus(ipAddress);
+    // Hash the IP address before checking
+    const hashedIp = hashIp(ipAddress);
+    return await this.queryService.checkIpBanStatus(hashedIp);
   }
 }
