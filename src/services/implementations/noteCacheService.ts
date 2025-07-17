@@ -1,10 +1,8 @@
-import { getRedisClient } from '@/utils/redis';
+import { connectToRedis, isRedisConfigured } from '@/utils/redis';
 import { Note, NoteFilters } from '@/models/note';
-import { INoteService } from '@/services/interfaces/noteServiceInterface';
 import { NoteDatabaseService } from './noteDatabaseService';
 
 export class NoteCacheService extends NoteDatabaseService {
-  private redis = getRedisClient();
   private readonly CACHE_TTL = 300; // 5 minutes
   private readonly CACHE_PREFIX = 'note:';
   private readonly LIST_CACHE_PREFIX = 'notes:list:';
@@ -49,10 +47,15 @@ export class NoteCacheService extends NoteDatabaseService {
   }
 
   async getAll(filters?: NoteFilters): Promise<Note[]> {
+    if (!isRedisConfigured()) {
+      return super.getAll(filters);
+    }
+
     const cacheKey = this.getListCacheKey(filters);
 
     try {
-      const cached = await this.redis.get(cacheKey);
+      const redisClient = await connectToRedis();
+      const cached = await redisClient.get(cacheKey);
       if (cached) {
         return JSON.parse(cached);
       }
@@ -63,7 +66,8 @@ export class NoteCacheService extends NoteDatabaseService {
     const notes = await super.getAll(filters);
 
     try {
-      await this.redis.setEx(cacheKey, this.CACHE_TTL, JSON.stringify(notes));
+      const redisClient = await connectToRedis();
+      await redisClient.setEx(cacheKey, this.CACHE_TTL, JSON.stringify(notes));
     } catch (error) {
       console.error('Error writing to cache:', error);
     }
@@ -72,10 +76,15 @@ export class NoteCacheService extends NoteDatabaseService {
   }
 
   async getById(id: string): Promise<Note | null> {
+    if (!isRedisConfigured()) {
+      return super.getById(id);
+    }
+
     const cacheKey = this.getCacheKey(id);
 
     try {
-      const cached = await this.redis.get(cacheKey);
+      const redisClient = await connectToRedis();
+      const cached = await redisClient.get(cacheKey);
       if (cached) {
         return JSON.parse(cached);
       }
@@ -87,7 +96,8 @@ export class NoteCacheService extends NoteDatabaseService {
 
     if (note) {
       try {
-        await this.redis.setEx(cacheKey, this.CACHE_TTL, JSON.stringify(note));
+        const redisClient = await connectToRedis();
+        await redisClient.setEx(cacheKey, this.CACHE_TTL, JSON.stringify(note));
       } catch (error) {
         console.error('Error writing to cache:', error);
       }
@@ -100,10 +110,15 @@ export class NoteCacheService extends NoteDatabaseService {
     forUserId: string,
     filters?: NoteFilters
   ): Promise<Note[]> {
+    if (!isRedisConfigured()) {
+      return super.getByForUserId(forUserId, filters);
+    }
+
     const cacheKey = this.getUserCacheKey(forUserId, 'for', filters);
 
     try {
-      const cached = await this.redis.get(cacheKey);
+      const redisClient = await connectToRedis();
+      const cached = await redisClient.get(cacheKey);
       if (cached) {
         return JSON.parse(cached);
       }
@@ -114,7 +129,8 @@ export class NoteCacheService extends NoteDatabaseService {
     const notes = await super.getByForUserId(forUserId, filters);
 
     try {
-      await this.redis.setEx(cacheKey, this.CACHE_TTL, JSON.stringify(notes));
+      const redisClient = await connectToRedis();
+      await redisClient.setEx(cacheKey, this.CACHE_TTL, JSON.stringify(notes));
     } catch (error) {
       console.error('Error writing to cache:', error);
     }
@@ -126,10 +142,15 @@ export class NoteCacheService extends NoteDatabaseService {
     fromUserId: string,
     filters?: NoteFilters
   ): Promise<Note[]> {
+    if (!isRedisConfigured()) {
+      return super.getByFromUserId(fromUserId, filters);
+    }
+
     const cacheKey = this.getUserCacheKey(fromUserId, 'from', filters);
 
     try {
-      const cached = await this.redis.get(cacheKey);
+      const redisClient = await connectToRedis();
+      const cached = await redisClient.get(cacheKey);
       if (cached) {
         return JSON.parse(cached);
       }
@@ -140,7 +161,8 @@ export class NoteCacheService extends NoteDatabaseService {
     const notes = await super.getByFromUserId(fromUserId, filters);
 
     try {
-      await this.redis.setEx(cacheKey, this.CACHE_TTL, JSON.stringify(notes));
+      const redisClient = await connectToRedis();
+      await redisClient.setEx(cacheKey, this.CACHE_TTL, JSON.stringify(notes));
     } catch (error) {
       console.error('Error writing to cache:', error);
     }
@@ -200,10 +222,15 @@ export class NoteCacheService extends NoteDatabaseService {
     userId2: string,
     filters?: NoteFilters
   ): Promise<Note[]> {
+    if (!isRedisConfigured()) {
+      return super.getNotesBetweenUsers(userId1, userId2, filters);
+    }
+
     const cacheKey = this.getBetweenUsersCacheKey(userId1, userId2, filters);
 
     try {
-      const cached = await this.redis.get(cacheKey);
+      const redisClient = await connectToRedis();
+      const cached = await redisClient.get(cacheKey);
       if (cached) {
         return JSON.parse(cached);
       }
@@ -214,7 +241,8 @@ export class NoteCacheService extends NoteDatabaseService {
     const notes = await super.getNotesBetweenUsers(userId1, userId2, filters);
 
     try {
-      await this.redis.setEx(cacheKey, this.CACHE_TTL, JSON.stringify(notes));
+      const redisClient = await connectToRedis();
+      await redisClient.setEx(cacheKey, this.CACHE_TTL, JSON.stringify(notes));
     } catch (error) {
       console.error('Error writing to cache:', error);
     }
@@ -223,18 +251,28 @@ export class NoteCacheService extends NoteDatabaseService {
   }
 
   private async invalidateNoteCache(id: string): Promise<void> {
+    if (!isRedisConfigured()) {
+      return;
+    }
+
     try {
-      await this.redis.del(this.getCacheKey(id));
+      const redisClient = await connectToRedis();
+      await redisClient.del(this.getCacheKey(id));
     } catch (error) {
       console.error('Error invalidating note cache:', error);
     }
   }
 
   private async invalidateListCaches(): Promise<void> {
+    if (!isRedisConfigured()) {
+      return;
+    }
+
     try {
-      const keys = await this.redis.keys(`${this.LIST_CACHE_PREFIX}*`);
+      const redisClient = await connectToRedis();
+      const keys = await redisClient.keys(`${this.LIST_CACHE_PREFIX}*`);
       if (keys.length > 0) {
-        await this.redis.del(keys);
+        await redisClient.del(keys);
       }
     } catch (error) {
       console.error('Error invalidating list caches:', error);
@@ -245,18 +283,23 @@ export class NoteCacheService extends NoteDatabaseService {
     forUserId: string,
     fromUserId: string
   ): Promise<void> {
+    if (!isRedisConfigured()) {
+      return;
+    }
+
     try {
+      const redisClient = await connectToRedis();
       // Invalidate caches for both users
-      const forUserKeys = await this.redis.keys(
+      const forUserKeys = await redisClient.keys(
         `${this.USER_CACHE_PREFIX}for:${forUserId}:*`
       );
-      const fromUserKeys = await this.redis.keys(
+      const fromUserKeys = await redisClient.keys(
         `${this.USER_CACHE_PREFIX}from:${fromUserId}:*`
       );
-      const betweenUserKeys = await this.redis.keys(
+      const betweenUserKeys = await redisClient.keys(
         `${this.USER_CACHE_PREFIX}between:*${forUserId}*`
       );
-      const betweenUserKeys2 = await this.redis.keys(
+      const betweenUserKeys2 = await redisClient.keys(
         `${this.USER_CACHE_PREFIX}between:*${fromUserId}*`
       );
 
@@ -268,7 +311,7 @@ export class NoteCacheService extends NoteDatabaseService {
       ];
 
       if (allKeys.length > 0) {
-        await this.redis.del(allKeys);
+        await redisClient.del(allKeys);
       }
     } catch (error) {
       console.error('Error invalidating user caches:', error);

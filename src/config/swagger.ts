@@ -823,6 +823,10 @@ const swaggerOptions: Options = {
         name: 'Hello',
         description: 'Welcome and basic endpoints',
       },
+      {
+        name: 'Notes',
+        description: 'Note management endpoints for privileged users',
+      },
     ],
   },
   apis: ['./src/routes/*.ts', './src/controllers/*.ts', './src/models/*.ts'],
