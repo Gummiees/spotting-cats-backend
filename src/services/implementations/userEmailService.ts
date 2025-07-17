@@ -113,8 +113,9 @@ export class UserEmailService {
       const normalizedEmail = this.utilityService.normalizeEmail(
         emailChangeRequest.newEmail
       );
+      const encryptedEmail = encryptEmail(normalizedEmail);
       const result = await this.dbOps.updateUser(userId, {
-        email: normalizedEmail,
+        email: encryptedEmail,
         emailUpdatedAt: this.utilityService.createTimestamp(),
         updatedAt: this.utilityService.createTimestamp(),
       });
@@ -167,25 +168,44 @@ export class UserEmailService {
       }
 
       const normalizedEmail = this.utilityService.normalizeEmail(email);
-      const encryptedEmail = encryptEmail(normalizedEmail);
 
       // If excludeUserId is provided, first check if the email is the same as the current user's email
       if (excludeUserId) {
         const currentUser = await this.dbOps.findUserById(excludeUserId);
-        if (currentUser && currentUser.email === encryptedEmail) {
-          return {
-            available: false,
-            message: 'Email is the same as your current email',
-            statusCode: 'EMAIL_SAME_AS_CURRENT',
-          };
+        if (currentUser) {
+          try {
+            const decryptedCurrentEmail = decryptEmail(currentUser.email);
+            if (decryptedCurrentEmail === normalizedEmail) {
+              return {
+                available: false,
+                message: 'Email is the same as your current email',
+                statusCode: 'EMAIL_SAME_AS_CURRENT',
+              };
+            }
+          } catch (decryptError) {
+            console.error('Error decrypting current user email:', decryptError);
+            // If we can't decrypt the current email, continue with the availability check
+          }
         }
       }
 
       // Check if the email is already in use by other users (excluding current user)
-      const isAvailable = !(await this.dbOps.checkEmailExists(
-        encryptedEmail,
-        excludeUserId
-      ));
+      // We need to check all users and decrypt their emails to compare
+      const allUsers = await this.dbOps.findAllUsers();
+      const emailExists = allUsers.some((user) => {
+        if (excludeUserId && user._id.toString() === excludeUserId) {
+          return false; // Exclude current user
+        }
+        try {
+          const decryptedUserEmail = decryptEmail(user.email);
+          return decryptedUserEmail === normalizedEmail;
+        } catch (decryptError) {
+          console.error('Error decrypting user email:', decryptError);
+          return false; // If we can't decrypt, assume it doesn't match
+        }
+      });
+
+      const isAvailable = !emailExists;
 
       return {
         available: isAvailable,

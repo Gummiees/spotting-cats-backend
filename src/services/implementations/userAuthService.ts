@@ -2,7 +2,7 @@ import { User } from '@/models/user';
 import { UserDatabaseOperations } from './userDatabaseOperations';
 import { UserUtilityService } from './userUtilityService';
 import { UserIpBanService } from './userIpBanService';
-import { encryptEmail, decryptEmail } from '@/utils/security';
+import { decryptEmail } from '@/utils/security';
 import { emailService } from '@/services/emailService';
 
 export class UserAuthService {
@@ -34,8 +34,17 @@ export class UserAuthService {
       }
 
       const normalizedEmail = this.utilityService.normalizeEmail(email);
-      const encryptedEmail = encryptEmail(normalizedEmail);
-      const existingUser = await this.dbOps.findUserByEmail(encryptedEmail);
+      // We need to check all users and decrypt their emails to find a match
+      const allUsers = await this.dbOps.findAllUsers();
+      const existingUser = allUsers.find((user) => {
+        try {
+          const decryptedUserEmail = decryptEmail(user.email);
+          return decryptedUserEmail === normalizedEmail;
+        } catch (decryptError) {
+          console.error('Error decrypting user email:', decryptError);
+          return false;
+        }
+      });
 
       // Check if existing user is banned
       if (existingUser && existingUser.isBanned) {
@@ -180,8 +189,18 @@ export class UserAuthService {
   async getUserByEmail(email: string): Promise<User | null> {
     try {
       const normalizedEmail = this.utilityService.normalizeEmail(email);
-      const encryptedEmail = encryptEmail(normalizedEmail);
-      const user = await this.dbOps.findUserByEmail(encryptedEmail);
+      // We need to check all users and decrypt their emails to find a match
+      const allUsers = await this.dbOps.findAllUsers();
+      const user = allUsers.find((user) => {
+        try {
+          const decryptedUserEmail = decryptEmail(user.email);
+          return decryptedUserEmail === normalizedEmail;
+        } catch (decryptError) {
+          console.error('Error decrypting user email:', decryptError);
+          return false;
+        }
+      });
+
       if (!user || user.isBanned) return null;
       return this.utilityService.mapUserToResponse(user);
     } catch (error) {
@@ -238,10 +257,18 @@ export class UserAuthService {
       }
     }
 
-    // Encrypt email before searching in database
+    // We need to check all users and decrypt their emails to find a match
     const normalizedEmail = this.utilityService.normalizeEmail(email);
-    const encryptedEmail = encryptEmail(normalizedEmail);
-    let user = await this.dbOps.findUserByEmail(encryptedEmail);
+    const allUsers = await this.dbOps.findAllUsers();
+    let user = allUsers.find((user) => {
+      try {
+        const decryptedUserEmail = decryptEmail(user.email);
+        return decryptedUserEmail === normalizedEmail;
+      } catch (decryptError) {
+        console.error('Error decrypting user email:', decryptError);
+        return false;
+      }
+    });
     let isNewUser = false;
 
     if (!user) {

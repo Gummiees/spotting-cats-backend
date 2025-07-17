@@ -2,7 +2,7 @@ import { User, PublicUser } from '@/models/user';
 import { emailService } from '@/services/emailService';
 import { UserDatabaseOperations } from './userDatabaseOperations';
 import { UserUtilityService } from './userUtilityService';
-import { encryptEmail, decryptEmail, hashIp } from '@/utils/security';
+import { encryptEmail, decryptEmail } from '@/utils/security';
 
 export class UserManagementService {
   constructor(
@@ -630,14 +630,23 @@ export class UserManagementService {
       };
     }
 
-    // Check if email is already in use by comparing encrypted emails
+    // Check if email is already in use by comparing decrypted emails
     const normalizedEmail = this.utilityService.normalizeEmail(email);
-    const encryptedEmail = encryptEmail(normalizedEmail);
-    const isAvailable = !(await this.dbOps.checkEmailExists(
-      encryptedEmail,
-      userId
-    ));
-    if (!isAvailable) {
+    const allUsers = await this.dbOps.findAllUsers();
+    const emailExists = allUsers.some((user) => {
+      if (user._id.toString() === userId) {
+        return false; // Exclude current user
+      }
+      try {
+        const decryptedUserEmail = decryptEmail(user.email);
+        return decryptedUserEmail === normalizedEmail;
+      } catch (decryptError) {
+        console.error('Error decrypting user email:', decryptError);
+        return false; // If we can't decrypt, assume it doesn't match
+      }
+    });
+
+    if (emailExists) {
       return { success: false, message: 'Email is already in use' };
     }
 
