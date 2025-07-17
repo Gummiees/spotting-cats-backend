@@ -1,4 +1,4 @@
-import { User } from '@/models/user';
+import { User, PublicUser } from '@/models/user';
 import { emailService } from '@/services/emailService';
 import { UserDatabaseOperations } from './userDatabaseOperations';
 import { UserUtilityService } from './userUtilityService';
@@ -209,6 +209,58 @@ export class UserManagementService {
       };
     } catch (error) {
       console.error('Error getting all users with privileges:', error);
+      return {
+        success: false,
+        users: [],
+        message: 'Failed to retrieve users',
+      };
+    }
+  }
+
+  async getAllUsersPublic(): Promise<{
+    success: boolean;
+    users: PublicUser[];
+    message: string;
+  }> {
+    try {
+      const users = await this.dbOps.findAllUsersWithPrivileges();
+
+      // Map users to public format with resolved usernames
+      const mappedUsers = await Promise.all(
+        users.map(async (user) => {
+          const mappedUser = this.utilityService.mapUserToPublicResponse(user);
+
+          // Resolve bannedBy ID to username if it exists
+          if (mappedUser.bannedBy) {
+            const bannedByUsername = await this.resolveUserIdToUsername(
+              mappedUser.bannedBy
+            );
+            if (bannedByUsername) {
+              mappedUser.bannedBy = bannedByUsername;
+            }
+          }
+
+          // Resolve roleUpdatedBy ID to username if it exists
+          if (mappedUser.roleUpdatedBy) {
+            const roleUpdatedByUsername = await this.resolveUserIdToUsername(
+              mappedUser.roleUpdatedBy
+            );
+            if (roleUpdatedByUsername) {
+              mappedUser.roleUpdatedBy = roleUpdatedByUsername;
+            }
+          }
+
+          return mappedUser;
+        })
+      );
+
+      return {
+        success: true,
+        users: mappedUsers,
+        message: `Retrieved ${mappedUsers.length} users`,
+      };
+    } catch (error) {
+      console.error('Error getting all public users:', error);
       return {
         success: false,
         users: [],

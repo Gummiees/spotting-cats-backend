@@ -75,6 +75,27 @@ export interface PublicUserByUsername {
   createdAt: Date;
 }
 
+export interface PublicUser {
+  id?: string;
+  username: string;
+  avatarUrl: string;
+  role: UserRole;
+  isActive: boolean;
+  isBanned: boolean;
+  banReason?: string;
+  bannedBy?: string;
+  lastLoginAt: Date;
+  createdAt: Date;
+  updatedAt?: Date;
+  emailUpdatedAt?: Date;
+  usernameUpdatedAt?: Date;
+  avatarUpdatedAt?: Date;
+  deactivatedAt?: Date;
+  bannedAt?: Date;
+  roleUpdatedAt?: Date;
+  roleUpdatedBy?: string;
+}
+
 export function applyUserBusinessLogic(user: Partial<User>): Partial<User> {
   const updatedUser = { ...user };
 

@@ -14,10 +14,8 @@ import {
   BanIpRequest,
   UnbanIpRequest,
 } from '@/models/requests';
-import { PublicUserByUsername } from '@/models/user';
 import { isValidDiceBearUrl } from '@/utils/avatar';
 import { config } from '@/config';
-import { User } from '@/models/user';
 import { getClientIp } from '@/utils/security';
 
 export class UserController {
@@ -73,10 +71,16 @@ export class UserController {
 
       if (result.success && result.token) {
         UserController.setAuthCookie(res, result.token);
+
+        // Get public user data instead of full user data
+        const publicUser = result.user
+          ? await userService.getUserByIdPublic(result.user.id!)
+          : null;
+
         ResponseUtil.success(
           res,
           {
-            user: result.user,
+            user: publicUser,
             isNewUser: result.isNewUser,
           },
           result.message
@@ -101,7 +105,7 @@ export class UserController {
         return;
       }
 
-      const user = await userService.getUserById(req.user!.userId);
+      const user = await userService.getUserByIdPublic(req.user!.userId);
 
       if (!user) {
         ResponseUtil.notFound(res, 'User not found');
@@ -688,20 +692,7 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const result = await userService.getAllUsersWithPrivileges(true);
-
-      const requestingUser = req.user;
-      const includeIpData = !!(
-        requestingUser &&
-        (requestingUser.role === 'admin' ||
-          requestingUser.role === 'superadmin')
-      );
-      if (result.success && result.users && !includeIpData) {
-        result.users.forEach((user) => {
-          delete user.ipAddresses;
-          delete user.lastIpAddress;
-        });
-      }
+      const result = await userService.getAllUsersPublic();
 
       if (result.success) {
         ResponseUtil.success(res, { users: result.users }, result.message);
@@ -743,67 +734,14 @@ export class UserController {
     try {
       const { username } = req.params;
 
-      const token = req.cookies?.auth_token;
-      let callerHasElevatedPermissions = false;
-      let decoded: any = null;
-
-      if (token) {
-        decoded = userService.verifyToken(token);
-        if (decoded) {
-          const caller = await userService.getUserById(decoded.userId);
-          if (caller && !caller.isBanned) {
-            callerHasElevatedPermissions = [
-              'moderator',
-              'admin',
-              'superadmin',
-            ].includes(caller.role);
-          }
-        }
-      }
-
-      let user: User | null;
-      if (callerHasElevatedPermissions) {
-        user = await userService.getUserByUsernameWithPrivileges(
-          username.trim(),
-          true
-        );
-
-        const caller = await userService.getUserById(decoded!.userId);
-        const includeIpData =
-          caller && ['admin', 'superadmin'].includes(caller.role);
-
-        if (user && !includeIpData) {
-          delete user.ipAddresses;
-          delete user.lastIpAddress;
-        }
-      } else {
-        user = await userService.getUserByUsername(username.trim());
-      }
+      const user = await userService.getUserByUsernamePublic(username.trim());
 
       if (!user) {
         ResponseUtil.notFound(res, 'User not found');
         return;
       }
 
-      if (callerHasElevatedPermissions) {
-        ResponseUtil.success(res, { user }, 'User retrieved successfully');
-      } else {
-        const publicUser: PublicUserByUsername = {
-          username: user.username,
-          avatarUrl: user.avatarUrl,
-          role: user.role,
-          isInactive: !user.isActive || user.isBanned,
-          isBanned: user.isBanned,
-          lastLoginAt: user.lastLoginAt,
-          createdAt: user.createdAt,
-        };
-
-        ResponseUtil.success(
-          res,
-          { user: publicUser },
-          'User retrieved successfully'
-        );
-      }
+      ResponseUtil.success(res, { user }, 'User retrieved successfully');
     } catch (error) {
       next(error);
     }
@@ -828,22 +766,7 @@ export class UserController {
         return;
       }
 
-      const user = await userService.getUserByIdWithPrivileges(
-        userId.trim(),
-        true
-      );
-
-      const requestingUser = req.user;
-      const includeIpData = !!(
-        requestingUser &&
-        (requestingUser.role === 'admin' ||
-          requestingUser.role === 'superadmin')
-      );
-
-      if (user && !includeIpData) {
-        delete user.ipAddresses;
-        delete user.lastIpAddress;
-      }
+      const user = await userService.getUserByIdPublic(userId.trim());
 
       if (!user) {
         ResponseUtil.notFound(res, 'User not found');

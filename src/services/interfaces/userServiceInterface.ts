@@ -1,4 +1,4 @@
-import { User, UserSession, UserRole } from '@/models/user';
+import { User, UserSession, UserRole, PublicUser } from '@/models/user';
 import { UserUpdateRequest } from '@/models/requests';
 
 export interface UserServiceInterface {
@@ -40,6 +40,7 @@ export interface UserServiceInterface {
     userId: string,
     includePrivilegedData: boolean
   ): Promise<User | null>;
+  getUserByIdPublic(userId: string): Promise<PublicUser | null>;
   getUserByEmail(email: string): Promise<User | null>;
   getUserByUsername(username: string): Promise<User | null>;
   getUserByUsernameWithResolvedUsernames(
@@ -49,6 +50,7 @@ export interface UserServiceInterface {
     username: string,
     includePrivilegedData: boolean
   ): Promise<User | null>;
+  getUserByUsernamePublic(username: string): Promise<PublicUser | null>;
   updateUser(
     userId: string,
     updates: UserUpdateRequest
@@ -71,6 +73,11 @@ export interface UserServiceInterface {
   getAllUsersWithPrivileges(
     includePrivilegedData: boolean
   ): Promise<{ success: boolean; users: User[]; message: string }>;
+  getAllUsersPublic(): Promise<{
+    success: boolean;
+    users: PublicUser[];
+    message: string;
+  }>;
 
   // Utility methods
   cleanupExpiredCodes(): Promise<void>;

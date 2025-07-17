@@ -27,6 +27,7 @@ export class UserEmailService {
         return {
           success: false,
           message: 'New email must be different from current email',
+          errorCode: 'EMAIL_SAME_AS_CURRENT',
         };
       }
 

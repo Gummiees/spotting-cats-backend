@@ -1,5 +1,5 @@
 import { UserServiceInterface } from '@/services/interfaces/userServiceInterface';
-import { User, UserSession } from '@/models/user';
+import { User, UserSession, PublicUser } from '@/models/user';
 import { UserUpdateRequest } from '@/models/requests';
 import { getRedisClient } from '@/utils/redis';
 
@@ -120,6 +120,18 @@ export class UserCacheService implements UserServiceInterface {
     }
   }
 
+  async getUserByIdPublic(userId: string): Promise<PublicUser | null> {
+    try {
+      // For public user data, we'll go directly to the database service
+      // since the cache doesn't store the public user format
+      return await this.userService.getUserByIdPublic(userId);
+    } catch (error) {
+      console.error('Error getting public user by ID from cache:', error);
+      // Fallback to database service
+      return this.userService.getUserByIdPublic(userId);
+    }
+  }
+
   async getUserByEmail(email: string): Promise<User | null> {
     try {
       // Try to get user ID from email cache first
@@ -194,6 +206,18 @@ export class UserCacheService implements UserServiceInterface {
         username,
         includePrivilegedData
       );
+    }
+  }
+
+  async getUserByUsernamePublic(username: string): Promise<PublicUser | null> {
+    try {
+      // For public user data, we'll go directly to the database service
+      // since the cache doesn't store the public user format
+      return await this.userService.getUserByUsernamePublic(username);
+    } catch (error) {
+      console.error('Error getting public user by username from cache:', error);
+      // Fallback to database service
+      return this.userService.getUserByUsernamePublic(username);
     }
   }
 
@@ -372,6 +396,22 @@ export class UserCacheService implements UserServiceInterface {
       );
       // Fallback to database service
       return this.userService.getAllUsersWithPrivileges(includePrivilegedData);
+    }
+  }
+
+  async getAllUsersPublic(): Promise<{
+    success: boolean;
+    users: PublicUser[];
+    message: string;
+  }> {
+    try {
+      // For public user data, we'll go directly to the database service
+      // since the cache doesn't store the public user format
+      return await this.userService.getAllUsersPublic();
+    } catch (error) {
+      console.error('Error getting all public users from cache:', error);
+      // Fallback to database service
+      return this.userService.getAllUsersPublic();
     }
   }
 

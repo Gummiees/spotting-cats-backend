@@ -151,7 +151,7 @@ router.post(
  *                   type: object
  *                   properties:
  *                     user:
- *                       $ref: '#/components/schemas/User'
+ *                       $ref: '#/components/schemas/PublicUser'
  *                     isNewUser:
  *                       type: boolean
  *                       example: false
@@ -256,7 +256,7 @@ router.post('/refresh-token', authMiddleware, UserController.refreshToken);
  *                   type: object
  *                   properties:
  *                     user:
- *                       $ref: '#/components/schemas/User'
+ *                       $ref: '#/components/schemas/PublicUser'
  *                 message:
  *                   type: string
  *                   example: "User profile retrieved successfully"
@@ -385,7 +385,7 @@ router.get('/check-email', UserController.checkEmailAvailability);
  *                   type: object
  *                   properties:
  *                     user:
- *                       $ref: '#/components/schemas/User'
+ *                       $ref: '#/components/schemas/PublicUser'
  *                 message:
  *                   type: string
  *                   example: "User retrieved successfully"
@@ -425,8 +425,8 @@ router.get(
  * @swagger
  * /api/v1/users/{username}:
  *   get:
- *     summary: Get user by username (public access with role-based data visibility)
- *     description: Retrieve user information by username. Returns different levels of user data based on the caller's role. Regular users and anonymous users receive limited public information. Users with moderator, admin, or superadmin roles receive complete user information including sensitive fields like email, ban details, and timestamps. For security reasons, banned or inactive user profiles are only accessible to users with elevated permissions.
+ *     summary: Get user by username (public access)
+ *     description: Retrieve public user information by username. Returns user data excluding email and IP addresses for privacy and security.
  *     tags: [Users]
  *     parameters:
  *       - in: path
@@ -442,35 +442,19 @@ router.get(
  *         content:
  *           application/json:
  *             schema:
- *               oneOf:
- *                 - type: object
- *                   description: Complete user information (for moderator, admin, superadmin)
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
  *                   properties:
- *                     success:
- *                       type: boolean
- *                       example: true
- *                     data:
- *                       type: object
- *                       properties:
- *                         user:
- *                           $ref: '#/components/schemas/User'
- *                     message:
- *                       type: string
- *                       example: "User retrieved successfully"
- *                 - type: object
- *                   description: Public user information (for regular users and anonymous)
- *                   properties:
- *                     success:
- *                       type: boolean
- *                       example: true
- *                     data:
- *                       type: object
- *                       properties:
- *                         user:
- *                           $ref: '#/components/schemas/PublicUserByUsername'
- *                     message:
- *                       type: string
- *                       example: "User retrieved successfully"
+ *                     user:
+ *                       $ref: '#/components/schemas/PublicUser'
+ *                 message:
+ *                   type: string
+ *                   example: "User retrieved successfully"
  *       400:
  *         description: Username is required
  *         content:
@@ -1119,7 +1103,7 @@ router.post(
  * @swagger
  * /api/v1/users/admin/all:
  *   get:
- *     summary: Get all users (Admin only)
+ *     summary: Get all users (Admin only - returns public data)
  *     tags: [Admin]
  *     security:
  *       - cookieAuth: []
@@ -1135,9 +1119,12 @@ router.post(
  *                   type: boolean
  *                   example: true
  *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/User'
+ *                   type: object
+ *                   properties:
+ *                     users:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/PublicUser'
  *                 message:
  *                   type: string
  *                   example: "All users retrieved successfully"

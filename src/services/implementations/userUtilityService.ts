@@ -4,7 +4,12 @@ import {
   adjectives,
   nouns,
 } from 'unique-username-generator';
-import { User, UserSession, applyUserBusinessLogic } from '@/models/user';
+import {
+  User,
+  UserSession,
+  applyUserBusinessLogic,
+  PublicUser,
+} from '@/models/user';
 import { generateAvatarForUsername } from '@/utils/avatar';
 import { config } from '@/config';
 
@@ -140,6 +145,29 @@ export class UserUtilityService {
       role: user.role || 'user',
       banReason: user.banReason,
       bannedBy: user.bannedBy,
+      roleUpdatedAt: user.roleUpdatedAt,
+      roleUpdatedBy: user.roleUpdatedBy,
+    };
+  }
+
+  mapUserToPublicResponse(user: any): PublicUser {
+    return {
+      id: user._id.toString(),
+      username: user.username,
+      avatarUrl: user.avatarUrl,
+      role: user.role || 'user',
+      isActive: user.isActive,
+      isBanned: user.isBanned || false,
+      banReason: user.banReason,
+      bannedBy: user.bannedBy,
+      lastLoginAt: user.lastLoginAt,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      emailUpdatedAt: user.emailUpdatedAt,
+      usernameUpdatedAt: user.usernameUpdatedAt,
+      avatarUpdatedAt: user.avatarUpdatedAt,
+      deactivatedAt: user.deactivatedAt,
+      bannedAt: user.bannedAt,
       roleUpdatedAt: user.roleUpdatedAt,
       roleUpdatedBy: user.roleUpdatedBy,
     };

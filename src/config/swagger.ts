@@ -183,11 +183,11 @@ const swaggerOptions: Options = {
         PublicUser: {
           type: 'object',
           description:
-            'Public user information returned by getUserById endpoint',
+            'Public user information returned by user endpoints (excludes email and IP addresses)',
           properties: {
             id: {
               type: 'string',
-              description: 'User ID (renamed from _id)',
+              description: 'User ID',
               example: '507f1f77bcf86cd799439011',
             },
             username: {
@@ -206,21 +206,30 @@ const swaggerOptions: Options = {
               description: 'User role in the system',
               example: 'user',
             },
-            isInactive: {
+            isActive: {
               type: 'boolean',
-              description: 'True if user is not active or banned or deleted',
-              example: false,
+              description: 'Whether the user account is active',
+              example: true,
             },
             isBanned: {
               type: 'boolean',
               description: 'Whether the user is banned',
               example: false,
             },
+            banReason: {
+              type: 'string',
+              description: 'Reason for the ban (if banned)',
+              example: 'Violation of community guidelines',
+            },
+            bannedBy: {
+              type: 'string',
+              description: 'Username of the user who banned this user',
+              example: 'admin_user',
+            },
             lastLoginAt: {
               type: 'string',
               format: 'date-time',
-              description:
-                'Last login timestamp (set to creation time for new users)',
+              description: 'Last login timestamp',
               example: '2024-01-15T10:30:00.000Z',
             },
             createdAt: {
@@ -228,6 +237,47 @@ const swaggerOptions: Options = {
               format: 'date-time',
               description: 'Account creation timestamp',
               example: '2024-01-01T00:00:00.000Z',
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Last update timestamp',
+            },
+            emailUpdatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'When email was last updated',
+            },
+            usernameUpdatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'When username was last updated',
+            },
+            avatarUpdatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'When avatar was last updated',
+            },
+            deactivatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'When account was deactivated',
+            },
+            bannedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'When user was banned',
+            },
+            roleUpdatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'When the user role was last updated',
+            },
+            roleUpdatedBy: {
+              type: 'string',
+              description:
+                'Username of the user who last updated this user role',
+              example: 'superadmin_user',
             },
           },
         },
