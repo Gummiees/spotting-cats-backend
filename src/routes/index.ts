@@ -6,6 +6,7 @@ import helloRoutes from './helloRoutes';
 import catRoutes from './catRoutes';
 import cacheRoutes from './cacheRoutes';
 import { userRoutes } from './userRoutes';
+import noteRoutes from './noteRoutes';
 
 const router = Router();
 
@@ -51,5 +52,6 @@ router.use(`${config.api.prefix}/${config.api.version}/hello`, helloRoutes);
 router.use(`${config.api.prefix}/${config.api.version}/cats`, catRoutes);
 router.use(`${config.api.prefix}/${config.api.version}/cache`, cacheRoutes);
 router.use(`${config.api.prefix}/${config.api.version}/users`, userRoutes);
+router.use(`${config.api.prefix}/${config.api.version}/notes`, noteRoutes);
 
 export default router;

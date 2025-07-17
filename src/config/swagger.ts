@@ -508,6 +508,42 @@ const swaggerOptions: Options = {
             },
           },
         },
+        Note: {
+          type: 'object',
+          description:
+            'Note entity for privileged users to add notes about users',
+          properties: {
+            id: {
+              type: 'string',
+              example: '507f1f77bcf86cd799439011',
+            },
+            forUserId: {
+              type: 'string',
+              description: 'ID of the user the note is for',
+              example: '507f1f77bcf86cd799439011',
+            },
+            fromUserId: {
+              type: 'string',
+              description: 'ID of the user who created the note',
+              example: '507f1f77bcf86cd799439012',
+            },
+            note: {
+              type: 'string',
+              description: 'The note content',
+              example: 'User has been reported for inappropriate behavior',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'When the note was created',
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'When the note was last updated (optional)',
+            },
+          },
+        },
         HealthStatus: {
           type: 'object',
           properties: {

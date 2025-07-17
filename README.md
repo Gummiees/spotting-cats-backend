@@ -201,6 +201,17 @@ erDiagram
         DateTime createdAt
         DateTime updatedAt
     }
+
+    USER ||--o{ NOTES : receives
+    USER ||--o{ NOTES : writes
+    NOTES {
+        string id PK
+        string forUserId FK
+        string fromUserId FK
+        string note
+        DateTime createdAt
+        DateTime updatedAt
+    }
 ```
 
 ## Installation
