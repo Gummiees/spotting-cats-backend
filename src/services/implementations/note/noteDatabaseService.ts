@@ -264,15 +264,17 @@ export class NoteDatabaseService implements INoteService {
 
   // Helper method to map Note to NoteResponse
   private async mapNoteToResponse(note: Note): Promise<NoteResponse> {
-    const [forUser, byUser] = await Promise.all([
-      this.resolveUserIdToUsername(note.forUserId),
-      this.resolveUserIdToUsername(note.fromUserId),
-    ]);
+    const forUser = await this.resolveUserIdToUsername(note.forUserId);
+
+    // Handle orphaned notes (where fromUserId is undefined)
+    const fromUser = note.fromUserId
+      ? await this.resolveUserIdToUsername(note.fromUserId)
+      : undefined;
 
     return {
       id: note.id!,
       forUser,
-      byUser,
+      fromUser,
       note: note.note,
       createdAt: note.createdAt,
       updatedAt: note.updatedAt,

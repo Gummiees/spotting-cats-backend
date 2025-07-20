@@ -340,6 +340,17 @@ export class UserDatabaseOperations {
     await catsCollection.updateMany({ userId }, { $unset: { userId: '' } });
   }
 
+  // Note operations (for orphaning)
+  async orphanUserNotes(userId: string): Promise<void> {
+    const { connectToMongo } = await import('@/utils/mongo');
+    const db = await connectToMongo();
+    const notesCollection = db.collection('notes');
+    await notesCollection.updateMany(
+      { fromUserId: userId },
+      { $unset: { fromUserId: '' } }
+    );
+  }
+
   // Utility methods
   private createObjectId(id: string): ObjectId {
     return new ObjectId(id);

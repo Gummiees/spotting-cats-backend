@@ -326,7 +326,7 @@ export class NoteCacheService extends NoteDatabaseService {
 
   private async invalidateUserCaches(
     forUserId: string,
-    fromUserId: string
+    fromUserId?: string
   ): Promise<void> {
     if (!isRedisConfigured()) {
       return;
@@ -338,15 +338,19 @@ export class NoteCacheService extends NoteDatabaseService {
       const forUserKeys = await redisClient.keys(
         `${this.USER_CACHE_PREFIX}for:${forUserId}:*`
       );
-      const fromUserKeys = await redisClient.keys(
-        `${this.USER_CACHE_PREFIX}from:${fromUserId}:*`
-      );
+      const fromUserKeys = fromUserId
+        ? await redisClient.keys(
+            `${this.USER_CACHE_PREFIX}from:${fromUserId}:*`
+          )
+        : [];
       const betweenUserKeys = await redisClient.keys(
         `${this.USER_CACHE_PREFIX}between:*${forUserId}*`
       );
-      const betweenUserKeys2 = await redisClient.keys(
-        `${this.USER_CACHE_PREFIX}between:*${fromUserId}*`
-      );
+      const betweenUserKeys2 = fromUserId
+        ? await redisClient.keys(
+            `${this.USER_CACHE_PREFIX}between:*${fromUserId}*`
+          )
+        : [];
 
       const allKeys = [
         ...forUserKeys,

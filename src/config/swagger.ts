@@ -482,10 +482,12 @@ const swaggerOptions: Options = {
               description: 'Username of the user the note is for',
               example: 'john_doe',
             },
-            byUser: {
+            fromUser: {
               type: 'string',
-              description: 'Username of the user who created the note',
+              description:
+                'Username of the user who created the note (null for orphaned notes)',
               example: 'admin_user',
+              nullable: true,
             },
             note: {
               type: 'string',

@@ -54,7 +54,7 @@ export class NoteController {
 
       // Check if the authenticated user is the one who created the note
       const authenticatedUserId = req.user!.userId;
-      if (existing.fromUserId !== authenticatedUserId) {
+      if (!existing.fromUserId || existing.fromUserId !== authenticatedUserId) {
         return ResponseUtil.forbidden(
           res,
           'You can only update notes you created'
@@ -89,7 +89,7 @@ export class NoteController {
 
       // Check if the authenticated user is the one who created the note
       const authenticatedUserId = req.user!.userId;
-      if (existing.fromUserId !== authenticatedUserId) {
+      if (!existing.fromUserId || existing.fromUserId !== authenticatedUserId) {
         return ResponseUtil.forbidden(
           res,
           'You can only delete notes you created'
