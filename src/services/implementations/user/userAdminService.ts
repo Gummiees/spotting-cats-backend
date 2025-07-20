@@ -41,8 +41,8 @@ export class UserAdminService {
         }
       }
 
-      // Get notes written by this user (fromUserId)
-      const notes = await this.noteService.getByFromUserIdWithUsernames(
+      // Get notes created for this user (forUserId)
+      const notes = await this.noteService.getByForUserIdWithUsernames(
         user._id.toString()
       );
 
