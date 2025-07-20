@@ -9,7 +9,7 @@ const router = Router();
  * /api/v1/notes/user/{username}:
  *   post:
  *     summary: Create a new note for a user
- *     description: Create a note for a specific user. Only privileged users (moderator, admin, superadmin) can create notes.
+ *     description: Create a note for a specific user. Only privileged users (moderator, admin, superadmin) can create notes. Notes are automatically deleted when the target user is deleted.
  *     tags: [Notes]
  *     security:
  *       - cookieAuth: []
@@ -244,7 +244,7 @@ router.delete(
  * /api/v1/notes/user/{username}:
  *   get:
  *     summary: Get all notes for a user by username
- *     description: Retrieve all notes for a specific user. Only privileged users (moderator, admin, superadmin) can view notes.
+ *     description: Retrieve all notes for a specific user. Only privileged users (moderator, admin, superadmin) can view notes. Notes created for deleted users are automatically removed.
  *     tags: [Notes]
  *     security:
  *       - cookieAuth: []

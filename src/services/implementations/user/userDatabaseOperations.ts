@@ -340,15 +340,58 @@ export class UserDatabaseOperations {
     await catsCollection.updateMany({ userId }, { $unset: { userId: '' } });
   }
 
-  // Note operations (for orphaning)
-  async orphanUserNotes(userId: string): Promise<void> {
+  // Note operations (for orphaning and deletion)
+  async handleUserNotes(userId: string): Promise<void> {
     const { connectToMongo } = await import('@/utils/mongo');
     const db = await connectToMongo();
     const notesCollection = db.collection('notes');
+
+    // Orphan notes created by this user (remove fromUserId)
     await notesCollection.updateMany(
       { fromUserId: userId },
       { $unset: { fromUserId: '' } }
     );
+
+    // Delete notes created for this user (delete where forUserId matches)
+    await notesCollection.deleteMany({ forUserId: userId });
+
+    // Invalidate note caches after operations
+    await this.invalidateNoteCaches(userId);
+  }
+
+  // Invalidate note caches when user is deleted
+  private async invalidateNoteCaches(userId: string): Promise<void> {
+    try {
+      const { connectToRedis, isRedisConfigured } = await import(
+        '@/utils/redis'
+      );
+      if (!isRedisConfigured()) {
+        return;
+      }
+
+      const redisClient = await connectToRedis();
+
+      // Invalidate all note-related caches for this user
+      const patterns = [
+        `note:*`,
+        `notes:list:*`,
+        `notes:user:for:${userId}:*`,
+        `notes:user:from:${userId}:*`,
+        `notes:user:between:*${userId}*`,
+      ];
+
+      for (const pattern of patterns) {
+        const keys = await redisClient.keys(pattern);
+        if (keys.length > 0) {
+          await redisClient.del(keys);
+        }
+      }
+    } catch (error) {
+      console.error(
+        'Error invalidating note caches during user deletion:',
+        error
+      );
+    }
   }
 
   // Utility methods

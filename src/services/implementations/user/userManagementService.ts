@@ -530,7 +530,7 @@ export class UserManagementService {
   private async orphanUserData(userId: string): Promise<void> {
     try {
       await this.dbOps.orphanUserCats(userId);
-      await this.dbOps.orphanUserNotes(userId);
+      await this.dbOps.handleUserNotes(userId);
     } catch (error) {
       console.error('Error orphaning user data:', error);
     }
