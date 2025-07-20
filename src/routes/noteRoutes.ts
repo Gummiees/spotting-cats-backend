@@ -87,7 +87,7 @@ router.post(
  * /api/v1/notes/user/{username}/{id}:
  *   put:
  *     summary: Update a note by ID and username
- *     description: Update the content of a note. Only privileged users (moderator, admin, superadmin) can update notes.
+ *     description: Update the content of a note. Only privileged users (moderator, admin, superadmin) can update notes, and only if they created the note.
  *     tags: [Notes]
  *     security:
  *       - cookieAuth: []
@@ -148,7 +148,7 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       403:
- *         description: Forbidden - Elevated permissions required
+ *         description: Forbidden - Elevated permissions required or note not created by user
  *         content:
  *           application/json:
  *             schema:
@@ -172,7 +172,7 @@ router.put(
  * /api/v1/notes/user/{username}/{id}:
  *   delete:
  *     summary: Delete a note by ID and username
- *     description: Delete a note. Only privileged users (moderator, admin, superadmin) can delete notes.
+ *     description: Delete a note. Only privileged users (moderator, admin, superadmin) can delete notes, and only if they created the note.
  *     tags: [Notes]
  *     security:
  *       - cookieAuth: []
@@ -220,7 +220,7 @@ router.put(
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       403:
- *         description: Forbidden - Elevated permissions required
+ *         description: Forbidden - Elevated permissions required or note not created by user
  *         content:
  *           application/json:
  *             schema:

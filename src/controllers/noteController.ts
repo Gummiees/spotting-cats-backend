@@ -51,6 +51,16 @@ export class NoteController {
       if (!existing || existing.forUserId !== user.id) {
         return ResponseUtil.notFound(res, 'Note not found');
       }
+
+      // Check if the authenticated user is the one who created the note
+      const authenticatedUserId = req.user!.userId;
+      if (existing.fromUserId !== authenticatedUserId) {
+        return ResponseUtil.forbidden(
+          res,
+          'You can only update notes you created'
+        );
+      }
+
       const updated = await noteService.update(id, { note });
       if (!updated) {
         return ResponseUtil.notFound(res, 'Note not found');
@@ -76,6 +86,16 @@ export class NoteController {
       if (!existing || existing.forUserId !== user.id) {
         return ResponseUtil.notFound(res, 'Note not found');
       }
+
+      // Check if the authenticated user is the one who created the note
+      const authenticatedUserId = req.user!.userId;
+      if (existing.fromUserId !== authenticatedUserId) {
+        return ResponseUtil.forbidden(
+          res,
+          'You can only delete notes you created'
+        );
+      }
+
       const deleted = await noteService.delete(id);
       if (!deleted) {
         return ResponseUtil.notFound(res, 'Note not found');
