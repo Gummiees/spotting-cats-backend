@@ -26,7 +26,12 @@ export class NoteController {
         note,
         createdAt: new Date(),
       });
-      ResponseUtil.success(res, createdNote, 'Note created', 201);
+
+      // Get the note with resolved usernames for the response
+      const noteWithUsernames = await noteService.getByIdWithUsernames(
+        createdNote.id!
+      );
+      ResponseUtil.success(res, noteWithUsernames, 'Note created', 201);
     } catch (err) {
       next(err);
     }
@@ -65,7 +70,12 @@ export class NoteController {
       if (!updated) {
         return ResponseUtil.notFound(res, 'Note not found');
       }
-      ResponseUtil.success(res, null, 'Note updated');
+
+      // Get the updated note with resolved usernames for the response
+      const updatedNoteWithUsernames = await noteService.getByIdWithUsernames(
+        id
+      );
+      ResponseUtil.success(res, updatedNoteWithUsernames, 'Note updated');
     } catch (err) {
       next(err);
     }

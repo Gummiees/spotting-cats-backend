@@ -131,7 +131,7 @@ router.post(
  *                   type: boolean
  *                   example: true
  *                 data:
- *                   type: null
+ *                   $ref: '#/components/schemas/NoteResponse'
  *                 message:
  *                   type: string
  *                   example: "Note updated"
