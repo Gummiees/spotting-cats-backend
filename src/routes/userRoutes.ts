@@ -354,6 +354,67 @@ router.get('/check-email', UserController.checkEmailAvailability);
 
 /**
  * @swagger
+ * /api/v1/users/admin/:username:
+ *   get:
+ *     summary: Get user by username for admin view
+ *     description: Get detailed user information including notes written by the user. This endpoint requires admin privileges and returns sensitive information like email and IP addresses.
+ *     tags: [Admin]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: username
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Username of the user to retrieve
+ *     responses:
+ *       200:
+ *         description: Admin user data retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/AdminUserResponse'
+ *                 message:
+ *                   type: string
+ *                   example: "Admin user data retrieved successfully"
+ *       401:
+ *         description: Unauthorized - No valid authentication token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - Admin privileges required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get(
+  '/admin/:username',
+  authMiddleware,
+  requireElevatedPermissions,
+  UserController.getUserByUsernameAdmin
+);
+
+/**
+ * @swagger
  * /api/v1/users/{username}:
  *   get:
  *     summary: Get user by username (public access)
@@ -441,67 +502,6 @@ router.get('/check-email', UserController.checkEmailAvailability);
  *               $ref: '#/components/schemas/Error'
  */
 router.get('/:username', checkProfileAccess, UserController.getUserByUsername);
-
-/**
- * @swagger
- * /api/v1/users/admin/:username:
- *   get:
- *     summary: Get user by username for admin view
- *     description: Get detailed user information including notes written by the user. This endpoint requires admin privileges and returns sensitive information like email and IP addresses.
- *     tags: [Admin]
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - in: path
- *         name: username
- *         required: true
- *         schema:
- *           type: string
- *         description: Username of the user to retrieve
- *     responses:
- *       200:
- *         description: Admin user data retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   type: object
- *                   properties:
- *                     user:
- *                       $ref: '#/components/schemas/AdminUserResponse'
- *                 message:
- *                   type: string
- *                   example: "Admin user data retrieved successfully"
- *       401:
- *         description: Unauthorized - No valid authentication token
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       403:
- *         description: Forbidden - Admin privileges required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       404:
- *         description: User not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-router.get(
-  '/admin/:username',
-  authMiddleware,
-  requireElevatedPermissions,
-  UserController.getUserByUsernameAdmin
-);
 
 /**
  * @swagger
