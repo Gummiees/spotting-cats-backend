@@ -7,6 +7,7 @@ import catRoutes from './catRoutes';
 import cacheRoutes from './cacheRoutes';
 import { userRoutes } from './userRoutes';
 import noteRoutes from './noteRoutes';
+import algoliaRoutes from './algoliaRoutes';
 
 const router = Router();
 
@@ -53,5 +54,6 @@ router.use(`${config.api.prefix}/${config.api.version}/cats`, catRoutes);
 router.use(`${config.api.prefix}/${config.api.version}/cache`, cacheRoutes);
 router.use(`${config.api.prefix}/${config.api.version}/users`, userRoutes);
 router.use(`${config.api.prefix}/${config.api.version}/notes`, noteRoutes);
+router.use(`${config.api.prefix}/${config.api.version}/algolia`, algoliaRoutes);
 
 export default router;

@@ -4,21 +4,29 @@ import { CatFilters } from '@/services/interfaces/catServiceInterface';
 import { ResponseUtil } from '@/utils/response';
 import { AuthRequest } from '@/models/requests';
 import { CatApiService } from '@/services/catApiService';
+import { AlgoliaService } from '@/services/algoliaService';
 import { isProduction } from '@/constants/environment';
 
 const catService = new CatService();
 const catApiService = new CatApiService();
+const algoliaService = new AlgoliaService();
 
 export class CatController {
   static async create(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      // Automatically set userId from authenticated user
       const catData = {
         ...req.body,
         userId: req.user!.userId,
       };
 
       const cat = await catService.create(catData);
+
+      try {
+        await algoliaService.indexCat(cat);
+      } catch (algoliaError) {
+        console.error('Failed to index cat to Algolia:', algoliaError);
+      }
+
       ResponseUtil.success(res, cat, 'Cat created', 201);
     } catch (err) {
       next(err);
@@ -53,13 +61,11 @@ export class CatController {
       );
     } catch (catApiError) {
       console.error('CatAPI failed, falling back to database:', catApiError);
-      // Fall back to database if CatAPI fails
       await CatController.getAllFromDatabase(req, res);
     }
   }
 
   private static async getAllFromDatabase(req: Request, res: Response) {
-    // Extract and parse query parameters for database
     const filters: CatFilters = {
       userId: req.query.userId as string,
       protectorId: req.query.protectorId as string,
@@ -82,7 +88,6 @@ export class CatController {
       page: req.query.page ? parseInt(req.query.page as string) : undefined,
     };
 
-    // Remove undefined values to create a clean filter object
     const cleanFilters: CatFilters = Object.fromEntries(
       Object.entries(filters).filter(([_, value]) => value !== undefined)
     );
@@ -114,7 +119,6 @@ export class CatController {
 
   static async update(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      // Check if user owns the cat
       const cat = await catService.getById(req.params.id);
       if (!cat) return ResponseUtil.notFound(res, 'Cat not found');
 
@@ -124,6 +128,16 @@ export class CatController {
 
       const updated = await catService.update(req.params.id, req.body);
       if (!updated) return ResponseUtil.notFound(res, 'Cat not found');
+
+      try {
+        const updatedCat = await catService.getById(req.params.id);
+        if (updatedCat) {
+          await algoliaService.updateCat(updatedCat);
+        }
+      } catch (algoliaError) {
+        console.error('Failed to update cat in Algolia:', algoliaError);
+      }
+
       ResponseUtil.success(res, null, 'Cat updated');
     } catch (err) {
       next(err);
@@ -132,7 +146,6 @@ export class CatController {
 
   static async delete(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      // Check if user owns the cat
       const cat = await catService.getById(req.params.id);
       if (!cat) return ResponseUtil.notFound(res, 'Cat not found');
 
@@ -142,6 +155,13 @@ export class CatController {
 
       const deleted = await catService.delete(req.params.id);
       if (!deleted) return ResponseUtil.notFound(res, 'Cat not found');
+
+      try {
+        await algoliaService.deleteCat(req.params.id);
+      } catch (algoliaError) {
+        console.error('Failed to delete cat from Algolia:', algoliaError);
+      }
+
       ResponseUtil.success(res, null, 'Cat deleted');
     } catch (err) {
       next(err);
@@ -150,7 +170,6 @@ export class CatController {
 
   static async purge(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      // Check if we're in production environment
       if (isProduction(process.env.NODE_ENV || '')) {
         return ResponseUtil.forbidden(
           res,
