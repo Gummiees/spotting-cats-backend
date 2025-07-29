@@ -1,5 +1,5 @@
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import slowDown from 'express-slow-down';
 import hpp from 'hpp';
 import { Express, Request, Response, NextFunction } from 'express';
@@ -118,6 +118,7 @@ export const verificationCodeRateLimit = rateLimit({
   keyGenerator: (req) => {
     // Use email as part of the key to make it per-email rate limiting
     const email = req.body?.email;
-    return email ? `${req.ip}-${email.toLowerCase()}` : req.ip || '';
+    const ipKey = ipKeyGenerator(req.ip || '');
+    return email ? `${ipKey}-${email.toLowerCase()}` : ipKey;
   },
 });
