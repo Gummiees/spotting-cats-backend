@@ -4,7 +4,7 @@
   "description": "",
   "main": "dist/server.js",
   "engines": {
-    "node": "24"
+    "node": "22"
   },
   "_moduleAliases": {
     "@": "dist",
@@ -61,7 +61,7 @@
     "@types/express": "^5.0.3",
     "@types/hpp": "^0.2.6",
     "@types/mongodb": "^4.0.6",
-    "@types/node": "^24.1.0",
+    "@types/node": "^22.13.14",
     "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
