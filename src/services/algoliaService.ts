@@ -1,4 +1,4 @@
-const algoliasearch = require('algoliasearch').algoliasearch;
+import { algoliasearch } from 'algoliasearch';
 import { Cat } from '@/models/cat';
 import { CatService } from '@/services/catService';
 
