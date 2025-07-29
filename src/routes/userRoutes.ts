@@ -354,157 +354,6 @@ router.get('/check-email', UserController.checkEmailAvailability);
 
 /**
  * @swagger
- * /api/v1/users/admin/:username:
- *   get:
- *     summary: Get user by username for admin view
- *     description: Get detailed user information including notes written by the user. This endpoint requires admin privileges and returns sensitive information like email and IP addresses.
- *     tags: [Admin]
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - in: path
- *         name: username
- *         required: true
- *         schema:
- *           type: string
- *         description: Username of the user to retrieve
- *     responses:
- *       200:
- *         description: Admin user data retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   type: object
- *                   properties:
- *                     user:
- *                       $ref: '#/components/schemas/AdminUserResponse'
- *                 message:
- *                   type: string
- *                   example: "Admin user data retrieved successfully"
- *       401:
- *         description: Unauthorized - No valid authentication token
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       403:
- *         description: Forbidden - Admin privileges required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       404:
- *         description: User not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-router.get(
-  '/admin/:username',
-  authMiddleware,
-  requireElevatedPermissions,
-  UserController.getUserByUsernameAdmin
-);
-
-/**
- * @swagger
- * /api/v1/users/{username}:
- *   get:
- *     summary: Get user by username (public access)
- *     description: Retrieve basic user information by username. Returns essential user data including ban status for security purposes.
- *     tags: [Users]
- *     parameters:
- *       - in: path
- *         name: username
- *         required: true
- *         schema:
- *           type: string
- *         description: The username to retrieve
- *         example: "johndoe"
- *     responses:
- *       200:
- *         description: User retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   type: object
- *                   properties:
- *                     user:
- *                       type: object
- *                       properties:
- *                         username:
- *                           type: string
- *                           example: "john_doe"
- *                         avatarUrl:
- *                           type: string
- *                           example: "https://api.dicebear.com/7.x/avataaars/svg?seed=john_doe"
- *                         role:
- *                           type: string
- *                           enum: [user, moderator, admin, superadmin]
- *                           example: "user"
- *                         isInactive:
- *                           type: boolean
- *                           example: false
- *                         isBanned:
- *                           type: boolean
- *                           example: false
- *                         lastLoginAt:
- *                           type: string
- *                           format: date-time
- *                           example: "2023-01-01T00:00:00.000Z"
- *                         createdAt:
- *                           type: string
- *                           format: date-time
- *                           example: "2023-01-01T00:00:00.000Z"
- *                         updatedAt:
- *                           type: string
- *                           format: date-time
- *                           example: "2023-01-01T00:00:00.000Z"
- *                         emailUpdatedAt:
- *                           type: string
- *                           format: date-time
- *                           example: "2023-01-01T00:00:00.000Z"
- *                         usernameUpdatedAt:
- *                           type: string
- *                           format: date-time
- *                           example: "2023-01-01T00:00:00.000Z"
- *                         avatarUpdatedAt:
- *                           type: string
- *                           format: date-time
- *                           example: "2023-01-01T00:00:00.000Z"
- *                 message:
- *                   type: string
- *                   example: "User retrieved successfully"
- *       400:
- *         description: Username is required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       404:
- *         description: User not found (or access denied for security reasons)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-router.get('/:username', checkProfileAccess, UserController.getUserByUsername);
-
-/**
- * @swagger
  * /api/v1/users/username:
  *   put:
  *     summary: Update user's username
@@ -1350,5 +1199,156 @@ router.post(
   requireAdmin,
   UserController.triggerCleanup
 );
+
+/**
+ * @swagger
+ * /api/v1/users/admin/:username:
+ *   get:
+ *     summary: Get user by username for admin view
+ *     description: Get detailed user information including notes written by the user. This endpoint requires admin privileges and returns sensitive information like email and IP addresses.
+ *     tags: [Admin]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: username
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Username of the user to retrieve
+ *     responses:
+ *       200:
+ *         description: Admin user data retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/AdminUserResponse'
+ *                 message:
+ *                   type: string
+ *                   example: "Admin user data retrieved successfully"
+ *       401:
+ *         description: Unauthorized - No valid authentication token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - Admin privileges required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get(
+  '/admin/:username',
+  authMiddleware,
+  requireElevatedPermissions,
+  UserController.getUserByUsernameAdmin
+);
+
+/**
+ * @swagger
+ * /api/v1/users/{username}:
+ *   get:
+ *     summary: Get user by username (public access)
+ *     description: Retrieve basic user information by username. Returns essential user data including ban status for security purposes.
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: username
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The username to retrieve
+ *         example: "johndoe"
+ *     responses:
+ *       200:
+ *         description: User retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         username:
+ *                           type: string
+ *                           example: "john_doe"
+ *                         avatarUrl:
+ *                           type: string
+ *                           example: "https://api.dicebear.com/7.x/avataaars/svg?seed=john_doe"
+ *                         role:
+ *                           type: string
+ *                           enum: [user, moderator, admin, superadmin]
+ *                           example: "user"
+ *                         isInactive:
+ *                           type: boolean
+ *                           example: false
+ *                         isBanned:
+ *                           type: boolean
+ *                           example: false
+ *                         lastLoginAt:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2023-01-01T00:00:00.000Z"
+ *                         createdAt:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2023-01-01T00:00:00.000Z"
+ *                         updatedAt:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2023-01-01T00:00:00.000Z"
+ *                         emailUpdatedAt:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2023-01-01T00:00:00.000Z"
+ *                         usernameUpdatedAt:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2023-01-01T00:00:00.000Z"
+ *                         avatarUpdatedAt:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2023-01-01T00:00:00.000Z"
+ *                 message:
+ *                   type: string
+ *                   example: "User retrieved successfully"
+ *       400:
+ *         description: Username is required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: User not found (or access denied for security reasons)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/:username', checkProfileAccess, UserController.getUserByUsername);
 
 export { router as userRoutes };
