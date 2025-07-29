@@ -84,7 +84,7 @@ app.use((req, _res, next) => {
 app.use('/', routes);
 
 // 404 handler
-app.use('*', notFoundHandler);
+app.use('/*splat', notFoundHandler);
 
 // Error handler
 app.use(errorHandler);
