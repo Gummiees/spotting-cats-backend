@@ -3,12 +3,10 @@ import { CatService } from '@/services/catService';
 import { CatFilters } from '@/services/interfaces/catServiceInterface';
 import { ResponseUtil } from '@/utils/response';
 import { AuthRequest } from '@/models/requests';
-import { CatApiService } from '@/services/catApiService';
 import { AlgoliaService } from '@/services/algoliaService';
 import { isProduction } from '@/constants/environment';
 
 const catService = new CatService();
-const catApiService = new CatApiService();
 const algoliaService = new AlgoliaService();
 
 export class CatController {
@@ -35,33 +33,9 @@ export class CatController {
 
   static async getAll(req: Request, res: Response, next: NextFunction) {
     try {
-      if (catApiService.isAvailable()) {
-        await CatController.getAllFromApi(req, res);
-        return;
-      }
-
       await CatController.getAllFromDatabase(req, res);
     } catch (err) {
       next(err);
-    }
-  }
-
-  private static async getAllFromApi(req: Request, res: Response) {
-    try {
-      const filters = {
-        limit: req.query.limit ? parseInt(req.query.limit as string) : 10,
-        page: req.query.page ? parseInt(req.query.page as string) : 1,
-      };
-
-      const catImages = await catApiService.getCatImages(filters);
-      ResponseUtil.success(
-        res,
-        catImages,
-        'Cat images retrieved from external API'
-      );
-    } catch (catApiError) {
-      console.error('CatAPI failed, falling back to database:', catApiError);
-      await CatController.getAllFromDatabase(req, res);
     }
   }
 
