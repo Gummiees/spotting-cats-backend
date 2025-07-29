@@ -3,8 +3,10 @@ import { CatService } from '@/services/catService';
 import { CatFilters } from '@/services/interfaces/catServiceInterface';
 import { ResponseUtil } from '@/utils/response';
 import { AuthRequest } from '@/models/requests';
+import { CatApiService } from '@/services/catApiService';
 
 const catService = new CatService();
+const catApiService = new CatApiService();
 
 export class CatController {
   static async create(req: AuthRequest, res: Response, next: NextFunction) {
@@ -24,43 +26,70 @@ export class CatController {
 
   static async getAll(req: Request, res: Response, next: NextFunction) {
     try {
-      // Extract and parse query parameters
-      const filters: CatFilters = {
-        userId: req.query.userId as string,
-        protectorId: req.query.protectorId as string,
-        colonyId: req.query.colonyId as string,
-        age: req.query.age ? parseInt(req.query.age as string) : undefined,
-        isDomestic: req.query.isDomestic
-          ? req.query.isDomestic === 'true'
-          : undefined,
-        isMale: req.query.isMale ? req.query.isMale === 'true' : undefined,
-        isSterilized: req.query.isSterilized
-          ? req.query.isSterilized === 'true'
-          : undefined,
-        isFriendly: req.query.isFriendly
-          ? req.query.isFriendly === 'true'
-          : undefined,
-        isUserOwner: req.query.isUserOwner
-          ? req.query.isUserOwner === 'true'
-          : undefined,
-        limit: req.query.limit
-          ? parseInt(req.query.limit as string)
-          : undefined,
-        page: req.query.page ? parseInt(req.query.page as string) : undefined,
-      };
+      if (catApiService.isAvailable()) {
+        await CatController.getAllFromApi(req, res);
+        return;
+      }
 
-      // Remove undefined values to create a clean filter object
-      const cleanFilters: CatFilters = Object.fromEntries(
-        Object.entries(filters).filter(([_, value]) => value !== undefined)
-      );
-
-      const cats = await catService.getAll(
-        Object.keys(cleanFilters).length > 0 ? cleanFilters : undefined
-      );
-      ResponseUtil.success(res, cats, 'Cats retrieved');
+      await CatController.getAllFromDatabase(req, res);
     } catch (err) {
       next(err);
     }
+  }
+
+  private static async getAllFromApi(req: Request, res: Response) {
+    try {
+      const filters = {
+        limit: req.query.limit ? parseInt(req.query.limit as string) : 10,
+        page: req.query.page ? parseInt(req.query.page as string) : 1,
+      };
+
+      const catImages = await catApiService.getCatImages(filters);
+      ResponseUtil.success(
+        res,
+        catImages,
+        'Cat images retrieved from external API'
+      );
+    } catch (catApiError) {
+      console.error('CatAPI failed, falling back to database:', catApiError);
+      // Fall back to database if CatAPI fails
+      await CatController.getAllFromDatabase(req, res);
+    }
+  }
+
+  private static async getAllFromDatabase(req: Request, res: Response) {
+    // Extract and parse query parameters for database
+    const filters: CatFilters = {
+      userId: req.query.userId as string,
+      protectorId: req.query.protectorId as string,
+      colonyId: req.query.colonyId as string,
+      age: req.query.age ? parseInt(req.query.age as string) : undefined,
+      isDomestic: req.query.isDomestic
+        ? req.query.isDomestic === 'true'
+        : undefined,
+      isMale: req.query.isMale ? req.query.isMale === 'true' : undefined,
+      isSterilized: req.query.isSterilized
+        ? req.query.isSterilized === 'true'
+        : undefined,
+      isFriendly: req.query.isFriendly
+        ? req.query.isFriendly === 'true'
+        : undefined,
+      isUserOwner: req.query.isUserOwner
+        ? req.query.isUserOwner === 'true'
+        : undefined,
+      limit: req.query.limit ? parseInt(req.query.limit as string) : undefined,
+      page: req.query.page ? parseInt(req.query.page as string) : undefined,
+    };
+
+    // Remove undefined values to create a clean filter object
+    const cleanFilters: CatFilters = Object.fromEntries(
+      Object.entries(filters).filter(([_, value]) => value !== undefined)
+    );
+
+    const cats = await catService.getAll(
+      Object.keys(cleanFilters).length > 0 ? cleanFilters : undefined
+    );
+    ResponseUtil.success(res, cats, 'Cats retrieved from database');
   }
 
   static async getMyCats(req: AuthRequest, res: Response, next: NextFunction) {
