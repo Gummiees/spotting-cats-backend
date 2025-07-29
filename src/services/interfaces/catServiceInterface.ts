@@ -21,4 +21,5 @@ export interface ICatService {
   getByUserId(userId: string): Promise<Cat[]>;
   update(id: string, update: Partial<Cat>): Promise<boolean>;
   delete(id: string): Promise<boolean>;
+  purge(): Promise<number>;
 }

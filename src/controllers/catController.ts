@@ -117,4 +117,25 @@ export class CatController {
       next(err);
     }
   }
+
+  static async purge(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      // Check if we're in production environment
+      if (process.env.NODE_ENV === 'production') {
+        return ResponseUtil.forbidden(
+          res,
+          'Purge operation is not allowed in production environment'
+        );
+      }
+
+      const deletedCount = await catService.purge();
+      ResponseUtil.success(
+        res,
+        { deletedCount },
+        `Successfully purged ${deletedCount} cats from the database`
+      );
+    } catch (err) {
+      next(err);
+    }
+  }
 }

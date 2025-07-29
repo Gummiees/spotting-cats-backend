@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { CatController } from '@/controllers/catController';
-import { authMiddleware } from '@/middleware/auth';
+import { authMiddleware, requireAdmin } from '@/middleware/auth';
 import {
   createCatValidation,
   updateCatValidation,
@@ -502,6 +502,61 @@ router.delete(
   authMiddleware,
   deleteCatValidation,
   CatController.delete
+);
+
+/**
+ * @swagger
+ * /api/v1/cats/admin/purge:
+ *   delete:
+ *     summary: Purge all cats from the database (Admin only, non-production only)
+ *     tags: [Cats]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: All cats purged successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     deletedCount:
+ *                       type: number
+ *                       description: Number of cats deleted
+ *                       example: 150
+ *                 message:
+ *                   type: string
+ *                   example: "Successfully purged 150 cats from the database"
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - Admin access required or production environment
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.delete(
+  '/admin/purge',
+  authMiddleware,
+  requireAdmin,
+  CatController.purge
 );
 
 // Apply query sanitization to all routes

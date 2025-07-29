@@ -93,6 +93,16 @@ export class CatCacheService implements ICatService {
     return success;
   }
 
+  async purge(): Promise<number> {
+    const deletedCount = await this.dbService.purge();
+
+    if (deletedCount > 0) {
+      await this.invalidateAllCatCaches();
+    }
+
+    return deletedCount;
+  }
+
   private generateCacheKey(filters?: CatFilters): string {
     if (!filters || Object.keys(filters).length === 0) {
       return 'cats:all';
@@ -262,6 +272,24 @@ export class CatCacheService implements ICatService {
     const invalidationPromises = patterns.map((pattern) =>
       this.deleteCachePattern(pattern)
     );
+    await Promise.all(invalidationPromises);
+  }
+
+  private async invalidateAllCatCaches(): Promise<void> {
+    const invalidationPromises: Promise<void>[] = [];
+
+    // Invalidate general list cache
+    invalidationPromises.push(CacheService.delete('cats:all'));
+
+    // Delete all cache keys that start with 'cats:'
+    // This is a simplified approach - in a real Redis implementation,
+    // you would use Redis SCAN to find and delete all matching keys
+    const patterns = ['cats:*', 'cats:user:*', 'cats:filtered:*'];
+
+    for (const pattern of patterns) {
+      invalidationPromises.push(this.deleteCachePattern(pattern));
+    }
+
     await Promise.all(invalidationPromises);
   }
 

@@ -129,6 +129,16 @@ export class CatDatabaseService implements ICatService {
     }
   }
 
+  async purge(): Promise<number> {
+    try {
+      const collection = await this.getCollection();
+      const result = await collection.deleteMany({});
+      return result.deletedCount;
+    } catch (error) {
+      this.handleDatabaseError(error, 'purge');
+    }
+  }
+
   private buildFilterQuery(filters?: CatFilters): any {
     if (!filters) return {};
 
