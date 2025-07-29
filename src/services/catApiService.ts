@@ -79,6 +79,7 @@ export class CatApiService {
       const images = await this.theCatAPI.images.searchImages({
         limit,
         page,
+        order: 'RAND',
         hasBreeds: true,
         mimeTypes: ['png'],
       });
