@@ -1,4 +1,10 @@
 import dotenv from 'dotenv';
+import {
+  NODE_ENV,
+  isProduction,
+  isDevelopment,
+  isStaging,
+} from '@/constants/environment';
 
 dotenv.config();
 
@@ -38,7 +44,7 @@ export const config = {
       callback: (err: Error | null, allow?: boolean) => void
     ) {
       // In production, be more restrictive
-      if (process.env.NODE_ENV === 'production') {
+      if (isProduction(process.env.NODE_ENV || '')) {
         if (!origin) {
           return callback(new Error('Origin not allowed in production'));
         }
@@ -51,8 +57,8 @@ export const config = {
 
       // Allow all origins for development/staging environment
       if (
-        process.env.NODE_ENV === 'staging' ||
-        process.env.NODE_ENV === 'development'
+        isStaging(process.env.NODE_ENV || '') ||
+        isDevelopment(process.env.NODE_ENV || '')
       ) {
         return callback(null, true);
       }
@@ -93,7 +99,7 @@ export const config = {
     },
     requestSizeLimit: '10mb',
     trustProxy:
-      process.env.NODE_ENV === 'production' ||
+      isProduction(process.env.NODE_ENV || '') ||
       process.env.TRUST_PROXY === 'true',
   },
 } as const;

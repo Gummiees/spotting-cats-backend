@@ -4,6 +4,7 @@ import slowDown from 'express-slow-down';
 import hpp from 'hpp';
 import { Express, Request, Response, NextFunction } from 'express';
 import { config } from '@/config';
+import { isProduction } from '@/constants/environment';
 
 export const configureSecurityMiddleware = (app: Express): void => {
   // Security headers with Helmet
@@ -32,7 +33,7 @@ export const configureSecurityMiddleware = (app: Express): void => {
   app.use(hpp());
 
   // Rate limiting - only in production
-  if (config.nodeEnv === 'production') {
+  if (isProduction(config.nodeEnv)) {
     app.use(rateLimit(config.security.rateLimit));
 
     // Slow down requests after rate limit - only in production
@@ -67,49 +68,45 @@ export const configureSecurityMiddleware = (app: Express): void => {
 };
 
 // Additional security middleware for specific routes
-export const strictRateLimit =
-  config.nodeEnv === 'production'
-    ? rateLimit({
-        windowMs: 5 * 60 * 1000, // 5 minutes
-        max: 10, // limit each IP to 10 requests per windowMs
-        message: 'Too many requests from this IP, please try again later.',
-        standardHeaders: true,
-        legacyHeaders: false,
-      })
-    : (_req: Request, _res: Response, next: NextFunction) => next(); // No-op in non-production
+export const strictRateLimit = isProduction(config.nodeEnv)
+  ? rateLimit({
+      windowMs: 5 * 60 * 1000, // 5 minutes
+      max: 10, // limit each IP to 10 requests per windowMs
+      message: 'Too many requests from this IP, please try again later.',
+      standardHeaders: true,
+      legacyHeaders: false,
+    })
+  : (_req: Request, _res: Response, next: NextFunction) => next(); // No-op in non-production
 
-export const authRateLimit =
-  config.nodeEnv === 'production'
-    ? rateLimit({
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 5, // limit each IP to 5 requests per windowMs
-        message: 'Too many authentication attempts, please try again later.',
-        standardHeaders: true,
-        legacyHeaders: false,
-      })
-    : (_req: Request, _res: Response, next: NextFunction) => next(); // No-op in non-production
+export const authRateLimit = isProduction(config.nodeEnv)
+  ? rateLimit({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: 5, // limit each IP to 5 requests per windowMs
+      message: 'Too many authentication attempts, please try again later.',
+      standardHeaders: true,
+      legacyHeaders: false,
+    })
+  : (_req: Request, _res: Response, next: NextFunction) => next(); // No-op in non-production
 
-export const cleanupRateLimit =
-  config.nodeEnv === 'production'
-    ? rateLimit({
-        windowMs: 60 * 60 * 1000, // 1 hour
-        max: 3, // limit each IP to 3 requests per hour
-        message: 'Too many cleanup operations, please try again later.',
-        standardHeaders: true,
-        legacyHeaders: false,
-      })
-    : (_req: Request, _res: Response, next: NextFunction) => next(); // No-op in non-production
+export const cleanupRateLimit = isProduction(config.nodeEnv)
+  ? rateLimit({
+      windowMs: 60 * 60 * 1000, // 1 hour
+      max: 3, // limit each IP to 3 requests per hour
+      message: 'Too many cleanup operations, please try again later.',
+      standardHeaders: true,
+      legacyHeaders: false,
+    })
+  : (_req: Request, _res: Response, next: NextFunction) => next(); // No-op in non-production
 
-export const whitelistRoleUpdateRateLimit =
-  config.nodeEnv === 'production'
-    ? rateLimit({
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 1, // limit each IP to 1 request per 15 minutes
-        message: 'Too many role update requests, please try again later.',
-        standardHeaders: true,
-        legacyHeaders: false,
-      })
-    : (_req: Request, _res: Response, next: NextFunction) => next(); // No-op in non-production
+export const whitelistRoleUpdateRateLimit = isProduction(config.nodeEnv)
+  ? rateLimit({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: 1, // limit each IP to 1 request per 15 minutes
+      message: 'Too many role update requests, please try again later.',
+      standardHeaders: true,
+      legacyHeaders: false,
+    })
+  : (_req: Request, _res: Response, next: NextFunction) => next(); // No-op in non-production
 
 export const verificationCodeRateLimit = rateLimit({
   windowMs: 60 * 1000, // 60 seconds

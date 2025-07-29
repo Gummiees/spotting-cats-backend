@@ -8,6 +8,7 @@ import {
   canBanUser,
   ROLE_HIERARCHY,
 } from '@/models/user';
+import { isProduction } from '@/constants/environment';
 
 export const authMiddleware = async (
   req: AuthRequest,
@@ -61,7 +62,7 @@ export const authMiddleware = async (
       res.cookie('auth_token', refreshResult.newToken, {
         httpOnly: true,
         secure: true,
-        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'none',
+        sameSite: isProduction(process.env.NODE_ENV || '') ? 'strict' : 'none',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         path: '/',
       });

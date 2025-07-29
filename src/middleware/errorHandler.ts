@@ -1,6 +1,7 @@
 import { ResponseUtil } from '@/utils/response';
 import { NextFunction, Request, Response } from 'express';
 import { config } from '@/config';
+import { isProduction } from '@/constants/environment';
 
 export interface AppError extends Error {
   statusCode?: number;
@@ -14,7 +15,7 @@ export const errorHandler = (
   _next: NextFunction
 ): void => {
   const statusCode = error.statusCode || 500;
-  const isProduction = config.nodeEnv === 'production';
+  const isProductionEnv = isProduction(config.nodeEnv);
 
   // Log error details for security monitoring
   const errorLog = {
@@ -26,19 +27,19 @@ export const errorHandler = (
     statusCode,
     errorName: error.name,
     errorMessage: error.message,
-    stack: isProduction ? undefined : error.stack,
+    stack: isProductionEnv ? undefined : error.stack,
   };
 
   console.error('Error occurred:', errorLog);
 
   // In production, don't expose internal error details
   const message =
-    isProduction && statusCode === 500
+    isProductionEnv && statusCode === 500
       ? 'Internal Server Error'
       : error.message || 'Internal Server Error';
 
   // Don't log stack traces in production
-  if (!isProduction && error.stack) {
+  if (!isProductionEnv && error.stack) {
     console.error(error.stack);
   }
 

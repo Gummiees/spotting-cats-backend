@@ -4,6 +4,7 @@ import { CatFilters } from '@/services/interfaces/catServiceInterface';
 import { ResponseUtil } from '@/utils/response';
 import { AuthRequest } from '@/models/requests';
 import { CatApiService } from '@/services/catApiService';
+import { isProduction } from '@/constants/environment';
 
 const catService = new CatService();
 const catApiService = new CatApiService();
@@ -150,7 +151,7 @@ export class CatController {
   static async purge(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       // Check if we're in production environment
-      if (process.env.NODE_ENV === 'production') {
+      if (isProduction(process.env.NODE_ENV || '')) {
         return ResponseUtil.forbidden(
           res,
           'Purge operation is not allowed in production environment'

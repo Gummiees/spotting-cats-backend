@@ -17,6 +17,7 @@ import {
 import { isValidDiceBearUrl } from '@/utils/avatar';
 import { config } from '@/config';
 import { getClientIp, decryptEmail } from '@/utils/security';
+import { isProduction } from '@/constants/environment';
 
 export class UserController {
   static async sendVerificationCode(
@@ -542,7 +543,7 @@ export class UserController {
     res.cookie('auth_token', token, {
       httpOnly: true,
       secure: true,
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'none',
+      sameSite: isProduction(process.env.NODE_ENV || '') ? 'strict' : 'none',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       path: '/',
     });
@@ -552,7 +553,7 @@ export class UserController {
     res.clearCookie('auth_token', {
       httpOnly: true,
       secure: true,
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'none',
+      sameSite: isProduction(process.env.NODE_ENV || '') ? 'strict' : 'none',
       path: '/',
     });
   }

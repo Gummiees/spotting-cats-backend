@@ -1,6 +1,7 @@
 import { TheCatAPI } from '@thatapicompany/thecatapi';
 import { config } from '@/config';
 import { CacheService } from '@/services/cacheService';
+import { isStaging } from '@/constants/environment';
 
 export interface CatApiImage {
   id: string;
@@ -38,7 +39,7 @@ export class CatApiService {
    */
   private shouldUseCatApi(): boolean {
     return (
-      config.nodeEnv === 'staging' &&
+      isStaging(config.nodeEnv) &&
       config.catApi.enabled &&
       config.catApi.apiKey !== ''
     );
