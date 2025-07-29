@@ -1,8 +1,8 @@
-import { algoliasearch } from 'algoliasearch';
+import { Algoliasearch, algoliasearch } from 'algoliasearch';
 import { Cat } from '@/models/cat';
 import { CatService } from '@/services/catService';
 
-export interface AlgoliaCatRecord {
+export interface AlgoliaCatRecord extends Record<string, unknown> {
   objectID: string;
   name?: string;
   age?: number;
@@ -27,8 +27,8 @@ export interface AlgoliaCatRecord {
 }
 
 export class AlgoliaService {
-  private client: any;
-  private index: any;
+  private client: Algoliasearch;
+  private indexName: string;
   private catService: CatService;
 
   constructor() {
@@ -38,8 +38,8 @@ export class AlgoliaService {
       process.env.ALGOLIA_API_KEY || ''
     );
 
-    // Initialize the search index
-    this.index = this.client.initIndex('cats_index');
+    // Set the index name
+    this.indexName = 'cats_index';
     this.catService = new CatService();
   }
 
@@ -112,7 +112,10 @@ export class AlgoliaService {
       );
 
       // Save objects to Algolia
-      const result = await this.index.saveObjects(algoliaRecords);
+      await this.client.saveObjects({
+        indexName: this.indexName,
+        objects: algoliaRecords,
+      });
 
       console.log(
         `Successfully indexed ${algoliaRecords.length} cats to Algolia`
@@ -142,7 +145,10 @@ export class AlgoliaService {
       }
 
       const algoliaRecord = this.transformCatToAlgoliaRecord(cat);
-      await this.index.saveObject(algoliaRecord);
+      await this.client.saveObjects({
+        indexName: this.indexName,
+        objects: [algoliaRecord],
+      });
 
       console.log(`Successfully indexed cat ${cat.id} to Algolia`);
       return { success: true };
@@ -169,7 +175,10 @@ export class AlgoliaService {
     catId: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      await this.index.deleteObject(catId);
+      await this.client.deleteObject({
+        indexName: this.indexName,
+        objectID: catId,
+      });
       console.log(`Successfully deleted cat ${catId} from Algolia`);
       return { success: true };
     } catch (error) {
@@ -198,10 +207,17 @@ export class AlgoliaService {
         searchParams.filters = filters;
       }
 
-      const result = await this.index.search(query, searchParams);
+      const result = await this.client.search({
+        indexName: this.indexName,
+        query,
+        ...searchParams,
+      });
+
+      // The result structure depends on the API version
+      const searchResult = result as any;
       return {
-        hits: result.hits as AlgoliaCatRecord[],
-        nbHits: result.nbHits,
+        hits: searchResult.hits || searchResult.results?.[0]?.hits || [],
+        nbHits: searchResult.nbHits || searchResult.results?.[0]?.nbHits || 0,
       };
     } catch (error) {
       console.error('Error searching cats in Algolia:', error);
@@ -214,7 +230,9 @@ export class AlgoliaService {
    */
   async clearIndex(): Promise<{ success: boolean; error?: string }> {
     try {
-      await this.index.clearObjects();
+      await this.client.clearObjects({
+        indexName: this.indexName,
+      });
       console.log('Successfully cleared Algolia index');
       return { success: true };
     } catch (error) {
@@ -235,11 +253,16 @@ export class AlgoliaService {
     avgClickPosition: number;
   }> {
     try {
-      const stats = await this.index.getSettings();
+      const stats = await this.client.getSettings({
+        indexName: this.indexName,
+      });
+
+      // The stats structure depends on the API version
+      const statsResult = stats as any;
       return {
-        nbHits: stats.nbHits || 0,
-        nbPages: stats.nbPages || 0,
-        avgClickPosition: stats.avgClickPosition || 0,
+        nbHits: statsResult.nbHits || 0,
+        nbPages: statsResult.nbPages || 0,
+        avgClickPosition: statsResult.avgClickPosition || 0,
       };
     } catch (error) {
       console.error('Error getting index stats:', error);
