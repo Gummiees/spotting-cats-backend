@@ -1,5 +1,6 @@
 import { connectToRedis, isRedisConfigured } from '@/utils/redis';
 import { decryptEmail } from '@/utils/security';
+import { CacheService } from '@/services/cacheService';
 
 export class UserCacheInvalidation {
   protected readonly USER_CACHE_PREFIX = 'user:';
@@ -14,11 +15,10 @@ export class UserCacheInvalidation {
     }
 
     try {
-      const redisClient = await connectToRedis();
       const userKey = `${this.USER_CACHE_PREFIX}${userId}`;
 
       // Delete user data cache
-      await redisClient.del(userKey);
+      await CacheService.delete(userKey);
 
       // Get database user to find encrypted email and username for cache invalidation
       const dbUser = await this.getDbUserById(userId);
@@ -28,7 +28,7 @@ export class UserCacheInvalidation {
           const decryptedEmail = decryptEmail(dbUser.email);
           const normalizedEmail = decryptedEmail.toLowerCase().trim();
           const emailKey = `${this.USER_EMAIL_CACHE_PREFIX}${normalizedEmail}`;
-          await redisClient.del(emailKey);
+          await CacheService.delete(emailKey);
         } catch (decryptError) {
           console.error(
             'Error decrypting email for cache invalidation:',
@@ -39,7 +39,7 @@ export class UserCacheInvalidation {
       if (dbUser && dbUser.username) {
         const normalizedUsername = dbUser.username.toLowerCase().trim();
         const usernameKey = `${this.USER_USERNAME_CACHE_PREFIX}${normalizedUsername}`;
-        await redisClient.del(usernameKey);
+        await CacheService.delete(usernameKey);
       }
     } catch (error) {
       console.error('Error invalidating user cache:', error);
@@ -52,26 +52,20 @@ export class UserCacheInvalidation {
     }
 
     try {
-      const redisClient = await connectToRedis();
+      const patterns = [
+        `${this.USER_CACHE_PREFIX}*`,
+        `${this.USER_EMAIL_CACHE_PREFIX}*`,
+        `${this.USER_USERNAME_CACHE_PREFIX}*`,
+      ];
 
-      // Get all keys matching the user cache patterns
-      const userKeys = await redisClient.keys(`${this.USER_CACHE_PREFIX}*`);
-      const emailKeys = await redisClient.keys(
-        `${this.USER_EMAIL_CACHE_PREFIX}*`
-      );
-      const usernameKeys = await redisClient.keys(
-        `${this.USER_USERNAME_CACHE_PREFIX}*`
-      );
+      let totalDeleted = 0;
+      for (const pattern of patterns) {
+        const deletedCount = await CacheService.deletePattern(pattern);
+        totalDeleted += deletedCount;
+      }
 
-      // Delete all user-related cache entries
-      if (userKeys.length > 0) {
-        await redisClient.del(userKeys as any);
-      }
-      if (emailKeys.length > 0) {
-        await redisClient.del(emailKeys as any);
-      }
-      if (usernameKeys.length > 0) {
-        await redisClient.del(usernameKeys as any);
+      if (totalDeleted > 0) {
+        console.log(`Deleted ${totalDeleted} user cache keys`);
       }
     } catch (error) {
       console.error('Error invalidating all user caches:', error);

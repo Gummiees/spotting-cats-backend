@@ -241,12 +241,15 @@ export class CatCacheService implements ICatService {
   }
 
   private async invalidateUserCaches(userId: string): Promise<void> {
-    // Delete the specific user cache
-    await CacheService.delete(`cats:user:${userId}`);
+    // Delete all cache keys related to this user
+    const patterns = [
+      `cats:user:${userId}`,
+      `cats:filtered:*userId*${userId}*`,
+    ];
 
-    // Delete all cache keys that contain this userId
-    const userPattern = `cats:filtered:*userId*${userId}*`;
-    await this.deleteCachePattern(userPattern);
+    for (const pattern of patterns) {
+      await this.deleteCachePattern(pattern);
+    }
   }
 
   private async getUserIdFromUsername(
@@ -263,14 +266,20 @@ export class CatCacheService implements ICatService {
 
   private async invalidateProtectorCaches(protectorId: string): Promise<void> {
     // Delete all cache keys that contain this protectorId
-    const protectorPattern = `cats:filtered:*protectorId*${protectorId}*`;
-    await this.deleteCachePattern(protectorPattern);
+    const patterns = [`cats:filtered:*protectorId*${protectorId}*`];
+
+    for (const pattern of patterns) {
+      await this.deleteCachePattern(pattern);
+    }
   }
 
   private async invalidateColonyCaches(colonyId: string): Promise<void> {
     // Delete all cache keys that contain this colonyId
-    const colonyPattern = `cats:filtered:*colonyId*${colonyId}*`;
-    await this.deleteCachePattern(colonyPattern);
+    const patterns = [`cats:filtered:*colonyId*${colonyId}*`];
+
+    for (const pattern of patterns) {
+      await this.deleteCachePattern(pattern);
+    }
   }
 
   private async invalidateFilteredCaches(cat: CatResponse): Promise<void> {
@@ -293,13 +302,8 @@ export class CatCacheService implements ICatService {
   private async invalidateAllCatCaches(): Promise<void> {
     const invalidationPromises: Promise<void>[] = [];
 
-    // Invalidate general list cache
-    invalidationPromises.push(CacheService.delete('cats:all'));
-
     // Delete all cache keys that start with 'cats:'
-    // This is a simplified approach - in a real Redis implementation,
-    // you would use Redis SCAN to find and delete all matching keys
-    const patterns = ['cats:*', 'cats:user:*', 'cats:filtered:*'];
+    const patterns = ['cats:*'];
 
     for (const pattern of patterns) {
       invalidationPromises.push(this.deleteCachePattern(pattern));
@@ -310,23 +314,12 @@ export class CatCacheService implements ICatService {
 
   private async deleteCachePattern(pattern: string): Promise<void> {
     try {
-      // For now, we'll implement a simple approach that deletes common cache keys
-      // In a production environment, you would use Redis SCAN to find and delete all matching keys
-
-      if (pattern === 'cats:all') {
-        await CacheService.delete('cats:all');
-      } else if (pattern.startsWith('cats:user:')) {
-        // Extract userId from pattern like 'cats:user:*'
-        const userId = pattern.replace('cats:user:', '').replace('*', '');
-        if (userId) {
-          await CacheService.delete(`cats:user:${userId}`);
-        }
-      } else if (pattern.startsWith('cats:filtered:')) {
-        // For filtered caches, we'll just delete the main 'cats:all' cache as a fallback
-        await CacheService.delete('cats:all');
-      } else if (pattern === 'cats:*') {
-        // Delete all cat-related caches
-        await CacheService.delete('cats:all');
+      // Use Redis SCAN to find and delete all keys matching the pattern
+      const deletedCount = await CacheService.deletePattern(pattern);
+      if (deletedCount > 0) {
+        console.log(
+          `Deleted ${deletedCount} cache keys matching pattern: ${pattern}`
+        );
       }
     } catch (error) {
       console.error(`Error deleting cache pattern ${pattern}:`, error);

@@ -1,6 +1,7 @@
 import { connectToRedis, isRedisConfigured } from '@/utils/redis';
 import { Note, NoteFilters, NoteResponse } from '@/models/note';
 import { NoteDatabaseService } from './noteDatabaseService';
+import { CacheService } from '@/services/cacheService';
 
 export class NoteCacheService extends NoteDatabaseService {
   private readonly CACHE_TTL = 300; // 5 minutes
@@ -314,10 +315,11 @@ export class NoteCacheService extends NoteDatabaseService {
     }
 
     try {
-      const redisClient = await connectToRedis();
-      const keys = await redisClient.keys(`${this.LIST_CACHE_PREFIX}*`);
-      if (keys.length > 0) {
-        await redisClient.del(keys);
+      const deletedCount = await CacheService.deletePattern(
+        `${this.LIST_CACHE_PREFIX}*`
+      );
+      if (deletedCount > 0) {
+        console.log(`Deleted ${deletedCount} note list cache keys`);
       }
     } catch (error) {
       console.error('Error invalidating list caches:', error);
@@ -333,34 +335,26 @@ export class NoteCacheService extends NoteDatabaseService {
     }
 
     try {
-      const redisClient = await connectToRedis();
-      // Invalidate caches for both users
-      const forUserKeys = await redisClient.keys(
-        `${this.USER_CACHE_PREFIX}for:${forUserId}:*`
-      );
-      const fromUserKeys = fromUserId
-        ? await redisClient.keys(
-            `${this.USER_CACHE_PREFIX}from:${fromUserId}:*`
-          )
-        : [];
-      const betweenUserKeys = await redisClient.keys(
-        `${this.USER_CACHE_PREFIX}between:*${forUserId}*`
-      );
-      const betweenUserKeys2 = fromUserId
-        ? await redisClient.keys(
-            `${this.USER_CACHE_PREFIX}between:*${fromUserId}*`
-          )
-        : [];
-
-      const allKeys = [
-        ...forUserKeys,
-        ...fromUserKeys,
-        ...betweenUserKeys,
-        ...betweenUserKeys2,
+      const patterns = [
+        `${this.USER_CACHE_PREFIX}for:${forUserId}:*`,
+        `${this.USER_CACHE_PREFIX}between:*${forUserId}*`,
       ];
 
-      if (allKeys.length > 0) {
-        await redisClient.del(allKeys);
+      if (fromUserId) {
+        patterns.push(
+          `${this.USER_CACHE_PREFIX}from:${fromUserId}:*`,
+          `${this.USER_CACHE_PREFIX}between:*${fromUserId}*`
+        );
+      }
+
+      let totalDeleted = 0;
+      for (const pattern of patterns) {
+        const deletedCount = await CacheService.deletePattern(pattern);
+        totalDeleted += deletedCount;
+      }
+
+      if (totalDeleted > 0) {
+        console.log(`Deleted ${totalDeleted} note user cache keys`);
       }
     } catch (error) {
       console.error('Error invalidating user caches:', error);
