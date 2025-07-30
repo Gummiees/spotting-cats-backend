@@ -66,15 +66,11 @@ app.use(cors(config.cors));
 app.use((req, res, next) => {
   const contentType = req.headers['content-type'];
 
-  console.log('🔍 Body parsing middleware - Content-Type:', contentType);
-
   // Skip body parsing for multipart requests
   if (contentType && contentType.includes('multipart/form-data')) {
-    console.log('✅ Skipping body parsing for multipart request');
     return next();
   }
 
-  console.log('📝 Applying JSON parsing for non-multipart request');
   // Apply JSON parsing for non-multipart requests
   express.json({ limit: config.security.requestSizeLimit })(req, res, next);
 });
