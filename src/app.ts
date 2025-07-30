@@ -62,33 +62,33 @@ configureSecurityMiddleware(app);
 // CORS configuration
 app.use(cors(config.cors));
 
-// Custom middleware to handle FormData requests
+// Body parsing middleware - only for non-multipart requests
 app.use((req, res, next) => {
   const contentType = req.headers['content-type'];
 
-  // If this is a multipart request, skip all body parsing
-  if (contentType && contentType.includes('multipart/form-data')) {
-    // Set a flag to skip body parsing
-    (req as any).skipBodyParsing = true;
-    return next();
-  }
-  next();
-});
+  console.log('🔍 Body parsing middleware - Content-Type:', contentType);
 
-// Body parsing middleware with limits
-app.use((req, res, next) => {
-  // Skip JSON parsing for multipart/form-data requests
-  if ((req as any).skipBodyParsing) {
+  // Skip body parsing for multipart requests
+  if (contentType && contentType.includes('multipart/form-data')) {
+    console.log('✅ Skipping body parsing for multipart request');
     return next();
   }
+
+  console.log('📝 Applying JSON parsing for non-multipart request');
+  // Apply JSON parsing for non-multipart requests
   express.json({ limit: config.security.requestSizeLimit })(req, res, next);
 });
 
+// URL-encoded parsing - only for non-multipart requests
 app.use((req, res, next) => {
-  // Skip URL encoding for multipart/form-data requests
-  if ((req as any).skipBodyParsing) {
+  const contentType = req.headers['content-type'];
+
+  // Skip body parsing for multipart requests
+  if (contentType && contentType.includes('multipart/form-data')) {
     return next();
   }
+
+  // Apply URL-encoded parsing for non-multipart requests
   express.urlencoded({
     extended: true,
     limit: config.security.requestSizeLimit,
