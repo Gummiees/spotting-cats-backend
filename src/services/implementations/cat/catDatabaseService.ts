@@ -202,7 +202,7 @@ export class CatDatabaseService implements ICatService {
     skip: number;
   } {
     const limit = filters?.limit
-      ? Math.min(Math.max(filters.limit, 1), 100)
+      ? Math.min(Math.max(filters.limit, 1), 24)
       : 12;
     const page = filters?.page ? Math.max(filters.page, 1) : 1;
     const skip = (page - 1) * limit;
