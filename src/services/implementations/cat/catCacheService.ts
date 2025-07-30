@@ -20,8 +20,8 @@ export class CatCacheService implements ICatService {
   async create(cat: Omit<Cat, 'id'>): Promise<CatResponse> {
     const newCat = await this.dbService.create(cat);
 
-    // Invalidate all related caches
-    await this.invalidateCachesForCreate(newCat);
+    // Invalidate all related caches using the original cat data
+    await this.invalidateCachesForCreate(newCat, cat);
 
     return newCat;
   }
@@ -141,17 +141,18 @@ export class CatCacheService implements ICatService {
     return `cats:filtered:${encodedFilters}`;
   }
 
-  private async invalidateCachesForCreate(newCat: CatResponse): Promise<void> {
+  private async invalidateCachesForCreate(
+    newCat: CatResponse,
+    originalCat: Omit<Cat, 'id'>
+  ): Promise<void> {
     const invalidationPromises: Promise<void>[] = [];
 
     // Invalidate general list cache
     invalidationPromises.push(CacheService.delete('cats:all'));
 
-    if (newCat.username) {
-      const userId = await this.getUserIdFromUsername(newCat.username);
-      if (userId) {
-        invalidationPromises.push(this.invalidateUserCaches(userId));
-      }
+    // Use userId from the original cat data
+    if (originalCat.userId) {
+      invalidationPromises.push(this.invalidateUserCaches(originalCat.userId));
     }
 
     // Invalidate protector-specific caches if applicable

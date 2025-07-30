@@ -43,10 +43,10 @@ export class CatDatabaseService implements ICatService {
 
       const insertedId = await this.insertCat(catWithDefaults);
 
-      const createdCat = {
-        id: insertedId.toString(),
+      const createdCat = await this.mapCatToResponse({
+        _id: insertedId,
         ...catWithDefaults,
-      };
+      });
       return this.stripUserIdForFrontend(createdCat);
     } catch (error) {
       if (error instanceof Error) {
