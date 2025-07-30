@@ -90,10 +90,6 @@ export const createCatValidation = [
     .trim()
     .isLength({ max: 1000 })
     .withMessage('extraInfo must be less than 1000 characters'),
-  body('isUserOwner')
-    .optional()
-    .isBoolean()
-    .withMessage('isUserOwner must be a boolean'),
   handleValidationErrors,
 ];
 
@@ -166,15 +162,6 @@ export const updateCatValidation = [
     .trim()
     .isLength({ max: 1000 })
     .withMessage('extraInfo must be less than 1000 characters'),
-  body('isUserOwner')
-    .optional()
-    .isBoolean()
-    .withMessage('isUserOwner must be a boolean'),
-  body('totalLikes')
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage('totalLikes must be a non-negative integer')
-    .toInt(),
   handleValidationErrors,
 ];
 

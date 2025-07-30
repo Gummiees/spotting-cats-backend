@@ -234,10 +234,7 @@ router.get('/my', authMiddleware, CatController.getMyCats);
  *                 type: boolean
  *                 description: Whether the cat is friendly (optional)
  *                 example: true
- *               isUserOwner:
- *                 type: boolean
- *                 description: Whether the user is the owner (default false)
- *                 example: false
+ *               # Note: isUserOwner, createdAt, updatedAt, confirmedOwnerAt, and totalLikes are ignored and set by the backend
  *     responses:
  *       201:
  *         description: Cat created successfully
@@ -450,14 +447,8 @@ router.get('/:id', getCatByIdValidation, CatController.getById);
  *                 type: boolean
  *                 description: Whether the cat is friendly
  *                 example: true
- *               isUserOwner:
- *                 type: boolean
- *                 description: Whether the user is the owner (optional)
- *                 example: false
- *               totalLikes:
- *                 type: number
- *                 description: Total number of likes (optional)
- *                 example: 0
+ *               # Note: isUserOwner, createdAt, updatedAt, confirmedOwnerAt, and totalLikes are ignored and set by the backend
+
  *     responses:
  *       200:
  *         description: Cat updated successfully

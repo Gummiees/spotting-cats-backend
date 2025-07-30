@@ -21,14 +21,13 @@ export class CatDatabaseService implements ICatService {
         throw new Error(validation.message);
       }
 
-      // Set defaults for optional fields and ensure required fields are present
       const catWithDefaults = {
         userId: sanitizedCat.userId,
         xCoordinate: sanitizedCat.xCoordinate!,
         yCoordinate: sanitizedCat.yCoordinate!,
-        totalLikes: sanitizedCat.totalLikes ?? 0,
+        totalLikes: 0,
         imageUrls: sanitizedCat.imageUrls ?? [],
-        isUserOwner: sanitizedCat.isUserOwner ?? false,
+        isUserOwner: false,
         createdAt: new Date(),
         name: sanitizedCat.name,
         age: sanitizedCat.age,
@@ -40,8 +39,6 @@ export class CatDatabaseService implements ICatService {
         colonyId: sanitizedCat.colonyId,
         breed: sanitizedCat.breed,
         extraInfo: sanitizedCat.extraInfo,
-        updatedAt: sanitizedCat.updatedAt,
-        confirmedOwnerAt: sanitizedCat.confirmedOwnerAt,
       };
 
       const insertedId = await this.insertCat(catWithDefaults);
@@ -321,27 +318,30 @@ export class CatDatabaseService implements ICatService {
   }
 
   private sanitizeCatData(data: any): Partial<Cat> {
+    const {
+      createdAt,
+      updatedAt,
+      confirmedOwnerAt,
+      isUserOwner,
+      totalLikes,
+      ...sanitizedData
+    } = data;
+
     return {
-      userId: this.sanitizeString(data.userId),
-      protectorId: this.sanitizeString(data.protectorId),
-      colonyId: this.sanitizeString(data.colonyId),
-      totalLikes: this.sanitizeNumber(data.totalLikes, 0, 999999),
-      name: this.sanitizeString(data.name),
-      age: this.sanitizeNumber(data.age, 0, 30),
-      breed: this.sanitizeString(data.breed),
-      imageUrls: this.sanitizeStringArray(data.imageUrls),
-      xCoordinate: this.sanitizeNumber(data.xCoordinate, -180, 180),
-      yCoordinate: this.sanitizeNumber(data.yCoordinate, -90, 90),
-      extraInfo: this.sanitizeString(data.extraInfo, 1000),
-      isDomestic: this.sanitizeBoolean(data.isDomestic),
-      isMale: this.sanitizeBoolean(data.isMale),
-      isSterilized: this.sanitizeBoolean(data.isSterilized),
-      isFriendly: this.sanitizeBoolean(data.isFriendly),
-      isUserOwner: this.sanitizeBoolean(data.isUserOwner),
-      updatedAt: data.updatedAt ? new Date(data.updatedAt) : undefined,
-      confirmedOwnerAt: data.confirmedOwnerAt
-        ? new Date(data.confirmedOwnerAt)
-        : undefined,
+      userId: this.sanitizeString(sanitizedData.userId),
+      protectorId: this.sanitizeString(sanitizedData.protectorId),
+      colonyId: this.sanitizeString(sanitizedData.colonyId),
+      name: this.sanitizeString(sanitizedData.name),
+      age: this.sanitizeNumber(sanitizedData.age, 0, 30),
+      breed: this.sanitizeString(sanitizedData.breed),
+      imageUrls: this.sanitizeStringArray(sanitizedData.imageUrls),
+      xCoordinate: this.sanitizeNumber(sanitizedData.xCoordinate, -180, 180),
+      yCoordinate: this.sanitizeNumber(sanitizedData.yCoordinate, -90, 90),
+      extraInfo: this.sanitizeString(sanitizedData.extraInfo, 1000),
+      isDomestic: this.sanitizeBoolean(sanitizedData.isDomestic),
+      isMale: this.sanitizeBoolean(sanitizedData.isMale),
+      isSterilized: this.sanitizeBoolean(sanitizedData.isSterilized),
+      isFriendly: this.sanitizeBoolean(sanitizedData.isFriendly),
     };
   }
 
