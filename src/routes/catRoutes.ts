@@ -9,6 +9,7 @@ import {
   getCatsQueryValidation,
   sanitizeQueryParams,
 } from '@/middleware/validation';
+import { validateNSFWImages } from '@/middleware/nsfwValidation';
 
 const router = Router();
 
@@ -279,7 +280,13 @@ router.get('/my', authMiddleware, CatController.getMyCats);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/', authMiddleware, createCatValidation, CatController.create);
+router.post(
+  '/',
+  authMiddleware,
+  createCatValidation,
+  validateNSFWImages,
+  CatController.create
+);
 
 /**
  * @swagger
@@ -505,7 +512,13 @@ router.get('/:id', getCatByIdValidation, CatController.getById);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.put('/:id', authMiddleware, updateCatValidation, CatController.update);
+router.put(
+  '/:id',
+  authMiddleware,
+  updateCatValidation,
+  validateNSFWImages,
+  CatController.update
+);
 
 /**
  * @swagger

@@ -19,6 +19,7 @@ A modern Node.js backend API with Express.js, TypeScript, MongoDB, Redis cache, 
 - **Swagger Documentation**: Interactive API documentation with OpenAPI 3.0
 - **User Authentication**: Email-based authentication with JWT cookies
 - **Rate Limiting**: Protection against brute force attacks (production only)
+- **NSFW Content Filtering**: AI-powered content moderation for cat images using TensorFlow.js and NSFW.js
 
 ## Project Structure
 
@@ -441,6 +442,8 @@ The application implements a secure two-step email change process:
 - `express-rate-limit`: Rate limiting
 - `unique-username-generator`: Automatic username generation
 - `helmet`: Security headers
+- `@tensorflow/tfjs-node`: TensorFlow.js for Node.js (NSFW model inference)
+- `nsfwjs`: NSFW content detection library
 
 ### Development
 - `typescript`: TypeScript compiler
@@ -488,6 +491,50 @@ For Gmail, you'll need to:
 - Ensure the `SMTP_FROM` address is properly configured and verified
 - Monitor email delivery rates and bounce rates
 - Consider using email templates for consistent branding
+
+## NSFW Content Filtering
+
+The application includes AI-powered content moderation for cat images using TensorFlow.js and NSFW.js. This feature automatically detects and blocks inappropriate content when users create or update cats with images.
+
+### How It Works
+
+1. **Model Loading**: The NSFW model is loaded at application startup using TensorFlow.js
+2. **Image Validation**: When users create or update cats with `imageUrls`, the system:
+   - Fetches each image from the provided URLs
+   - Processes them through the NSFW classification model
+   - Calculates a confidence score for inappropriate content
+   - Blocks the request if NSFW content is detected
+
+3. **Classification Categories**: The model classifies images into 5 categories:
+   - **Drawing**: Artistic or cartoon content
+   - **Hentai**: Anime-style inappropriate content
+   - **Neutral**: Safe, appropriate content
+   - **Porn**: Explicit adult content
+   - **Sexy**: Suggestive but not explicit content
+
+4. **Threshold Configuration**: The system uses a configurable threshold (default: 0.5) for the combined score of Porn + Sexy categories
+
+### Implementation Details
+
+- **Service**: `src/services/nsfwService.ts` - Handles model loading and image classification
+- **Middleware**: `src/middleware/nsfwValidation.ts` - Validates images in cat creation/update requests
+- **Routes**: Applied to `POST /api/v1/cats` and `PUT /api/v1/cats/:id` endpoints
+
+### Error Handling
+
+- **Model Not Ready**: If the NSFW model fails to load, requests proceed without validation
+- **Image Fetch Errors**: Invalid URLs or network issues are logged and reported
+- **Classification Errors**: TensorFlow processing errors are handled gracefully
+- **Graceful Degradation**: The system continues to function even if NSFW validation fails
+
+### Configuration
+
+The NSFW filter can be configured by modifying the threshold in `src/services/nsfwService.ts`:
+
+```typescript
+// Adjust the threshold (0.0 to 1.0)
+const isNSFW = nsfwScore > 0.5; // More strict: 0.3, Less strict: 0.7
+```
 
 ## Architecture
 

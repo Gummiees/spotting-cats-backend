@@ -11,6 +11,7 @@ import cookieParser from 'cookie-parser';
 import { cleanupService } from '@/services/cleanupService';
 import { connectToRedis, isRedisConfigured } from '@/utils/redis';
 import { connectToMongo, isMongoConfigured } from '@/utils/mongo';
+import { nsfwService } from '@/services/nsfwService';
 
 const app = express();
 
@@ -35,6 +36,9 @@ async function initializeServices() {
     } else {
       console.log('⚠️  Redis not configured, running without cache');
     }
+
+    // Initialize NSFW model
+    await nsfwService.loadModel();
   } catch (error) {
     console.error('❌ Error initializing services:', error);
     // Don't throw here - allow the app to start even if services fail
