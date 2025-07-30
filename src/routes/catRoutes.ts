@@ -10,6 +10,11 @@ import {
   sanitizeQueryParams,
 } from '@/middleware/validation';
 import { validateNSFWImages } from '@/middleware/nsfwValidation';
+import {
+  uploadImages,
+  handleFileUploadError,
+  removeDuplicateImages,
+} from '@/middleware/fileUpload';
 
 const router = Router();
 
@@ -183,13 +188,20 @@ router.get('/my', authMiddleware, CatController.getMyCats);
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
  *               - xCoordinate
  *               - yCoordinate
  *             properties:
+ *               images:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *                 description: Array of image files (optional, max 10 files, 10MB each)
+ *                 example: ["image1.jpg", "image2.jpg"]
  *               protectorId:
  *                 type: string
  *                 description: ID of the protector (optional)
@@ -212,12 +224,6 @@ router.get('/my', authMiddleware, CatController.getMyCats);
  *                 type: string
  *                 description: Cat breed (optional)
  *                 example: "Persian"
- *               imageUrls:
- *                 type: array
- *                 items:
- *                   type: string
- *                 description: Array of image URLs (optional)
- *                 example: ["https://example.com/cat1.jpg", "https://example.com/cat2.jpg"]
  *               xCoordinate:
  *                 type: number
  *                 minimum: -180
@@ -283,6 +289,9 @@ router.get('/my', authMiddleware, CatController.getMyCats);
 router.post(
   '/',
   authMiddleware,
+  uploadImages,
+  handleFileUploadError,
+  removeDuplicateImages,
   createCatValidation,
   validateNSFWImages,
   CatController.create
@@ -407,10 +416,17 @@ router.get('/:id', getCatByIdValidation, CatController.getById);
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             properties:
+ *               images:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *                 description: Array of image files (optional, max 10 files, 10MB each)
+ *                 example: ["image1.jpg", "image2.jpg"]
  *               protectorId:
  *                 type: string
  *                 description: ID of the protector (optional)
@@ -431,12 +447,6 @@ router.get('/:id', getCatByIdValidation, CatController.getById);
  *                 type: string
  *                 description: Cat breed (optional)
  *                 example: "Persian"
- *               imageUrls:
- *                 type: array
- *                 items:
- *                   type: string
- *                 description: Array of image URLs (optional)
- *                 example: ["https://example.com/cat1.jpg", "https://example.com/cat2.jpg"]
  *               xCoordinate:
  *                 type: number
  *                 minimum: -180
@@ -515,6 +525,9 @@ router.get('/:id', getCatByIdValidation, CatController.getById);
 router.put(
   '/:id',
   authMiddleware,
+  uploadImages,
+  handleFileUploadError,
+  removeDuplicateImages,
   updateCatValidation,
   validateNSFWImages,
   CatController.update

@@ -5,6 +5,8 @@ import { ResponseUtil } from '@/utils/response';
 import { AuthRequest } from '@/models/requests';
 import { AlgoliaService } from '@/services/algoliaService';
 import { isProduction } from '@/constants/environment';
+import { cloudinaryService } from '@/services/cloudinaryService';
+import { getImageBuffers } from '@/middleware/fileUpload';
 
 const catService = new CatService();
 const algoliaService = new AlgoliaService();
@@ -12,9 +14,36 @@ const algoliaService = new AlgoliaService();
 export class CatController {
   static async create(req: AuthRequest, res: Response, next: NextFunction) {
     try {
+      // Get image buffers from uploaded files
+      const imageBuffers = getImageBuffers(req);
+
+      // Upload images to Cloudinary if any
+      let imageUrls: string[] = [];
+      if (imageBuffers.length > 0) {
+        if (!cloudinaryService.isReady()) {
+          return ResponseUtil.badRequest(
+            res,
+            'Image upload service not available'
+          );
+        }
+
+        try {
+          const uploadPromises = imageBuffers.map((buffer) =>
+            cloudinaryService.uploadImage(buffer, { folder: 'cats' })
+          );
+
+          const uploadResults = await Promise.all(uploadPromises);
+          imageUrls = uploadResults.map((result) => result.secureUrl);
+        } catch (uploadError) {
+          console.error('Error uploading images to Cloudinary:', uploadError);
+          return ResponseUtil.badRequest(res, 'Failed to upload images');
+        }
+      }
+
       const catData = {
         ...req.body,
         userId: req.user!.userId,
+        imageUrls: imageUrls,
       };
 
       const cat = await catService.create(catData);
@@ -116,7 +145,38 @@ export class CatController {
         return ResponseUtil.forbidden(res, 'You can only update your own cats');
       }
 
-      const updated = await catService.update(req.params.id, req.body);
+      // Get image buffers from uploaded files
+      const imageBuffers = getImageBuffers(req);
+
+      // Upload images to Cloudinary if any
+      let imageUrls: string[] = [];
+      if (imageBuffers.length > 0) {
+        if (!cloudinaryService.isReady()) {
+          return ResponseUtil.badRequest(
+            res,
+            'Image upload service not available'
+          );
+        }
+
+        try {
+          const uploadPromises = imageBuffers.map((buffer) =>
+            cloudinaryService.uploadImage(buffer, { folder: 'cats' })
+          );
+
+          const uploadResults = await Promise.all(uploadPromises);
+          imageUrls = uploadResults.map((result) => result.secureUrl);
+        } catch (uploadError) {
+          console.error('Error uploading images to Cloudinary:', uploadError);
+          return ResponseUtil.badRequest(res, 'Failed to upload images');
+        }
+      }
+
+      const updateData = {
+        ...req.body,
+        ...(imageUrls.length > 0 && { imageUrls: imageUrls }),
+      };
+
+      const updated = await catService.update(req.params.id, updateData);
       if (!updated) return ResponseUtil.notFound(res, 'Cat not found');
 
       try {

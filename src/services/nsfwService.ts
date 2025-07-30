@@ -65,6 +65,54 @@ export class NSFWService {
     }
   }
 
+  async validateImageBuffers(imageBuffers: Buffer[]): Promise<{
+    isValid: boolean;
+    invalidImages: string[];
+    errors: string[];
+  }> {
+    const invalidImages: string[] = [];
+    const errors: string[] = [];
+
+    for (let i = 0; i < imageBuffers.length; i++) {
+      const buffer = imageBuffers[i];
+      const imageIndex = i + 1;
+
+      try {
+        // Check if buffer is valid
+        if (!buffer || buffer.length === 0) {
+          invalidImages.push(`image_${imageIndex}`);
+          errors.push(`Empty image buffer for image ${imageIndex}`);
+          continue;
+        }
+
+        // Classify the image
+        const result = await this.classifyImage(buffer);
+
+        if (result.isNSFW) {
+          invalidImages.push(`image_${imageIndex}`);
+          errors.push(
+            `NSFW content detected in image ${imageIndex} (confidence: ${result.confidence.toFixed(
+              3
+            )})`
+          );
+        }
+      } catch (error) {
+        invalidImages.push(`image_${imageIndex}`);
+        errors.push(
+          `Error processing image ${imageIndex}: ${
+            error instanceof Error ? error.message : 'Unknown error'
+          }`
+        );
+      }
+    }
+
+    return {
+      isValid: invalidImages.length === 0,
+      invalidImages,
+      errors,
+    };
+  }
+
   async validateImages(imageUrls: string[]): Promise<{
     isValid: boolean;
     invalidImages: string[];

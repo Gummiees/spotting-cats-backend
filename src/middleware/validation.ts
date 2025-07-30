@@ -27,7 +27,7 @@ export const validateObjectId = (paramName: string): ValidationChain => {
   return check(paramName).isMongoId().withMessage('Invalid ID format');
 };
 
-// Cat validation schemas
+// Cat validation schemas for FormData
 export const createCatValidation = [
   body('name')
     .optional()
@@ -77,14 +77,6 @@ export const createCatValidation = [
     .withMessage('Breed must be less than 100 characters')
     .matches(/^[a-zA-Z0-9\s\-_]+$/)
     .withMessage('Breed contains invalid characters'),
-  body('imageUrls')
-    .optional()
-    .isArray()
-    .withMessage('imageUrls must be an array'),
-  body('imageUrls.*')
-    .optional()
-    .isURL()
-    .withMessage('Each imageUrl must be a valid URL'),
   body('extraInfo')
     .optional()
     .trim()
@@ -149,14 +141,7 @@ export const updateCatValidation = [
     .withMessage('Breed must be less than 100 characters')
     .matches(/^[a-zA-Z0-9\s\-_]+$/)
     .withMessage('Breed contains invalid characters'),
-  body('imageUrls')
-    .optional()
-    .isArray()
-    .withMessage('imageUrls must be an array'),
-  body('imageUrls.*')
-    .optional()
-    .isURL()
-    .withMessage('Each imageUrl must be a valid URL'),
+
   body('extraInfo')
     .optional()
     .trim()

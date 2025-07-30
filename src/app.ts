@@ -12,6 +12,7 @@ import { cleanupService } from '@/services/cleanupService';
 import { connectToRedis, isRedisConfigured } from '@/utils/redis';
 import { connectToMongo, isMongoConfigured } from '@/utils/mongo';
 import { nsfwService } from '@/services/nsfwService';
+import { cloudinaryService } from '@/services/cloudinaryService';
 
 const app = express();
 
@@ -39,6 +40,13 @@ async function initializeServices() {
 
     // Initialize NSFW model
     await nsfwService.loadModel();
+
+    // Initialize Cloudinary service
+    if (cloudinaryService.isReady()) {
+      console.log('✅ Cloudinary service initialized successfully');
+    } else {
+      console.log('⚠️ Cloudinary service not configured');
+    }
   } catch (error) {
     console.error('❌ Error initializing services:', error);
     // Don't throw here - allow the app to start even if services fail
