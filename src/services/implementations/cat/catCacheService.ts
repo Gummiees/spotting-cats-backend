@@ -20,21 +20,38 @@ export class CatCacheService implements ICatService {
   async create(cat: Omit<Cat, 'id'>): Promise<CatResponse> {
     const newCat = await this.dbService.create(cat);
 
+    console.log('Cat created with ID:', newCat.id);
+    console.log('Invalidating caches for new cat...');
     await this.invalidateCachesForCreate(newCat, cat);
+    console.log('Cache invalidation completed');
 
     return newCat;
   }
 
   async getAll(filters?: CatFilters): Promise<CatResponse[]> {
     const cacheKey = this.generateCacheKey(filters);
+    console.log('Getting cats with cache key:', cacheKey);
 
     const cached = await CacheService.get<Cat[]>(cacheKey);
     if (cached) {
+      console.log('Returning cached cats, count:', cached.length);
       return cached;
     }
 
+    console.log('Cache miss, fetching from database');
     const result = await this.dbService.getAll(filters);
-    await CacheService.set(cacheKey, result, CACHE_TTL);
+    console.log('Fetched cats from database, count:', result.length);
+
+    // Check if cache was invalidated recently
+    const cacheExists = await CacheService.exists(cacheKey);
+    if (cacheExists) {
+      console.log(
+        'Cache key still exists after invalidation, skipping cache set'
+      );
+    } else {
+      await CacheService.set(cacheKey, result, CACHE_TTL);
+      console.log('Cached result with key:', cacheKey);
+    }
 
     return result;
   }
@@ -122,6 +139,7 @@ export class CatCacheService implements ICatService {
 
   private generateCacheKey(filters?: CatFilters): string {
     if (!filters || Object.keys(filters).length === 0) {
+      console.log('Generated cache key: cats:all (no filters)');
       return 'cats:all';
     }
 
@@ -138,14 +156,23 @@ export class CatCacheService implements ICatService {
 
     const filterString = JSON.stringify(sortedFilters);
     const encodedFilters = Buffer.from(filterString).toString('base64');
-    return `cats:filtered:${encodedFilters}`;
+    const cacheKey = `cats:filtered:${encodedFilters}`;
+    console.log(
+      'Generated cache key:',
+      cacheKey,
+      'for filters:',
+      sortedFilters
+    );
+    return cacheKey;
   }
 
   private async invalidateCachesForCreate(
     newCat: CatResponse,
     originalCat: Omit<Cat, 'id'>
   ): Promise<void> {
+    console.log('Invalidating all cat caches...');
     await this.invalidateAllCatCaches();
+    console.log('All cat caches invalidated');
   }
 
   private async invalidateCachesForUpdate(
@@ -305,11 +332,13 @@ export class CatCacheService implements ICatService {
     // Delete all cache keys that start with 'cats:'
     const patterns = ['cats:*'];
 
+    console.log('Invalidating patterns:', patterns);
     for (const pattern of patterns) {
       invalidationPromises.push(this.deleteCachePattern(pattern));
     }
 
     await Promise.all(invalidationPromises);
+    console.log('All cat cache invalidation completed');
   }
 
   private async deleteCachePattern(pattern: string): Promise<void> {
