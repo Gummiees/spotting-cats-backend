@@ -20,6 +20,7 @@ A modern Node.js backend API with Express.js, TypeScript, MongoDB, Redis cache, 
 - **User Authentication**: Email-based authentication with JWT cookies
 - **Rate Limiting**: Protection against brute force attacks (production only)
 - **NSFW Content Filtering**: AI-powered content moderation for cat images using TensorFlow.js and NSFW.js
+- **Cloudinary Integration**: Image upload and storage with automatic optimization and duplicate detection
 
 ## Project Structure
 
@@ -240,6 +241,11 @@ REDIS_URL=redis://localhost:6379
 # JWT Configuration
 JWT_SECRET=your-super-secret-jwt-key-change-in-production
 
+# Cloudinary Configuration
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+
 # Email Configuration (SMTP)
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
@@ -444,6 +450,8 @@ The application implements a secure two-step email change process:
 - `helmet`: Security headers
 - `@tensorflow/tfjs-node`: TensorFlow.js for Node.js (NSFW model inference)
 - `nsfwjs`: NSFW content detection library
+- `cloudinary`: Cloudinary SDK for image upload and management
+- `multer`: File upload middleware for handling multipart/form-data
 
 ### Development
 - `typescript`: TypeScript compiler
@@ -457,6 +465,7 @@ The application implements a secure two-step email change process:
 - `@types/nodemailer`: Nodemailer type definitions
 - `@types/bcryptjs`: Bcrypt type definitions
 - `@types/cookie-parser`: Cookie parser type definitions
+- `@types/multer`: Multer type definitions
 - `ts-node`: TypeScript execution engine
 - `nodemon`: Auto-restart server during development
 
@@ -491,6 +500,64 @@ For Gmail, you'll need to:
 - Ensure the `SMTP_FROM` address is properly configured and verified
 - Monitor email delivery rates and bounce rates
 - Consider using email templates for consistent branding
+
+## Image Upload & Cloudinary Integration
+
+The application supports image uploads via FormData with automatic processing through Cloudinary. Images are optimized, stored securely, and checked for inappropriate content.
+
+### Features
+
+- **FormData Support**: Images are sent as multipart/form-data instead of URLs
+- **Cloudinary Storage**: Automatic image optimization and transformation
+- **Duplicate Detection**: Images with the same hash are reused to prevent storage waste
+- **NSFW Filtering**: All uploaded images are automatically checked for inappropriate content
+- **File Validation**: Only image files are allowed (max 10 files, 10MB each)
+
+### Environment Variables
+
+Add these Cloudinary environment variables to your `.env` file:
+
+```env
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+```
+
+### API Usage
+
+**POST** `/api/v1/cats` and **PUT** `/api/v1/cats/:id` now accept FormData:
+
+```javascript
+const formData = new FormData();
+formData.append('name', 'Fluffy');
+formData.append('age', '3');
+formData.append('xCoordinate', '-73.935242');
+formData.append('yCoordinate', '40.730610');
+formData.append('images', imageFile1);
+formData.append('images', imageFile2);
+
+fetch('/api/v1/cats', {
+  method: 'POST',
+  body: formData,
+  credentials: 'include'
+});
+```
+
+### Response Format
+
+The API returns Cloudinary URLs in the response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "imageUrls": [
+      "https://res.cloudinary.com/your-cloud/image/upload/v1234567890/cats/abc123.jpg"
+    ],
+    // ... other cat data
+  }
+}
+```
 
 ## NSFW Content Filtering
 
@@ -579,3 +646,6 @@ For detailed information about the Swagger setup, see [SWAGGER_SETUP.md](./SWAGG
 | `SMTP_USER` | - | SMTP username/email |
 | `SMTP_PASS` | - | SMTP password/app password |
 | `SMTP_FROM` | `SMTP_USER` | Sender email address |
+| `CLOUDINARY_CLOUD_NAME` | - | Cloudinary cloud name |
+| `CLOUDINARY_API_KEY` | - | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | - | Cloudinary API secret |

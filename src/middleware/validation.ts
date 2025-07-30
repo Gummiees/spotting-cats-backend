@@ -27,6 +27,35 @@ export const validateObjectId = (paramName: string): ValidationChain => {
   return check(paramName).isMongoId().withMessage('Invalid ID format');
 };
 
+// Middleware to validate that cats have at least one image
+export const validateCatHasImages = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  // Check if there are uploaded files
+  const uploadedFiles = req.files as Express.Multer.File[];
+  const hasUploadedImages =
+    uploadedFiles && Array.isArray(uploadedFiles) && uploadedFiles.length > 0;
+
+  // Check if there are imageUrls in the body (for backward compatibility)
+  const bodyImageUrls = req.body.imageUrls;
+  const hasBodyImages =
+    bodyImageUrls && Array.isArray(bodyImageUrls) && bodyImageUrls.length > 0;
+
+  // For updates, we don't require images (user might want to keep existing ones)
+  // For creation, we require at least one image
+  const isUpdate = req.method === 'PUT' || req.method === 'PATCH';
+
+  if (!isUpdate && !hasUploadedImages && !hasBodyImages) {
+    return ResponseUtil.badRequest(res, 'Cat must have at least one image', [
+      'At least one image is required for creating a cat',
+    ]);
+  }
+
+  next();
+};
+
 // Cat validation schemas for FormData
 export const createCatValidation = [
   body('name')
@@ -141,7 +170,6 @@ export const updateCatValidation = [
     .withMessage('Breed must be less than 100 characters')
     .matches(/^[a-zA-Z0-9\s\-_]+$/)
     .withMessage('Breed contains invalid characters'),
-
   body('extraInfo')
     .optional()
     .trim()
@@ -182,37 +210,28 @@ export const getCatsQueryValidation = [
   query('isDomestic')
     .optional()
     .isBoolean()
-    .withMessage('isDomestic must be a boolean')
-    .toBoolean(),
+    .withMessage('isDomestic must be a boolean'),
   query('isMale')
     .optional()
     .isBoolean()
-    .withMessage('isMale must be a boolean')
-    .toBoolean(),
+    .withMessage('isMale must be a boolean'),
   query('isSterilized')
     .optional()
     .isBoolean()
-    .withMessage('isSterilized must be a boolean')
-    .toBoolean(),
+    .withMessage('isSterilized must be a boolean'),
   query('isFriendly')
     .optional()
     .isBoolean()
-    .withMessage('isFriendly must be a boolean')
-    .toBoolean(),
-  query('isUserOwner')
-    .optional()
-    .isBoolean()
-    .withMessage('isUserOwner must be a boolean')
-    .toBoolean(),
+    .withMessage('isFriendly must be a boolean'),
   query('limit')
     .optional()
     .isInt({ min: 1, max: 100 })
-    .withMessage('Limit must be between 1 and 100')
+    .withMessage('Limit must be a number between 1 and 100')
     .toInt(),
   query('page')
     .optional()
     .isInt({ min: 1 })
-    .withMessage('Page must be a positive integer')
+    .withMessage('Page must be a positive number')
     .toInt(),
   query('orderBy')
     .optional()
@@ -221,11 +240,11 @@ export const getCatsQueryValidation = [
   query('orderDirection')
     .optional()
     .isIn(['ASC', 'DESC'])
-    .withMessage('orderDirection must be either ASC or DESC'),
+    .withMessage('orderDirection must be ASC or DESC'),
   handleValidationErrors,
 ];
 
-// Generic sanitization for query parameters
+// Sanitize query parameters
 export const sanitizeQueryParams = (
   req: Request,
   _res: Response,
@@ -234,7 +253,7 @@ export const sanitizeQueryParams = (
   if (req.query) {
     Object.keys(req.query).forEach((key) => {
       if (typeof req.query[key] === 'string') {
-        req.query[key] = (req.query[key] as string).trim();
+        req.query[key] = req.query[key]?.toString().trim();
       }
     });
   }

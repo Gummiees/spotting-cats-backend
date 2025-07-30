@@ -148,9 +148,11 @@ export class CatController {
       // Get image buffers from uploaded files
       const imageBuffers = getImageBuffers(req);
 
-      // Upload images to Cloudinary if any
-      let imageUrls: string[] = [];
+      // Handle image updates
+      let finalImageUrls: string[] = [];
+
       if (imageBuffers.length > 0) {
+        // New images uploaded - upload to Cloudinary
         if (!cloudinaryService.isReady()) {
           return ResponseUtil.badRequest(
             res,
@@ -164,16 +166,54 @@ export class CatController {
           );
 
           const uploadResults = await Promise.all(uploadPromises);
-          imageUrls = uploadResults.map((result) => result.secureUrl);
+          const newImageUrls = uploadResults.map((result) => result.secureUrl);
+
+          // Check if user wants to replace all images or add to existing ones
+          const replaceAllImages = req.body.replaceImages === 'true';
+          const keepImages = req.body.keepImages; // Array of image URLs to keep
+
+          if (replaceAllImages) {
+            // Replace all existing images with new ones
+            finalImageUrls = newImageUrls;
+          } else if (keepImages) {
+            // Handle keepImages - could be array or string
+            const keepImagesArray = Array.isArray(keepImages)
+              ? keepImages
+              : [keepImages];
+
+            // Keep specific existing images + add new ones
+            const imagesToKeep = cat.imageUrls.filter((url) =>
+              keepImagesArray.includes(url)
+            );
+            finalImageUrls = [...imagesToKeep, ...newImageUrls];
+          } else {
+            // Add new images to existing ones (default behavior)
+            finalImageUrls = [...cat.imageUrls, ...newImageUrls];
+          }
         } catch (uploadError) {
           console.error('Error uploading images to Cloudinary:', uploadError);
           return ResponseUtil.badRequest(res, 'Failed to upload images');
         }
+      } else if (req.body.imageUrls && Array.isArray(req.body.imageUrls)) {
+        // User provided specific imageUrls (for backward compatibility or manual URL management)
+        finalImageUrls = req.body.imageUrls;
+      } else if (req.body.keepImages) {
+        // User wants to keep only specific existing images (no new uploads)
+        const keepImagesArray = Array.isArray(req.body.keepImages)
+          ? req.body.keepImages
+          : [req.body.keepImages];
+
+        finalImageUrls = cat.imageUrls.filter((url) =>
+          keepImagesArray.includes(url)
+        );
+      } else {
+        // No new images provided - keep existing images
+        finalImageUrls = cat.imageUrls;
       }
 
       const updateData = {
         ...req.body,
-        ...(imageUrls.length > 0 && { imageUrls: imageUrls }),
+        imageUrls: finalImageUrls,
       };
 
       const updated = await catService.update(req.params.id, updateData);

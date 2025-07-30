@@ -8,6 +8,7 @@ import {
   deleteCatValidation,
   getCatsQueryValidation,
   sanitizeQueryParams,
+  validateCatHasImages,
 } from '@/middleware/validation';
 import { validateNSFWImages } from '@/middleware/nsfwValidation';
 import {
@@ -194,6 +195,7 @@ router.get('/my', authMiddleware, CatController.getMyCats);
  *             required:
  *               - xCoordinate
  *               - yCoordinate
+ *               - images
  *             properties:
  *               images:
  *                 type: array
@@ -292,6 +294,7 @@ router.post(
   uploadImages,
   handleFileUploadError,
   removeDuplicateImages,
+  validateCatHasImages,
   createCatValidation,
   validateNSFWImages,
   CatController.create
@@ -528,6 +531,7 @@ router.put(
   uploadImages,
   handleFileUploadError,
   removeDuplicateImages,
+  validateCatHasImages,
   updateCatValidation,
   validateNSFWImages,
   CatController.update
