@@ -63,7 +63,15 @@ configureSecurityMiddleware(app);
 app.use(cors(config.cors));
 
 // Body parsing middleware with limits
-app.use(express.json({ limit: config.security.requestSizeLimit }));
+// Note: JSON parsing is disabled for FormData routes in the route files
+app.use((req, res, next) => {
+  // Skip JSON parsing for multipart/form-data requests
+  if (req.headers['content-type']?.includes('multipart/form-data')) {
+    return next();
+  }
+  express.json({ limit: config.security.requestSizeLimit })(req, res, next);
+});
+
 app.use(
   express.urlencoded({
     extended: true,
