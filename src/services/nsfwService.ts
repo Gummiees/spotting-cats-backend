@@ -16,7 +16,7 @@ export class NSFWService {
     try {
       // Use require for CommonJS compatibility
       const nsfw = require('nsfwjs');
-      this.model = await nsfw.load('inception_v3');
+      this.model = await nsfw.load('InceptionV3');
       this.isModelLoaded = true;
       console.log('✅ NSFW Inception v3 model loaded successfully');
     } catch (error) {

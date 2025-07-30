@@ -108,14 +108,20 @@ export class UserAuthService {
       }
 
       // Step 3: Map user to response format
-      const mappedUser = this.utilityService.mapUserToResponse(
-        userResult.user!
-      );
+      if (!userResult.user) {
+        console.error('User object is undefined after authentication');
+        return {
+          success: false,
+          message: 'Authentication failed - user not found',
+        };
+      }
+
+      const mappedUser = this.utilityService.mapUserToResponse(userResult.user);
 
       // Step 4: Generate authentication token
       let token: string;
       try {
-        token = this.utilityService.generateTokenFromDbUser(userResult.user!);
+        token = this.utilityService.generateTokenFromDbUser(userResult.user);
       } catch (error) {
         console.error('Error generating token from user:', error);
         return { success: false, message: 'Authentication failed' };
