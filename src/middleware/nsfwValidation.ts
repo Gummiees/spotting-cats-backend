@@ -33,13 +33,11 @@ export const validateNSFWImages = async (
     const validationResult = await nsfwService.validateImages(imageUrls);
 
     if (!validationResult.isValid) {
-      return ResponseUtil.badRequest(
+      return ResponseUtil.nsfwContentDetected(
         res,
         'NSFW content detected in one or more images',
-        {
-          invalidImages: validationResult.invalidImages,
-          errors: validationResult.errors,
-        }
+        validationResult.invalidImages,
+        validationResult.errors
       );
     }
 

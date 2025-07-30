@@ -94,4 +94,26 @@ export class ResponseUtil {
 
     res.status(429).json(response);
   }
+
+  static nsfwContentDetected(
+    res: Response,
+    message: string = 'NSFW content detected',
+    invalidImages: string[] = [],
+    errors: string[] = []
+  ): void {
+    const response: ErrorResponse = {
+      success: false,
+      error: 'NSFW Content Detected',
+      message,
+      timestamp: new Date().toISOString(),
+      details: {
+        errorCode: 'NSFW_CONTENT_DETECTED',
+        canRetry: false,
+        invalidImages,
+        errors,
+      },
+    };
+
+    res.status(400).json(response);
+  }
 }
