@@ -19,6 +19,7 @@ export interface AlgoliaCatRecord extends Record<string, unknown> {
   xCoordinate: number;
   yCoordinate: number;
   extraInfo?: string;
+  imageUrls: string[];
   createdAt: Date;
   updatedAt?: Date;
   confirmedOwnerAt?: Date;
@@ -50,10 +51,11 @@ export class AlgoliaService {
     const tags: string[] = [];
 
     // Add tags for better search and filtering
-    if (cat.isDomestic) tags.push('domestic');
-    if (cat.isMale) tags.push('male');
-    if (cat.isSterilized) tags.push('sterilized');
-    if (cat.isFriendly) tags.push('friendly');
+    if (cat.isDomestic) tags.push('domestic') ?? tags.push('not-domestic');
+    if (cat.isMale) tags.push('male') ?? tags.push('female');
+    if (cat.isSterilized)
+      tags.push('sterilized') ?? tags.push('not-sterilized');
+    if (cat.isFriendly) tags.push('friendly') ?? tags.push('not-friendly');
     if (cat.isUserOwner) tags.push('user-owner');
     if (cat.breed) tags.push(cat.breed.toLowerCase());
     if (cat.age) {
@@ -80,6 +82,7 @@ export class AlgoliaService {
       xCoordinate: cat.xCoordinate,
       yCoordinate: cat.yCoordinate,
       extraInfo: cat.extraInfo,
+      imageUrls: cat.imageUrls,
       createdAt: cat.createdAt,
       updatedAt: cat.updatedAt,
       confirmedOwnerAt: cat.confirmedOwnerAt,

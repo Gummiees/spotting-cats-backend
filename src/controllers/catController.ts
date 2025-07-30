@@ -93,7 +93,7 @@ export class CatController {
 
   static async update(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const cat = await catService.getById(req.params.id);
+      const cat = await catService.getByIdForAuth(req.params.id);
       if (!cat) return ResponseUtil.notFound(res, 'Cat not found');
 
       if (cat.userId !== req.user!.userId) {
@@ -120,7 +120,7 @@ export class CatController {
 
   static async delete(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const cat = await catService.getById(req.params.id);
+      const cat = await catService.getByIdForAuth(req.params.id);
       if (!cat) return ResponseUtil.notFound(res, 'Cat not found');
 
       if (cat.userId !== req.user!.userId) {

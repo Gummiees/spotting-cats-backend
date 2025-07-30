@@ -23,7 +23,7 @@ const router = Router();
  *         name: userId
  *         schema:
  *           type: string
- *         description: Filter by user ID
+ *         description: Filter by user ID (internal use only)
  *         example: "507f1f77bcf86cd799439011"
  *       - in: query
  *         name: protectorId

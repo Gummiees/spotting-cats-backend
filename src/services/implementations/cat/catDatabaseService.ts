@@ -4,13 +4,15 @@ import { DatabaseService } from '@/services/databaseService';
 import {
   ICatService,
   CatFilters,
+  CatResponse,
 } from '@/services/interfaces/catServiceInterface';
 import { ObjectId } from 'mongodb';
+import { userService } from '@/services/userService';
 
 const COLLECTION = 'cats';
 
 export class CatDatabaseService implements ICatService {
-  async create(cat: Omit<Cat, 'id'>): Promise<Cat> {
+  async create(cat: Omit<Cat, 'id'>): Promise<CatResponse> {
     try {
       const sanitizedCat = this.sanitizeCatData(cat);
       const validation = this.validateRequiredFields(sanitizedCat);
@@ -44,10 +46,11 @@ export class CatDatabaseService implements ICatService {
 
       const insertedId = await this.insertCat(catWithDefaults);
 
-      return {
+      const createdCat = {
         id: insertedId.toString(),
         ...catWithDefaults,
       };
+      return this.stripUserIdForFrontend(createdCat);
     } catch (error) {
       if (error instanceof Error) {
         throw error;
@@ -56,7 +59,7 @@ export class CatDatabaseService implements ICatService {
     }
   }
 
-  async getAll(filters?: CatFilters): Promise<Cat[]> {
+  async getAll(filters?: CatFilters): Promise<CatResponse[]> {
     try {
       const collection = await this.getCollection();
       const query = this.buildFilterQuery(filters);
@@ -68,30 +71,47 @@ export class CatDatabaseService implements ICatService {
         .skip(options.skip)
         .toArray();
 
-      return cats.map((cat) => this.mapCatToResponse(cat));
+      const mappedCats = await Promise.all(
+        cats.map((cat) => this.mapCatToResponse(cat))
+      );
+      return mappedCats.map((cat) => this.stripUserIdForFrontend(cat));
     } catch (error) {
       this.handleDatabaseError(error, 'getAll');
     }
   }
 
-  async getById(id: string): Promise<Cat | null> {
+  async getById(id: string): Promise<CatResponse | null> {
     try {
       const cat = await this.findCatById(id);
       if (!cat) return null;
-      return this.mapCatToResponse(cat);
+      const mappedCat = await this.mapCatToResponse(cat);
+      return this.stripUserIdForFrontend(mappedCat);
     } catch (error) {
       this.handleDatabaseError(error, 'getById');
     }
   }
 
-  async getByUserId(userId: string): Promise<Cat[]> {
+  async getByIdForAuth(id: string): Promise<Cat | null> {
+    try {
+      const cat = await this.findCatById(id);
+      if (!cat) return null;
+      return await this.mapCatToResponse(cat);
+    } catch (error) {
+      this.handleDatabaseError(error, 'getByIdForAuth');
+    }
+  }
+
+  async getByUserId(userId: string): Promise<CatResponse[]> {
     try {
       const collection = await this.getCollection();
       const cats = await collection
         .find({ userId }, { projection: this.createProjection().projection })
         .toArray();
 
-      return cats.map((cat) => this.mapCatToResponse(cat));
+      const mappedCats = await Promise.all(
+        cats.map((cat) => this.mapCatToResponse(cat))
+      );
+      return mappedCats.map((cat) => this.stripUserIdForFrontend(cat));
     } catch (error) {
       this.handleDatabaseError(error, 'getByUserId');
     }
@@ -255,10 +275,25 @@ export class CatDatabaseService implements ICatService {
     };
   }
 
-  private mapCatToResponse(cat: any): Cat {
+  private async mapCatToResponse(cat: any): Promise<Cat> {
+    let username: string | undefined;
+
+    if (cat.userId) {
+      try {
+        const user = await userService.getBasicUserById(cat.userId);
+        username = user?.username;
+      } catch (error) {
+        console.error(
+          `Failed to fetch username for userId ${cat.userId}:`,
+          error
+        );
+      }
+    }
+
     return {
       id: cat._id.toString(),
       userId: cat.userId,
+      username,
       protectorId: cat.protectorId,
       colonyId: cat.colonyId,
       totalLikes: cat.totalLikes ?? 0,
@@ -278,6 +313,11 @@ export class CatDatabaseService implements ICatService {
       updatedAt: cat.updatedAt,
       confirmedOwnerAt: cat.confirmedOwnerAt,
     };
+  }
+
+  private stripUserIdForFrontend(cat: Cat): Omit<Cat, 'userId'> {
+    const { userId, ...catForFrontend } = cat;
+    return catForFrontend;
   }
 
   private sanitizeCatData(data: any): Partial<Cat> {

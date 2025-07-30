@@ -325,10 +325,10 @@ const swaggerOptions: Options = {
               type: 'string',
               example: '507f1f77bcf86cd799439011',
             },
-            userId: {
+            username: {
               type: 'string',
-              description: 'ID of the user who owns the cat',
-              example: '507f1f77bcf86cd799439011',
+              description: 'Username of the user who owns the cat',
+              example: 'johndoe',
             },
             protectorId: {
               type: 'string',

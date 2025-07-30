@@ -3,8 +3,10 @@ import { CacheService } from '@/services/cacheService';
 import {
   ICatService,
   CatFilters,
+  CatResponse,
 } from '@/services/interfaces/catServiceInterface';
 import { CatDatabaseService } from './catDatabaseService';
+import { userService } from '@/services/userService';
 
 const CACHE_TTL = 300; // 5 minutes
 
@@ -15,7 +17,7 @@ export class CatCacheService implements ICatService {
     this.dbService = new CatDatabaseService();
   }
 
-  async create(cat: Omit<Cat, 'id'>): Promise<Cat> {
+  async create(cat: Omit<Cat, 'id'>): Promise<CatResponse> {
     const newCat = await this.dbService.create(cat);
 
     // Invalidate all related caches
@@ -24,7 +26,7 @@ export class CatCacheService implements ICatService {
     return newCat;
   }
 
-  async getAll(filters?: CatFilters): Promise<Cat[]> {
+  async getAll(filters?: CatFilters): Promise<CatResponse[]> {
     const cacheKey = this.generateCacheKey(filters);
     const cached = await CacheService.get<Cat[]>(cacheKey);
     if (cached) {
@@ -37,8 +39,8 @@ export class CatCacheService implements ICatService {
     return result;
   }
 
-  async getById(id: string): Promise<Cat | null> {
-    const cached = await CacheService.get<Cat>(`cats:${id}`);
+  async getById(id: string): Promise<CatResponse | null> {
+    const cached = await CacheService.get<CatResponse>(`cats:${id}`);
     if (cached) {
       return cached;
     }
@@ -52,7 +54,22 @@ export class CatCacheService implements ICatService {
     return result;
   }
 
-  async getByUserId(userId: string): Promise<Cat[]> {
+  async getByIdForAuth(id: string): Promise<Cat | null> {
+    const cached = await CacheService.get<Cat>(`cats:auth:${id}`);
+    if (cached) {
+      return cached;
+    }
+
+    const result = await this.dbService.getByIdForAuth(id);
+
+    if (result) {
+      await CacheService.set(`cats:auth:${id}`, result, CACHE_TTL);
+    }
+
+    return result;
+  }
+
+  async getByUserId(userId: string): Promise<CatResponse[]> {
     const cacheKey = `cats:user:${userId}`;
     const cached = await CacheService.get<Cat[]>(cacheKey);
     if (cached) {
@@ -124,15 +141,17 @@ export class CatCacheService implements ICatService {
     return `cats:filtered:${encodedFilters}`;
   }
 
-  private async invalidateCachesForCreate(newCat: Cat): Promise<void> {
+  private async invalidateCachesForCreate(newCat: CatResponse): Promise<void> {
     const invalidationPromises: Promise<void>[] = [];
 
     // Invalidate general list cache
     invalidationPromises.push(CacheService.delete('cats:all'));
 
-    // Invalidate user-specific caches (only if userId exists)
-    if (newCat.userId) {
-      invalidationPromises.push(this.invalidateUserCaches(newCat.userId));
+    if (newCat.username) {
+      const userId = await this.getUserIdFromUsername(newCat.username);
+      if (userId) {
+        invalidationPromises.push(this.invalidateUserCaches(userId));
+      }
     }
 
     // Invalidate protector-specific caches if applicable
@@ -154,7 +173,7 @@ export class CatCacheService implements ICatService {
   }
 
   private async invalidateCachesForUpdate(
-    currentCat: Cat,
+    currentCat: CatResponse,
     update: Partial<Cat>
   ): Promise<void> {
     const invalidationPromises: Promise<void>[] = [];
@@ -165,13 +184,17 @@ export class CatCacheService implements ICatService {
     // Invalidate general list cache
     invalidationPromises.push(CacheService.delete('cats:all'));
 
-    // Invalidate current user caches (only if userId exists)
-    if (currentCat.userId) {
-      invalidationPromises.push(this.invalidateUserCaches(currentCat.userId));
+    // Get current userId from username for comparison
+    let currentUserId: string | null = null;
+    if (currentCat.username) {
+      currentUserId = await this.getUserIdFromUsername(currentCat.username);
+      if (currentUserId) {
+        invalidationPromises.push(this.invalidateUserCaches(currentUserId));
+      }
     }
 
     // If userId is being changed, invalidate new user caches too
-    if (update.userId && update.userId !== currentCat.userId) {
+    if (update.userId && update.userId !== currentUserId) {
       invalidationPromises.push(this.invalidateUserCaches(update.userId));
     }
 
@@ -203,7 +226,9 @@ export class CatCacheService implements ICatService {
     await Promise.all(invalidationPromises);
   }
 
-  private async invalidateCachesForDelete(deletedCat: Cat): Promise<void> {
+  private async invalidateCachesForDelete(
+    deletedCat: CatResponse
+  ): Promise<void> {
     const invalidationPromises: Promise<void>[] = [];
 
     // Invalidate the specific cat cache
@@ -212,9 +237,11 @@ export class CatCacheService implements ICatService {
     // Invalidate general list cache
     invalidationPromises.push(CacheService.delete('cats:all'));
 
-    // Invalidate user-specific caches (only if userId exists)
-    if (deletedCat.userId) {
-      invalidationPromises.push(this.invalidateUserCaches(deletedCat.userId));
+    if (deletedCat.username) {
+      const userId = await this.getUserIdFromUsername(deletedCat.username);
+      if (userId) {
+        invalidationPromises.push(this.invalidateUserCaches(userId));
+      }
     }
 
     // Invalidate protector-specific caches if applicable
@@ -246,6 +273,18 @@ export class CatCacheService implements ICatService {
     await this.deleteCachePattern(userPattern);
   }
 
+  private async getUserIdFromUsername(
+    username: string
+  ): Promise<string | null> {
+    try {
+      const user = await userService.getUserByUsername(username);
+      return user?.id || null;
+    } catch (error) {
+      console.error(`Failed to get userId for username ${username}:`, error);
+      return null;
+    }
+  }
+
   private async invalidateProtectorCaches(protectorId: string): Promise<void> {
     // Delete all cache keys that contain this protectorId
     const protectorPattern = `cats:filtered:*protectorId*${protectorId}*`;
@@ -258,7 +297,7 @@ export class CatCacheService implements ICatService {
     await this.deleteCachePattern(colonyPattern);
   }
 
-  private async invalidateFilteredCaches(cat: Cat): Promise<void> {
+  private async invalidateFilteredCaches(cat: CatResponse): Promise<void> {
     // Invalidate filtered caches that might match this cat's properties
     const patterns = [
       `cats:filtered:*age*${cat.age}*`,
