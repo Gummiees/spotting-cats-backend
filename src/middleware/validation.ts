@@ -44,20 +44,14 @@ export const validateCatHasImages = (
   const hasUploadedImages =
     uploadedFiles && Array.isArray(uploadedFiles) && uploadedFiles.length > 0;
 
-  // Check if there are imageUrls in the body (for backward compatibility)
-  const bodyImageUrls = req.body.imageUrls;
-  const hasBodyImages =
-    bodyImageUrls && Array.isArray(bodyImageUrls) && bodyImageUrls.length > 0;
-
   // For updates, we don't require images (user might want to keep existing ones)
   // For creation, we require at least one image
   const isUpdate = req.method === 'PUT' || req.method === 'PATCH';
 
   console.log('📋 hasUploadedImages:', hasUploadedImages);
-  console.log('📋 hasBodyImages:', hasBodyImages);
   console.log('📋 isUpdate:', isUpdate);
 
-  if (!isUpdate && !hasUploadedImages && !hasBodyImages) {
+  if (!isUpdate && !hasUploadedImages) {
     console.log('❌ Validation failed - no images provided');
     return ResponseUtil.badRequest(res, 'Cat must have at least one image', [
       'At least one image is required for creating a cat',
