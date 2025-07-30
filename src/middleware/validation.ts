@@ -229,6 +229,14 @@ export const getCatsQueryValidation = [
     .isInt({ min: 1 })
     .withMessage('Page must be a positive integer')
     .toInt(),
+  query('orderBy')
+    .optional()
+    .isIn(['totalLikes', 'age', 'createdAt'])
+    .withMessage('orderBy must be one of: totalLikes, age, createdAt'),
+  query('orderDirection')
+    .optional()
+    .isIn(['ASC', 'DESC'])
+    .withMessage('orderDirection must be either ASC or DESC'),
   handleValidationErrors,
 ];
 

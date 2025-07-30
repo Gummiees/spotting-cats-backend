@@ -85,6 +85,21 @@ const router = Router();
  *           type: integer
  *           default: 1
  *         description: Page number
+ *       - in: query
+ *         name: orderBy
+ *         schema:
+ *           type: string
+ *           enum: [totalLikes, age, createdAt]
+ *         description: Field to order by. If not specified, defaults to ordering by createdAt in descending order (newest first)
+ *         example: "totalLikes"
+ *       - in: query
+ *         name: orderDirection
+ *         schema:
+ *           type: string
+ *           enum: [ASC, DESC]
+ *           default: DESC
+ *         description: Order direction (ASC for ascending, DESC for descending)
+ *         example: "DESC"
  *     responses:
  *       200:
  *         description: List of cats retrieved successfully

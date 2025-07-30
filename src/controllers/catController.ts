@@ -62,6 +62,22 @@ export class CatController {
       page: req.query.page ? parseInt(req.query.page as string) : undefined,
     };
 
+    // Handle ordering parameters
+    if (req.query.orderBy && req.query.orderDirection) {
+      const orderBy = req.query.orderBy as string;
+      const orderDirection = req.query.orderDirection as string;
+
+      if (
+        ['totalLikes', 'age', 'createdAt'].includes(orderBy) &&
+        ['ASC', 'DESC'].includes(orderDirection.toUpperCase())
+      ) {
+        filters.orderBy = {
+          field: orderBy as 'totalLikes' | 'age' | 'createdAt',
+          direction: orderDirection.toUpperCase() as 'ASC' | 'DESC',
+        };
+      }
+    }
+
     const cleanFilters: CatFilters = Object.fromEntries(
       Object.entries(filters).filter(([_, value]) => value !== undefined)
     );

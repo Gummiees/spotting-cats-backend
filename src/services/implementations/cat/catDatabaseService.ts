@@ -61,9 +61,11 @@ export class CatDatabaseService implements ICatService {
       const collection = await this.getCollection();
       const query = this.buildFilterQuery(filters);
       const options = this.buildQueryOptions(filters);
+      const sort = this.buildSortOptions(filters);
 
       const cats = await collection
         .find(query, { projection: this.createProjection().projection })
+        .sort(sort)
         .limit(options.limit)
         .skip(options.skip)
         .toArray();
@@ -71,6 +73,12 @@ export class CatDatabaseService implements ICatService {
       const mappedCats = await Promise.all(
         cats.map((cat) => this.mapCatToResponse(cat))
       );
+
+      // Apply special handling for age ordering (cats with no age at the end)
+      if (filters?.orderBy?.field === 'age') {
+        return this.handleAgeOrdering(mappedCats, filters.orderBy.direction);
+      }
+
       return mappedCats.map((cat) => this.stripUserIdForFrontend(cat));
     } catch (error) {
       this.handleDatabaseError(error, 'getAll');
@@ -208,6 +216,52 @@ export class CatDatabaseService implements ICatService {
     const skip = (page - 1) * limit;
 
     return { limit, skip };
+  }
+
+  private buildSortOptions(filters?: CatFilters): any {
+    if (!filters?.orderBy) {
+      return { createdAt: -1 }; // Default sort by newest first
+    }
+
+    const { field, direction } = filters.orderBy;
+    const sortDirection = direction === 'ASC' ? 1 : -1;
+
+    switch (field) {
+      case 'totalLikes':
+        return { totalLikes: sortDirection, createdAt: -1 };
+      case 'age':
+        // For age, we'll handle the special case in handleAgeOrdering
+        return { age: sortDirection, createdAt: -1 };
+      case 'createdAt':
+        return { createdAt: sortDirection };
+      default:
+        return { createdAt: -1 };
+    }
+  }
+
+  private handleAgeOrdering(
+    cats: Cat[],
+    direction: 'ASC' | 'DESC'
+  ): CatResponse[] {
+    // Separate cats with age and without age
+    const catsWithAge = cats.filter(
+      (cat) => cat.age !== undefined && cat.age !== null
+    );
+    const catsWithoutAge = cats.filter(
+      (cat) => cat.age === undefined || cat.age === null
+    );
+
+    // Sort cats with age
+    catsWithAge.sort((a, b) => {
+      const ageA = a.age || 0;
+      const ageB = b.age || 0;
+      return direction === 'ASC' ? ageA - ageB : ageB - ageA;
+    });
+
+    // Combine: cats with age (sorted) + cats without age (at the end)
+    const sortedCats = [...catsWithAge, ...catsWithoutAge];
+
+    return sortedCats.map((cat) => this.stripUserIdForFrontend(cat));
   }
 
   private async insertCat(catData: any): Promise<ObjectId> {

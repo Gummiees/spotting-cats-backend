@@ -1,5 +1,12 @@
 import { Cat } from '@/models/cat';
 
+export type OrderDirection = 'ASC' | 'DESC';
+
+export interface CatOrderBy {
+  field: 'totalLikes' | 'age' | 'createdAt';
+  direction: OrderDirection;
+}
+
 export interface CatFilters {
   userId?: string;
   protectorId?: string;
@@ -12,6 +19,7 @@ export interface CatFilters {
   isUserOwner?: boolean;
   limit?: number;
   page?: number;
+  orderBy?: CatOrderBy;
 }
 
 export type CatResponse = Omit<Cat, 'userId'>;
