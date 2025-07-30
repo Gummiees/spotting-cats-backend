@@ -20,7 +20,6 @@ export class CatCacheService implements ICatService {
   async create(cat: Omit<Cat, 'id'>): Promise<CatResponse> {
     const newCat = await this.dbService.create(cat);
 
-    // Invalidate all related caches using the original cat data
     await this.invalidateCachesForCreate(newCat, cat);
 
     return newCat;
@@ -28,6 +27,7 @@ export class CatCacheService implements ICatService {
 
   async getAll(filters?: CatFilters): Promise<CatResponse[]> {
     const cacheKey = this.generateCacheKey(filters);
+
     const cached = await CacheService.get<Cat[]>(cacheKey);
     if (cached) {
       return cached;
@@ -145,32 +145,7 @@ export class CatCacheService implements ICatService {
     newCat: CatResponse,
     originalCat: Omit<Cat, 'id'>
   ): Promise<void> {
-    const invalidationPromises: Promise<void>[] = [];
-
-    // Invalidate general list cache
-    invalidationPromises.push(CacheService.delete('cats:all'));
-
-    // Use userId from the original cat data
-    if (originalCat.userId) {
-      invalidationPromises.push(this.invalidateUserCaches(originalCat.userId));
-    }
-
-    // Invalidate protector-specific caches if applicable
-    if (newCat.protectorId) {
-      invalidationPromises.push(
-        this.invalidateProtectorCaches(newCat.protectorId)
-      );
-    }
-
-    // Invalidate colony-specific caches if applicable
-    if (newCat.colonyId) {
-      invalidationPromises.push(this.invalidateColonyCaches(newCat.colonyId));
-    }
-
-    // Invalidate filtered caches that might include this new cat
-    invalidationPromises.push(this.invalidateFilteredCaches(newCat));
-
-    await Promise.all(invalidationPromises);
+    await this.invalidateAllCatCaches();
   }
 
   private async invalidateCachesForUpdate(
@@ -335,21 +310,24 @@ export class CatCacheService implements ICatService {
 
   private async deleteCachePattern(pattern: string): Promise<void> {
     try {
-      // This is a simplified pattern deletion - in a real Redis implementation,
-      // you would use Redis SCAN or similar methods to find and delete matching keys
-      // For now, we'll implement a basic approach
+      // For now, we'll implement a simple approach that deletes common cache keys
+      // In a production environment, you would use Redis SCAN to find and delete all matching keys
 
-      // Note: This requires the CacheService to support pattern deletion
-      // If not available, you might need to maintain a separate index of cache keys
-
-      // For demonstration, we'll just log the pattern that should be deleted
-      console.log(`Would delete cache pattern: ${pattern}`);
-
-      // In a real implementation, you might do something like:
-      // const keys = await redis.keys(pattern);
-      // if (keys.length > 0) {
-      //   await redis.del(...keys);
-      // }
+      if (pattern === 'cats:all') {
+        await CacheService.delete('cats:all');
+      } else if (pattern.startsWith('cats:user:')) {
+        // Extract userId from pattern like 'cats:user:*'
+        const userId = pattern.replace('cats:user:', '').replace('*', '');
+        if (userId) {
+          await CacheService.delete(`cats:user:${userId}`);
+        }
+      } else if (pattern.startsWith('cats:filtered:')) {
+        // For filtered caches, we'll just delete the main 'cats:all' cache as a fallback
+        await CacheService.delete('cats:all');
+      } else if (pattern === 'cats:*') {
+        // Delete all cat-related caches
+        await CacheService.delete('cats:all');
+      }
     } catch (error) {
       console.error(`Error deleting cache pattern ${pattern}:`, error);
     }
