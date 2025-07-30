@@ -561,11 +561,11 @@ The API returns Cloudinary URLs in the response:
 
 ## NSFW Content Filtering
 
-The application includes AI-powered content moderation for cat images using TensorFlow.js and NSFW.js. This feature automatically detects and blocks inappropriate content when users create or update cats with images.
+The application includes AI-powered content moderation for cat images using TensorFlow.js and NSFW.js with the Inception v3 model. This feature automatically detects and blocks inappropriate content when users create or update cats with images.
 
 ### How It Works
 
-1. **Model Loading**: The NSFW model is loaded at application startup using TensorFlow.js
+1. **Model Loading**: The NSFW Inception v3 model is loaded at application startup using TensorFlow.js
 2. **Image Validation**: When users create or update cats with `imageUrls`, the system:
    - Fetches each image from the provided URLs
    - Processes them through the NSFW classification model
@@ -583,7 +583,7 @@ The application includes AI-powered content moderation for cat images using Tens
 
 ### Implementation Details
 
-- **Service**: `src/services/nsfwService.ts` - Handles model loading and image classification
+- **Service**: `src/services/nsfwService.ts` - Handles Inception v3 model loading and image classification
 - **Middleware**: `src/middleware/nsfwValidation.ts` - Validates images in cat creation/update requests
 - **Routes**: Applied to `POST /api/v1/cats` and `PUT /api/v1/cats/:id` endpoints
 

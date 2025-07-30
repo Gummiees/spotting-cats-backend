@@ -16,11 +16,11 @@ export class NSFWService {
     try {
       // Use require for CommonJS compatibility
       const nsfw = require('nsfwjs');
-      this.model = await nsfw.load();
+      this.model = await nsfw.load('inception_v3');
       this.isModelLoaded = true;
-      console.log('✅ NSFW model loaded successfully');
+      console.log('✅ NSFW Inception v3 model loaded successfully');
     } catch (error) {
-      console.error('❌ Failed to load NSFW model:', error);
+      console.error('❌ Failed to load NSFW Inception v3 model:', error);
       throw error;
     }
   }
