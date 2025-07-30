@@ -188,6 +188,17 @@ export function decryptEmail(encrypted: string): string {
     'Attempting to decrypt email with format:',
     encrypted.substring(0, 50) + '...'
   );
+
+  // Handle plain text emails (for users created before encryption was implemented)
+  if (
+    encrypted.includes('@') &&
+    encrypted.includes('.') &&
+    !encrypted.includes(':')
+  ) {
+    console.log('Email appears to be plain text, returning as-is:', encrypted);
+    return encrypted;
+  }
+
   const parts = encrypted.split(':');
   if (parts.length !== 3) {
     console.error(
