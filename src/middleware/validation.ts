@@ -33,6 +33,12 @@ export const validateCatHasImages = (
   res: Response,
   next: NextFunction
 ): void => {
+  console.log('🔍 validateCatHasImages called');
+  console.log('📋 Request method:', req.method);
+  console.log('📋 Content-Type:', req.headers['content-type']);
+  console.log('📋 req.files:', req.files);
+  console.log('📋 req.body.imageUrls:', req.body.imageUrls);
+
   // Check if there are uploaded files
   const uploadedFiles = req.files as Express.Multer.File[];
   const hasUploadedImages =
@@ -47,12 +53,18 @@ export const validateCatHasImages = (
   // For creation, we require at least one image
   const isUpdate = req.method === 'PUT' || req.method === 'PATCH';
 
+  console.log('📋 hasUploadedImages:', hasUploadedImages);
+  console.log('📋 hasBodyImages:', hasBodyImages);
+  console.log('📋 isUpdate:', isUpdate);
+
   if (!isUpdate && !hasUploadedImages && !hasBodyImages) {
+    console.log('❌ Validation failed - no images provided');
     return ResponseUtil.badRequest(res, 'Cat must have at least one image', [
       'At least one image is required for creating a cat',
     ]);
   }
 
+  console.log('✅ Validation passed');
   next();
 };
 
