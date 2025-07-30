@@ -62,22 +62,38 @@ configureSecurityMiddleware(app);
 // CORS configuration
 app.use(cors(config.cors));
 
+// Custom middleware to handle FormData requests
+app.use((req, res, next) => {
+  const contentType = req.headers['content-type'];
+
+  // If this is a multipart request, skip all body parsing
+  if (contentType && contentType.includes('multipart/form-data')) {
+    // Set a flag to skip body parsing
+    (req as any).skipBodyParsing = true;
+    return next();
+  }
+  next();
+});
+
 // Body parsing middleware with limits
-// Note: JSON parsing is disabled for FormData routes in the route files
 app.use((req, res, next) => {
   // Skip JSON parsing for multipart/form-data requests
-  if (req.headers['content-type']?.includes('multipart/form-data')) {
+  if ((req as any).skipBodyParsing) {
     return next();
   }
   express.json({ limit: config.security.requestSizeLimit })(req, res, next);
 });
 
-app.use(
+app.use((req, res, next) => {
+  // Skip URL encoding for multipart/form-data requests
+  if ((req as any).skipBodyParsing) {
+    return next();
+  }
   express.urlencoded({
     extended: true,
     limit: config.security.requestSizeLimit,
-  })
-);
+  })(req, res, next);
+});
 
 // Cookie parser middleware
 app.use(cookieParser());
