@@ -353,10 +353,14 @@ export class UserAuthService {
 
       // Update existing user (last login, etc.)
       const updateData = this.utilityService.createUserUpdateData(clientIp);
-      const updatedUser = await this.dbOps.updateUserWithOperators(
-        user._id,
-        updateData
-      );
+      await this.dbOps.updateUserWithOperators(user._id, updateData);
+
+      // Fetch the updated user
+      const updatedUser = await this.dbOps.findUserById(user._id);
+      if (!updatedUser) {
+        return { success: false, message: 'Failed to retrieve updated user' };
+      }
+
       return { success: true, user: updatedUser };
     } catch (error) {
       console.error('Error handling existing user:', error);
