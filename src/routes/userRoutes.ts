@@ -1351,4 +1351,64 @@ router.get(
  */
 router.get('/:username', checkProfileAccess, UserController.getUserByUsername);
 
+/**
+ * @swagger
+ * /api/v1/users/debug/email-encryption:
+ *   get:
+ *     summary: Debug email encryption status
+ *     description: Check the status of email encryption environment variables and test encryption/decryption
+ *     tags: [Debug]
+ *     responses:
+ *       200:
+ *         description: Debug information retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     emailEncryptionKeyExists:
+ *                       type: boolean
+ *                       example: true
+ *                     emailEncryptionKeyLength:
+ *                       type: number
+ *                       example: 64
+ *                     emailEncryptionKeyPrefix:
+ *                       type: string
+ *                       example: "9f2c372d1260206"
+ *                     nodeEnv:
+ *                       type: string
+ *                       example: "production"
+ *                     timestamp:
+ *                       type: string
+ *                       format: date-time
+ *                     encryptionTest:
+ *                       type: object
+ *                       properties:
+ *                         success:
+ *                           type: boolean
+ *                           example: true
+ *                         original:
+ *                           type: string
+ *                           example: "test@example.com"
+ *                         encrypted:
+ *                           type: string
+ *                           example: "Q8h9APZGlA+c+TwA:zbVyvsubMj8k4PkPkrg8lw==:NnZuva7S4qKeVnTmSHBwmw==..."
+ *                         decrypted:
+ *                           type: string
+ *                           example: "test@example.com"
+ *                         match:
+ *                           type: boolean
+ *                           example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Debug information retrieved"
+ */
+router.get('/debug/email-encryption', UserController.debugEmailEncryption);
+
 export { router as userRoutes };

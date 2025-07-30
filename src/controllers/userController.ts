@@ -16,7 +16,7 @@ import {
 } from '@/models/requests';
 import { isValidDiceBearUrl } from '@/utils/avatar';
 import { config } from '@/config';
-import { getClientIp, decryptEmail } from '@/utils/security';
+import { getClientIp, decryptEmail, encryptEmail } from '@/utils/security';
 import { isProduction } from '@/constants/environment';
 
 export class UserController {
@@ -1117,6 +1117,47 @@ export class UserController {
       } else {
         ResponseUtil.badRequest(res, result.message);
       }
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async debugEmailEncryption(
+    _req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const debugInfo: any = {
+        emailEncryptionKeyExists: !!process.env.EMAIL_ENCRYPTION_KEY,
+        emailEncryptionKeyLength: process.env.EMAIL_ENCRYPTION_KEY?.length || 0,
+        emailEncryptionKeyPrefix:
+          process.env.EMAIL_ENCRYPTION_KEY?.substring(0, 16) || 'N/A',
+        nodeEnv: process.env.NODE_ENV,
+        timestamp: new Date().toISOString(),
+      };
+
+      // Test encryption/decryption
+      try {
+        const testEmail = 'test@example.com';
+        const encrypted = encryptEmail(testEmail);
+        const decrypted = decryptEmail(encrypted);
+
+        debugInfo.encryptionTest = {
+          success: true,
+          original: testEmail,
+          encrypted: encrypted.substring(0, 50) + '...',
+          decrypted,
+          match: testEmail === decrypted,
+        };
+      } catch (error: any) {
+        debugInfo.encryptionTest = {
+          success: false,
+          error: error.message,
+        };
+      }
+
+      ResponseUtil.success(res, debugInfo, 'Debug information retrieved');
     } catch (error) {
       next(error);
     }

@@ -159,22 +159,41 @@ const EMAIL_ENCRYPTION_KEY = process.env.EMAIL_ENCRYPTION_KEY
   : undefined; // Must be 32 bytes (64 hex chars)
 
 export function encryptEmail(email: string): string {
-  if (!EMAIL_ENCRYPTION_KEY) throw new Error('EMAIL_ENCRYPTION_KEY not set');
+  if (!EMAIL_ENCRYPTION_KEY) {
+    console.error('EMAIL_ENCRYPTION_KEY is not set or invalid');
+    throw new Error('EMAIL_ENCRYPTION_KEY not set');
+  }
+  console.log('Encrypting email with key length:', EMAIL_ENCRYPTION_KEY.length);
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv('aes-256-gcm', EMAIL_ENCRYPTION_KEY, iv);
   let encrypted = cipher.update(email, 'utf8', 'base64');
   encrypted += cipher.final('base64');
   const tag = cipher.getAuthTag();
-  return `${iv.toString('base64')}:${tag.toString('base64')}:${encrypted}`;
+  const result = `${iv.toString('base64')}:${tag.toString(
+    'base64'
+  )}:${encrypted}`;
+  console.log('Encrypted email format:', result.substring(0, 50) + '...');
+  return result;
 }
 
 export function decryptEmail(encrypted: string): string {
-  if (!EMAIL_ENCRYPTION_KEY) throw new Error('EMAIL_ENCRYPTION_KEY not set');
+  if (!EMAIL_ENCRYPTION_KEY) {
+    console.error('EMAIL_ENCRYPTION_KEY is not set or invalid');
+    throw new Error('EMAIL_ENCRYPTION_KEY not set');
+  }
   if (!encrypted || typeof encrypted !== 'string') {
     throw new Error('Invalid encrypted email: must be a non-empty string');
   }
+  console.log(
+    'Attempting to decrypt email with format:',
+    encrypted.substring(0, 50) + '...'
+  );
   const parts = encrypted.split(':');
   if (parts.length !== 3) {
+    console.error(
+      'Invalid encrypted email format: expected 3 parts, got',
+      parts.length
+    );
     throw new Error('Invalid encrypted email format: expected iv:tag:data');
   }
   const [iv, tag, data] = parts.map((x) => Buffer.from(x, 'base64'));
@@ -186,6 +205,7 @@ export function decryptEmail(encrypted: string): string {
   decipher.setAuthTag(tag);
   let decrypted = decipher.update(data).toString('utf8');
   decrypted += decipher.final('utf8');
+  console.log('Successfully decrypted email:', decrypted);
   return decrypted;
 }
 
