@@ -1,17 +1,16 @@
-import { Like, CreateLike } from '@/models/like';
+import { CreateLike } from '@/models/like';
 import { ILikeService } from '@/services/interfaces/likeServiceInterface';
 import { connectToMongo } from '@/utils/mongo';
 import { DatabaseService } from '@/services/databaseService';
-import { ObjectId } from 'mongodb';
-import { CatService } from '@/services/catService';
+import { CatDatabaseService } from '@/services/implementations/cat/catDatabaseService';
 
 const COLLECTION = 'likes';
 
 export class LikeDatabaseService implements ILikeService {
-  private catService: CatService;
+  private catService: CatDatabaseService;
 
   constructor() {
-    this.catService = new CatService();
+    this.catService = new CatDatabaseService();
   }
 
   async toggleLike(
