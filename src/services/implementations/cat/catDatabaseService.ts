@@ -8,7 +8,6 @@ import {
 } from '@/services/interfaces/catServiceInterface';
 import { ObjectId } from 'mongodb';
 import { userService } from '@/services/userService';
-import { likeService } from '@/services/likeService';
 
 const COLLECTION = 'cats';
 
@@ -300,6 +299,24 @@ export class CatDatabaseService implements ICatService {
     return db.collection(COLLECTION);
   }
 
+  private async isLikedByUser(userId: string, catId: string): Promise<boolean> {
+    try {
+      DatabaseService.requireDatabase();
+      const db = await connectToMongo();
+      const likesCollection = db.collection('likes');
+
+      const like = await likesCollection.findOne({
+        userId,
+        catId,
+      });
+
+      return !!like;
+    } catch (error) {
+      console.error('Error checking if user liked cat:', error);
+      return false;
+    }
+  }
+
   private createProjection() {
     return {
       projection: {
@@ -345,7 +362,7 @@ export class CatDatabaseService implements ICatService {
 
     if (userId) {
       try {
-        isLiked = await likeService.isLikedByUser(userId, cat._id.toString());
+        isLiked = await this.isLikedByUser(userId, cat._id.toString());
       } catch (error) {
         console.error(
           `Failed to check if user ${userId} liked cat ${cat._id}:`,
