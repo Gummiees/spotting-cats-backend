@@ -22,6 +22,8 @@ export class LikeDatabaseService implements ILikeService {
       DatabaseService.requireDatabase();
       const collection = await this.getCollection();
 
+      console.log(`Checking if like exists for user: ${userId}, cat: ${catId}`);
+
       // Check if like already exists
       const existingLike = await collection.findOne({
         userId,
@@ -31,6 +33,7 @@ export class LikeDatabaseService implements ILikeService {
       let liked: boolean;
 
       if (existingLike) {
+        console.log(`Like exists, removing it`);
         // Remove like
         await collection.deleteOne({
           userId,
@@ -38,6 +41,7 @@ export class LikeDatabaseService implements ILikeService {
         });
         liked = false;
       } else {
+        console.log(`Like doesn't exist, adding it`);
         // Add like
         const newLike: CreateLike = {
           userId,
@@ -52,15 +56,20 @@ export class LikeDatabaseService implements ILikeService {
       }
 
       // Update cat's totalLikes
-      const currentCat = await this.catService.getByIdForAuth(catId);
+      console.log(`Getting current cat data for: ${catId}`);
+      const currentCat = await this.catService.getById(catId);
       if (!currentCat) {
+        console.log(`Cat not found in like service: ${catId}`);
         throw new Error('Cat not found');
       }
 
+      console.log(`Current cat totalLikes: ${currentCat.totalLikes}`);
       const newTotalLikes = Math.max(
         0,
         currentCat.totalLikes + (liked ? 1 : -1)
       );
+      console.log(`New totalLikes: ${newTotalLikes}`);
+
       await this.catService.update(catId, { totalLikes: newTotalLikes });
 
       return { liked, totalLikes: newTotalLikes };

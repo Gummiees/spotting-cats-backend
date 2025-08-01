@@ -288,13 +288,26 @@ export class CatController {
         return ResponseUtil.badRequest(res, 'Cat ID is required');
       }
 
+      console.log(`Attempting to like cat: ${catId} by user: ${userId}`);
+
       // Check if cat exists
       const cat = await catService.getById(catId);
       if (!cat) {
+        console.log(`Cat not found: ${catId}`);
         return ResponseUtil.notFound(res, 'Cat not found');
       }
 
+      console.log(
+        `Cat found: ${cat.name || 'Unnamed'}, current totalLikes: ${
+          cat.totalLikes
+        }`
+      );
+
       const result = await likeService.toggleLike(userId, catId);
+
+      console.log(
+        `Like result: ${result.liked}, new totalLikes: ${result.totalLikes}`
+      );
 
       ResponseUtil.success(
         res,
@@ -302,6 +315,7 @@ export class CatController {
         `Cat ${result.liked ? 'liked' : 'unliked'} successfully`
       );
     } catch (err) {
+      console.error('Error in toggleLike:', err);
       next(err);
     }
   }
