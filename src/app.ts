@@ -19,57 +19,41 @@ const app = express();
 // Initialize Redis connection early
 async function initializeServices() {
   try {
-    // Initialize cleanup service (cron jobs) - this is synchronous
+    // Initialize cleanup service (cron jobs)
     cleanupService.initialize();
 
-    // Run all async service initializations concurrently
-    const initializationPromises = [
-      // MongoDB initialization
-      (async () => {
-        if (isMongoConfigured()) {
-          await connectToMongo();
-          console.log('✅ MongoDB initialized successfully');
-        } else {
-          console.log('⚠️  MongoDB not configured');
-        }
-      })(),
+    // Initialize MongoDB if configured
+    if (isMongoConfigured()) {
+      await connectToMongo();
+      console.log('✅ MongoDB initialized successfully');
+    } else {
+      console.log('⚠️  MongoDB not configured');
+    }
 
-      // Redis initialization
-      (async () => {
-        if (isRedisConfigured()) {
-          await connectToRedis();
-          console.log('✅ Redis initialized successfully');
-        } else {
-          console.log('⚠️  Redis not configured, running without cache');
-        }
-      })(),
+    // Initialize Redis if configured
+    if (isRedisConfigured()) {
+      await connectToRedis();
+      console.log('✅ Redis initialized successfully');
+    } else {
+      console.log('⚠️  Redis not configured, running without cache');
+    }
 
-      // NSFW service initialization
-      (async () => {
-        try {
-          await nsfwService.loadModel();
-          console.log('✅ NSFW service initialized successfully');
-        } catch (error) {
-          console.log(
-            '⚠️ NSFW service not available - running without NSFW validation'
-          );
-          console.error('NSFW service error:', error);
-        }
-      })(),
-
-      // Cloudinary service check (synchronous but wrapped for consistency)
-      (async () => {
-        if (cloudinaryService.isReady()) {
-          console.log('✅ Cloudinary service initialized successfully');
-        } else {
-          console.log('⚠️ Cloudinary service not configured');
-        }
-      })(),
-    ];
-
-    // Wait for all services to initialize
-    await Promise.allSettled(initializationPromises);
-    console.log('🚀 All services initialization completed');
+    // Initialize NSFW model
+    try {
+      await nsfwService.loadModel();
+      console.log('✅ NSFW service initialized successfully');
+    } catch (error) {
+      console.log(
+        '⚠️ NSFW service not available - running without NSFW validation'
+      );
+      console.error('NSFW service error:', error);
+    }
+    // Initialize Cloudinary service
+    if (cloudinaryService.isReady()) {
+      console.log('✅ Cloudinary service initialized successfully');
+    } else {
+      console.log('⚠️ Cloudinary service not configured');
+    }
   } catch (error) {
     console.error('❌ Error initializing services:', error);
     // Don't throw here - allow the app to start even if services fail
