@@ -200,8 +200,12 @@ export class CatCacheService implements ICatService {
     // Invalidate filtered caches that might be affected
     invalidationPromises.push(this.invalidateFilteredCaches(currentCat));
 
-    // If totalLikes or age are being updated, invalidate ordering caches specifically
-    if (update.totalLikes !== undefined || update.age !== undefined) {
+    // If totalLikes, totalComments or age are being updated, invalidate ordering caches specifically
+    if (
+      update.totalLikes !== undefined ||
+      update.totalComments !== undefined ||
+      update.age !== undefined
+    ) {
       invalidationPromises.push(this.invalidateOrderingCaches());
     }
 
@@ -302,6 +306,7 @@ export class CatCacheService implements ICatService {
     // Also invalidate caches that might be ordered by fields that could affect ordering
     const orderingPatterns = [
       `cats:filtered:*orderBy*totalLikes*`,
+      `cats:filtered:*orderBy*totalComments*`,
       `cats:filtered:*orderBy*age*`,
       `cats:filtered:*orderBy*createdAt*`,
     ];
@@ -317,6 +322,7 @@ export class CatCacheService implements ICatService {
     // Invalidate all caches that use ordering
     const patterns = [
       `cats:filtered:*orderBy*totalLikes*`,
+      `cats:filtered:*orderBy*totalComments*`,
       `cats:filtered:*orderBy*age*`,
       `cats:filtered:*orderBy*createdAt*`,
     ];

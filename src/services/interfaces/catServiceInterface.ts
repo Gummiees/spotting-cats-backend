@@ -3,7 +3,7 @@ import { Cat } from '@/models/cat';
 export type OrderDirection = 'ASC' | 'DESC';
 
 export interface CatOrderBy {
-  field: 'totalLikes' | 'age' | 'createdAt';
+  field: 'totalLikes' | 'totalComments' | 'age' | 'createdAt';
   direction: OrderDirection;
 }
 

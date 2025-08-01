@@ -121,6 +121,7 @@ erDiagram
         string protectorId FK
         string colonyId FK
         int totalLikes
+        int totalComments
         string name
         int age
         string breed

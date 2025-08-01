@@ -26,6 +26,7 @@ export class CatDatabaseService implements ICatService {
         xCoordinate: sanitizedCat.xCoordinate!,
         yCoordinate: sanitizedCat.yCoordinate!,
         totalLikes: 0,
+        totalComments: 0,
         imageUrls: sanitizedCat.imageUrls ?? [],
         isUserOwner: false,
         createdAt: new Date(),
@@ -229,6 +230,8 @@ export class CatDatabaseService implements ICatService {
     switch (field) {
       case 'totalLikes':
         return { totalLikes: sortDirection, createdAt: -1 };
+      case 'totalComments':
+        return { totalComments: sortDirection, createdAt: -1 };
       case 'age':
         // For age, we'll handle the special case in handleAgeOrdering
         return { age: sortDirection, createdAt: -1 };
@@ -307,6 +310,7 @@ export class CatDatabaseService implements ICatService {
         protectorId: 1,
         colonyId: 1,
         totalLikes: 1,
+        totalComments: 1,
         name: 1,
         age: 1,
         breed: 1,
@@ -348,6 +352,7 @@ export class CatDatabaseService implements ICatService {
       protectorId: cat.protectorId,
       colonyId: cat.colonyId,
       totalLikes: cat.totalLikes ?? 0,
+      totalComments: cat.totalComments ?? 0,
       name: cat.name,
       age: cat.age,
       breed: cat.breed,
@@ -378,6 +383,7 @@ export class CatDatabaseService implements ICatService {
       confirmedOwnerAt,
       isUserOwner,
       totalLikes,
+      totalComments,
       ...sanitizedData
     } = data;
 

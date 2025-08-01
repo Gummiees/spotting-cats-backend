@@ -5,6 +5,7 @@ export interface Cat {
   protectorId?: string;
   colonyId?: string;
   totalLikes: number;
+  totalComments: number;
   name?: string;
   age?: number;
   breed?: string;

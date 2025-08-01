@@ -13,6 +13,7 @@ export interface AlgoliaCatRecord extends Record<string, unknown> {
   isFriendly?: boolean;
   isUserOwner: boolean;
   totalLikes: number;
+  totalComments: number;
   userId?: string;
   protectorId?: string;
   colonyId?: string;
@@ -76,6 +77,7 @@ export class AlgoliaService {
       isFriendly: cat.isFriendly,
       isUserOwner: cat.isUserOwner,
       totalLikes: cat.totalLikes,
+      totalComments: cat.totalComments,
       userId: cat.userId,
       protectorId: cat.protectorId,
       colonyId: cat.colonyId,
