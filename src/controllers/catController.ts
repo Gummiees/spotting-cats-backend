@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-import { CatService } from '@/services/catService';
 import { CatFilters } from '@/services/interfaces/catServiceInterface';
 import { ResponseUtil } from '@/utils/response';
 import { AuthRequest } from '@/models/requests';
@@ -8,8 +7,8 @@ import { isProduction } from '@/constants/environment';
 import { cloudinaryService } from '@/services/cloudinaryService';
 import { getImageBuffers } from '@/middleware/fileUpload';
 import { likeService } from '@/services/likeService';
+import { catService } from '@/services/catService';
 
-const catService = new CatService();
 const algoliaService = new AlgoliaService();
 
 export class CatController {

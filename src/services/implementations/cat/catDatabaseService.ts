@@ -408,7 +408,6 @@ export class CatDatabaseService implements ICatService {
       updatedAt,
       confirmedOwnerAt,
       isUserOwner,
-      totalLikes,
       ...sanitizedData
     } = data;
 
@@ -427,6 +426,7 @@ export class CatDatabaseService implements ICatService {
       isMale: this.sanitizeBoolean(sanitizedData.isMale),
       isSterilized: this.sanitizeBoolean(sanitizedData.isSterilized),
       isFriendly: this.sanitizeBoolean(sanitizedData.isFriendly),
+      totalLikes: this.sanitizeNumber(sanitizedData.totalLikes, 0, 999999),
     };
   }
 

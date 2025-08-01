@@ -1,6 +1,7 @@
 import { Algoliasearch, algoliasearch } from 'algoliasearch';
 import { Cat } from '@/models/cat';
-import { CatService } from '@/services/catService';
+import { catService } from '@/services/catService';
+import { ICatService } from '@/services/interfaces/catServiceInterface';
 
 export interface AlgoliaCatRecord extends Record<string, unknown> {
   objectID: string;
@@ -30,18 +31,25 @@ export interface AlgoliaCatRecord extends Record<string, unknown> {
 export class AlgoliaService {
   private client: Algoliasearch;
   private indexName: string;
-  private catService: CatService;
+  private catService: ICatService;
 
   constructor() {
-    // Initialize Algolia client with your credentials
-    this.client = algoliasearch(
-      process.env.ALGOLIA_APP_ID || '',
-      process.env.ALGOLIA_API_KEY || ''
-    );
+    // Initialize Algolia client
+    const appId = process.env.ALGOLIA_APP_ID;
+    const apiKey = process.env.ALGOLIA_API_KEY;
+
+    if (!appId || !apiKey) {
+      console.warn(
+        'Algolia credentials not found. Search functionality will be disabled.'
+      );
+      this.client = null as any;
+    } else {
+      this.client = algoliasearch(appId, apiKey);
+    }
 
     // Set the index name
     this.indexName = 'cats_index';
-    this.catService = new CatService();
+    this.catService = catService;
   }
 
   /**

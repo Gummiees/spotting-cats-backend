@@ -5,7 +5,6 @@ import {
   CatFilters,
   CatResponse,
 } from '@/services/interfaces/catServiceInterface';
-import { CatDatabaseService } from './catDatabaseService';
 import { userService } from '@/services/userService';
 
 const CACHE_TTL = 300; // 5 minutes
@@ -13,8 +12,8 @@ const CACHE_TTL = 300; // 5 minutes
 export class CatCacheService implements ICatService {
   private dbService: ICatService;
 
-  constructor() {
-    this.dbService = new CatDatabaseService();
+  constructor(dbService: ICatService) {
+    this.dbService = dbService;
   }
 
   async create(cat: Omit<Cat, 'id'>): Promise<CatResponse> {
