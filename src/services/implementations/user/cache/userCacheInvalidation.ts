@@ -41,6 +41,8 @@ export class UserCacheInvalidation {
         const usernameKey = `${this.USER_USERNAME_CACHE_PREFIX}${normalizedUsername}`;
         await CacheService.delete(usernameKey);
       }
+
+      await this.invalidateCatCachesForUser(userId);
     } catch (error) {
       console.error('Error invalidating user cache:', error);
     }
@@ -83,6 +85,24 @@ export class UserCacheInvalidation {
       }
     } catch (error) {
       console.error('Error invalidating multiple user caches:', error);
+    }
+  }
+
+  private async invalidateCatCachesForUser(userId: string): Promise<void> {
+    try {
+      // Invalidate user-specific cat caches
+      await CacheService.delete(`cats:user:${userId}`);
+
+      // Invalidate filtered caches that might include this user's cats
+      await CacheService.deletePattern(`cats:filtered:*userId*${userId}*`);
+
+      // Invalidate general cat caches since user's cats might be included
+      await CacheService.delete('cats:all');
+
+      // Invalidate all cat caches to ensure any cached data with this user's cats is cleared
+      await CacheService.deletePattern('cats:*');
+    } catch (error) {
+      console.error('Error invalidating cat caches for user:', error);
     }
   }
 }
