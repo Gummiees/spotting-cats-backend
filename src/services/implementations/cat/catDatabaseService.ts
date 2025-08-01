@@ -305,9 +305,12 @@ export class CatDatabaseService implements ICatService {
       const db = await connectToMongo();
       const likesCollection = db.collection('likes');
 
+      // Convert catId to ObjectId for consistent querying
+      const catObjectId = this.toObjectId(catId);
+
       const like = await likesCollection.findOne({
         userId,
-        catId,
+        catId: catObjectId,
       });
 
       return !!like;

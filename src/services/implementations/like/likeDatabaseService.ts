@@ -4,6 +4,7 @@ import { connectToMongo } from '@/utils/mongo';
 import { DatabaseService } from '@/services/databaseService';
 import { catService } from '@/services/catService';
 import { ICatService } from '@/services/interfaces/catServiceInterface';
+import { ObjectId } from 'mongodb';
 
 const COLLECTION = 'likes';
 
@@ -22,10 +23,13 @@ export class LikeDatabaseService implements ILikeService {
       DatabaseService.requireDatabase();
       const collection = await this.getCollection();
 
+      // Convert catId to ObjectId for consistent storage
+      const catObjectId = this.toObjectId(catId);
+
       // Check if like already exists
       const existingLike = await collection.findOne({
         userId,
-        catId,
+        catId: catObjectId,
       });
 
       let liked: boolean;
@@ -34,7 +38,7 @@ export class LikeDatabaseService implements ILikeService {
         // Remove like
         await collection.deleteOne({
           userId,
-          catId,
+          catId: catObjectId,
         });
         liked = false;
       } else {
@@ -46,6 +50,7 @@ export class LikeDatabaseService implements ILikeService {
 
         await collection.insertOne({
           ...newLike,
+          catId: catObjectId,
           createdAt: new Date(),
         });
         liked = true;
@@ -71,38 +76,20 @@ export class LikeDatabaseService implements ILikeService {
     }
   }
 
-  async isLikedByUser(userId: string, catId: string): Promise<boolean> {
-    try {
-      DatabaseService.requireDatabase();
-      const collection = await this.getCollection();
-
-      const like = await collection.findOne({
-        userId,
-        catId,
-      });
-
-      return !!like;
-    } catch (error) {
-      console.error('Error checking if user liked cat:', error);
-      return false;
-    }
-  }
-
-  async getLikesCount(catId: string): Promise<number> {
-    try {
-      DatabaseService.requireDatabase();
-      const collection = await this.getCollection();
-
-      const count = await collection.countDocuments({ catId });
-      return count;
-    } catch (error) {
-      console.error('Error getting likes count:', error);
-      return 0;
-    }
-  }
-
   private async getCollection() {
     const db = await connectToMongo();
     return db.collection(COLLECTION);
+  }
+
+  private toObjectId(id: string | ObjectId): ObjectId {
+    if (id instanceof ObjectId) {
+      return id;
+    }
+
+    if (!ObjectId.isValid(id)) {
+      throw new Error(`Invalid ObjectId format: ${id}`);
+    }
+
+    return new ObjectId(id);
   }
 }
