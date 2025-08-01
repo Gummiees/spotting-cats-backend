@@ -144,7 +144,36 @@ export class CatCacheService implements ICatService {
     newCat: CatResponse,
     originalCat: Omit<Cat, 'id'>
   ): Promise<void> {
-    await this.invalidateAllCatCaches();
+    const invalidationPromises: Promise<void>[] = [];
+
+    // Invalidate general list cache (both anonymous and user-specific)
+    invalidationPromises.push(CacheService.delete('cats:all'));
+    invalidationPromises.push(this.deleteCachePattern('cats:all:user:*'));
+
+    // Invalidate user-specific caches for the cat owner
+    if (newCat.username) {
+      const userId = await this.getUserIdFromUsername(newCat.username);
+      if (userId) {
+        invalidationPromises.push(this.invalidateUserCaches(userId));
+      }
+    }
+
+    // Invalidate protector-specific caches if applicable
+    if (newCat.protectorId) {
+      invalidationPromises.push(
+        this.invalidateProtectorCaches(newCat.protectorId)
+      );
+    }
+
+    // Invalidate colony-specific caches if applicable
+    if (newCat.colonyId) {
+      invalidationPromises.push(this.invalidateColonyCaches(newCat.colonyId));
+    }
+
+    // Invalidate filtered caches that might include this new cat
+    invalidationPromises.push(this.invalidateFilteredCaches(newCat));
+
+    await Promise.all(invalidationPromises);
   }
 
   private async invalidateCachesForUpdate(
@@ -218,11 +247,15 @@ export class CatCacheService implements ICatService {
   ): Promise<void> {
     const invalidationPromises: Promise<void>[] = [];
 
-    // Invalidate the specific cat cache
+    // Invalidate the specific cat cache (both anonymous and user-specific)
     invalidationPromises.push(CacheService.delete(`cats:${deletedCat.id}`));
+    invalidationPromises.push(
+      this.deleteCachePattern(`cats:${deletedCat.id}:user:*`)
+    );
 
-    // Invalidate general list cache
+    // Invalidate general list cache (both anonymous and user-specific)
     invalidationPromises.push(CacheService.delete('cats:all'));
+    invalidationPromises.push(this.deleteCachePattern('cats:all:user:*'));
 
     if (deletedCat.username) {
       const userId = await this.getUserIdFromUsername(deletedCat.username);
