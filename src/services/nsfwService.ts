@@ -50,8 +50,11 @@ export class NSFWService {
         predictionObj[prediction.className] = prediction.probability;
       });
 
-      // Calculate NSFW score (sum of Porn and Sexy predictions)
-      const nsfwScore = (predictionObj.Porn || 0) + (predictionObj.Sexy || 0);
+      // Calculate NSFW score (sum of Porn, Sexy, and Hentai predictions)
+      const nsfwScore =
+        (predictionObj.Porn || 0) +
+        (predictionObj.Sexy || 0) +
+        (predictionObj.Hentai || 0);
       const isNSFW = nsfwScore > 0.5; // Threshold can be adjusted
 
       return {
