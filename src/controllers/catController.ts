@@ -7,6 +7,7 @@ import { AlgoliaService } from '@/services/algoliaService';
 import { isProduction } from '@/constants/environment';
 import { cloudinaryService } from '@/services/cloudinaryService';
 import { getImageBuffers } from '@/middleware/fileUpload';
+import { likeService } from '@/services/likeService';
 
 const catService = new CatService();
 const algoliaService = new AlgoliaService();
@@ -272,6 +273,33 @@ export class CatController {
         res,
         { deletedCount },
         `Successfully purged ${deletedCount} cats from the database`
+      );
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async toggleLike(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { catId } = req.params;
+      const userId = req.user!.userId;
+
+      if (!catId) {
+        return ResponseUtil.badRequest(res, 'Cat ID is required');
+      }
+
+      // Check if cat exists
+      const cat = await catService.getById(catId);
+      if (!cat) {
+        return ResponseUtil.notFound(res, 'Cat not found');
+      }
+
+      const result = await likeService.toggleLike(userId, catId);
+
+      ResponseUtil.success(
+        res,
+        result,
+        `Cat ${result.liked ? 'liked' : 'unliked'} successfully`
       );
     } catch (err) {
       next(err);

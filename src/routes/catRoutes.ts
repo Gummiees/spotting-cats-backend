@@ -592,6 +592,68 @@ router.delete(
   CatController.delete
 );
 
+/**
+ * @swagger
+ * /api/v1/cats/{catId}/like:
+ *   post:
+ *     summary: Toggle like status for a cat
+ *     tags: [Cats]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: catId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Cat ID
+ *         example: "507f1f77bcf86cd799439011"
+ *     responses:
+ *       200:
+ *         description: Like status toggled successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     liked:
+ *                       type: boolean
+ *                       description: Whether the cat is now liked by the user
+ *                       example: true
+ *                     totalLikes:
+ *                       type: number
+ *                       description: Updated total likes count for the cat
+ *                       example: 42
+ *                 message:
+ *                   type: string
+ *                   example: "Cat liked successfully"
+ *       400:
+ *         description: Invalid cat ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Cat not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/:catId/like', authMiddleware, CatController.toggleLike);
+
 // Apply query sanitization to all routes
 router.use(sanitizeQueryParams);
 
