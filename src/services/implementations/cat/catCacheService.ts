@@ -196,6 +196,10 @@ export class CatCacheService implements ICatService {
       invalidationPromises.push(
         this.deleteCachePattern('cats:filtered:*:user:*')
       );
+      // Also invalidate the specific cat cache for all users since isLiked status changes
+      invalidationPromises.push(
+        this.deleteCachePattern(`cats:${currentCat.id}:user:*`)
+      );
     } else {
       // Full update, invalidate general list cache (both anonymous and user-specific)
       invalidationPromises.push(CacheService.delete('cats:all'));

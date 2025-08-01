@@ -4,15 +4,18 @@ import { connectToMongo } from '@/utils/mongo';
 import { DatabaseService } from '@/services/databaseService';
 import { catService } from '@/services/catService';
 import { ICatService } from '@/services/interfaces/catServiceInterface';
+import { CatDatabaseService } from '@/services/implementations/cat/catDatabaseService';
 import { ObjectId } from 'mongodb';
 
 const COLLECTION = 'likes';
 
 export class LikeDatabaseService implements ILikeService {
   private catService: ICatService;
+  private catDatabaseService: CatDatabaseService;
 
   constructor() {
     this.catService = catService;
+    this.catDatabaseService = new CatDatabaseService();
   }
 
   async toggleLike(
@@ -56,8 +59,7 @@ export class LikeDatabaseService implements ILikeService {
         liked = true;
       }
 
-      // Update cat's totalLikes
-      const currentCat = await this.catService.getById(catId);
+      const currentCat = await this.catDatabaseService.getById(catId);
       if (!currentCat) {
         throw new Error('Cat not found');
       }
