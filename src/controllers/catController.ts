@@ -97,15 +97,11 @@ export class CatController {
       const orderDirection = req.query.orderDirection as string;
 
       if (
-        ['totalLikes', 'totalComments', 'age', 'createdAt'].includes(orderBy) &&
+        ['totalLikes', 'age', 'createdAt'].includes(orderBy) &&
         ['ASC', 'DESC'].includes(orderDirection.toUpperCase())
       ) {
         filters.orderBy = {
-          field: orderBy as
-            | 'totalLikes'
-            | 'totalComments'
-            | 'age'
-            | 'createdAt',
+          field: orderBy as 'totalLikes' | 'age' | 'createdAt',
           direction: orderDirection.toUpperCase() as 'ASC' | 'DESC',
         };
       }

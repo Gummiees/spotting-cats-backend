@@ -96,7 +96,7 @@ const router = Router();
  *         name: orderBy
  *         schema:
  *           type: string
- *           enum: [totalLikes, totalComments, age, createdAt]
+ *           enum: [totalLikes, age, createdAt]
  *         description: Field to order by. If not specified, defaults to ordering by createdAt in descending order (newest first)
  *         example: "totalLikes"
  *       - in: query
@@ -258,7 +258,7 @@ router.get('/my', authMiddleware, CatController.getMyCats);
  *                 type: boolean
  *                 description: Whether the cat is friendly (optional)
  *                 example: true
- *               # Note: isUserOwner, createdAt, updatedAt, confirmedOwnerAt, totalLikes, and totalComments are ignored and set by the backend
+ *               # Note: isUserOwner, createdAt, updatedAt, confirmedOwnerAt, and totalLikes are ignored and set by the backend
  *     responses:
  *       201:
  *         description: Cat created successfully
@@ -482,7 +482,7 @@ router.get('/:id', getCatByIdValidation, CatController.getById);
  *                 type: boolean
  *                 description: Whether the cat is friendly
  *                 example: true
- *               # Note: isUserOwner, createdAt, updatedAt, confirmedOwnerAt, totalLikes, and totalComments are ignored and set by the backend
+ *               # Note: isUserOwner, createdAt, updatedAt, confirmedOwnerAt, and totalLikes are ignored and set by the backend
 
  *     responses:
  *       200:

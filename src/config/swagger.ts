@@ -345,11 +345,6 @@ const swaggerOptions: Options = {
               description: 'Total number of likes',
               example: 0,
             },
-            totalComments: {
-              type: 'number',
-              description: 'Total number of comments',
-              example: 0,
-            },
             name: {
               type: 'string',
               description: 'Cat name (optional)',

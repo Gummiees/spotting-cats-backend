@@ -230,10 +230,8 @@ export const getCatsQueryValidation = [
     .toInt(),
   query('orderBy')
     .optional()
-    .isIn(['totalLikes', 'totalComments', 'age', 'createdAt'])
-    .withMessage(
-      'orderBy must be one of: totalLikes, totalComments, age, createdAt'
-    ),
+    .isIn(['totalLikes', 'age', 'createdAt'])
+    .withMessage('orderBy must be one of: totalLikes, age, createdAt'),
   query('orderDirection')
     .optional()
     .isIn(['ASC', 'DESC'])
