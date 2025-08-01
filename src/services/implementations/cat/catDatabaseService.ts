@@ -8,6 +8,7 @@ import {
 } from '@/services/interfaces/catServiceInterface';
 import { ObjectId } from 'mongodb';
 import { userService } from '@/services/userService';
+import { likeService } from '@/services/likeService';
 
 const COLLECTION = 'cats';
 
@@ -56,7 +57,7 @@ export class CatDatabaseService implements ICatService {
     }
   }
 
-  async getAll(filters?: CatFilters): Promise<CatResponse[]> {
+  async getAll(filters?: CatFilters, userId?: string): Promise<CatResponse[]> {
     try {
       const collection = await this.getCollection();
       const query = this.buildFilterQuery(filters);
@@ -71,7 +72,7 @@ export class CatDatabaseService implements ICatService {
         .toArray();
 
       const mappedCats = await Promise.all(
-        cats.map((cat) => this.mapCatToResponse(cat))
+        cats.map((cat) => this.mapCatToResponse(cat, userId))
       );
 
       // Apply special handling for age ordering (cats with no age at the end)
@@ -85,11 +86,11 @@ export class CatDatabaseService implements ICatService {
     }
   }
 
-  async getById(id: string): Promise<CatResponse | null> {
+  async getById(id: string, userId?: string): Promise<CatResponse | null> {
     try {
       const cat = await this.findCatById(id);
       if (!cat) return null;
-      const mappedCat = await this.mapCatToResponse(cat);
+      const mappedCat = await this.mapCatToResponse(cat, userId);
       return this.stripUserIdForFrontend(mappedCat);
     } catch (error) {
       this.handleDatabaseError(error, 'getById');
@@ -326,8 +327,9 @@ export class CatDatabaseService implements ICatService {
     };
   }
 
-  private async mapCatToResponse(cat: any): Promise<Cat> {
+  private async mapCatToResponse(cat: any, userId?: string): Promise<Cat> {
     let username: string | undefined;
+    let isLiked: boolean | undefined;
 
     if (cat.userId) {
       try {
@@ -336,6 +338,17 @@ export class CatDatabaseService implements ICatService {
       } catch (error) {
         console.error(
           `Failed to fetch username for userId ${cat.userId}:`,
+          error
+        );
+      }
+    }
+
+    if (userId) {
+      try {
+        isLiked = await likeService.isLikedByUser(userId, cat._id.toString());
+      } catch (error) {
+        console.error(
+          `Failed to check if user ${userId} liked cat ${cat._id}:`,
           error
         );
       }
@@ -360,6 +373,7 @@ export class CatDatabaseService implements ICatService {
       isSterilized: cat.isSterilized,
       isFriendly: cat.isFriendly,
       isUserOwner: cat.isUserOwner ?? false,
+      isLiked: isLiked ?? false,
       createdAt: cat.createdAt,
       updatedAt: cat.updatedAt,
       confirmedOwnerAt: cat.confirmedOwnerAt,

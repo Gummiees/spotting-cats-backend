@@ -417,6 +417,11 @@ const swaggerOptions: Options = {
               description: 'Whether the user is the owner',
               example: false,
             },
+            isLiked: {
+              type: 'boolean',
+              description: 'Whether the current user has liked this cat',
+              example: true,
+            },
             createdAt: {
               type: 'string',
               format: 'date-time',

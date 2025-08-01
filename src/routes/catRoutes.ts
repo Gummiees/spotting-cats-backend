@@ -140,6 +140,8 @@ const router = Router();
  *                 message:
  *                   type: string
  *                   example: "Cats retrieved successfully"
+ *     notes:
+ *       - "When authenticated, each cat will include an 'isLiked' field indicating whether the current user has liked that cat"
  */
 router.get('/', getCatsQueryValidation, CatController.getAll);
 

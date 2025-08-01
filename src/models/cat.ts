@@ -17,6 +17,7 @@ export interface Cat {
   isSterilized?: boolean;
   isFriendly?: boolean;
   isUserOwner: boolean;
+  isLiked?: boolean;
   createdAt: Date;
   updatedAt?: Date;
   confirmedOwnerAt?: Date;

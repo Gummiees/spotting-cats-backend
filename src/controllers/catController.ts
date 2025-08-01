@@ -112,8 +112,13 @@ export class CatController {
       Object.entries(filters).filter(([_, value]) => value !== undefined)
     );
 
+    // Get userId from auth request if available
+    const authReq = req as AuthRequest;
+    const userId = authReq.user?.userId;
+
     const cats = await catService.getAll(
-      Object.keys(cleanFilters).length > 0 ? cleanFilters : undefined
+      Object.keys(cleanFilters).length > 0 ? cleanFilters : undefined,
+      userId
     );
     ResponseUtil.success(res, cats, 'Cats retrieved from database');
   }
@@ -129,7 +134,11 @@ export class CatController {
 
   static async getById(req: Request, res: Response, next: NextFunction) {
     try {
-      const cat = await catService.getById(req.params.id);
+      // Get userId from auth request if available
+      const authReq = req as AuthRequest;
+      const userId = authReq.user?.userId;
+
+      const cat = await catService.getById(req.params.id, userId);
       if (!cat) return ResponseUtil.notFound(res, 'Cat not found');
       ResponseUtil.success(res, cat, 'Cat retrieved');
     } catch (err) {
@@ -288,26 +297,13 @@ export class CatController {
         return ResponseUtil.badRequest(res, 'Cat ID is required');
       }
 
-      console.log(`Attempting to like cat: ${catId} by user: ${userId}`);
-
       // Check if cat exists
-      const cat = await catService.getById(catId);
+      const cat = await catService.getById(catId, userId);
       if (!cat) {
-        console.log(`Cat not found: ${catId}`);
         return ResponseUtil.notFound(res, 'Cat not found');
       }
 
-      console.log(
-        `Cat found: ${cat.name || 'Unnamed'}, current totalLikes: ${
-          cat.totalLikes
-        }`
-      );
-
       const result = await likeService.toggleLike(userId, catId);
-
-      console.log(
-        `Like result: ${result.liked}, new totalLikes: ${result.totalLikes}`
-      );
 
       ResponseUtil.success(
         res,
@@ -315,7 +311,6 @@ export class CatController {
         `Cat ${result.liked ? 'liked' : 'unliked'} successfully`
       );
     } catch (err) {
-      console.error('Error in toggleLike:', err);
       next(err);
     }
   }
