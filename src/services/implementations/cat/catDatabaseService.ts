@@ -411,23 +411,68 @@ export class CatDatabaseService implements ICatService {
       ...sanitizedData
     } = data;
 
-    return {
-      userId: this.sanitizeString(sanitizedData.userId),
-      protectorId: this.sanitizeString(sanitizedData.protectorId),
-      colonyId: this.sanitizeString(sanitizedData.colonyId),
-      name: this.sanitizeString(sanitizedData.name),
-      age: this.sanitizeNumber(sanitizedData.age, 0, 30),
-      breed: this.sanitizeString(sanitizedData.breed),
-      imageUrls: this.sanitizeStringArray(sanitizedData.imageUrls),
-      xCoordinate: this.sanitizeNumber(sanitizedData.xCoordinate, -180, 180),
-      yCoordinate: this.sanitizeNumber(sanitizedData.yCoordinate, -90, 90),
-      extraInfo: this.sanitizeString(sanitizedData.extraInfo, 1000),
-      isDomestic: this.sanitizeBoolean(sanitizedData.isDomestic),
-      isMale: this.sanitizeBoolean(sanitizedData.isMale),
-      isSterilized: this.sanitizeBoolean(sanitizedData.isSterilized),
-      isFriendly: this.sanitizeBoolean(sanitizedData.isFriendly),
-      totalLikes: this.sanitizeNumber(sanitizedData.totalLikes, 0, 999999),
-    };
+    const result: Partial<Cat> = {};
+
+    // Only include fields that are actually present in the input data
+    if (sanitizedData.userId !== undefined) {
+      result.userId = this.sanitizeString(sanitizedData.userId);
+    }
+    if (sanitizedData.protectorId !== undefined) {
+      result.protectorId = this.sanitizeString(sanitizedData.protectorId);
+    }
+    if (sanitizedData.colonyId !== undefined) {
+      result.colonyId = this.sanitizeString(sanitizedData.colonyId);
+    }
+    if (sanitizedData.name !== undefined) {
+      result.name = this.sanitizeString(sanitizedData.name);
+    }
+    if (sanitizedData.age !== undefined) {
+      result.age = this.sanitizeNumber(sanitizedData.age, 0, 30);
+    }
+    if (sanitizedData.breed !== undefined) {
+      result.breed = this.sanitizeString(sanitizedData.breed);
+    }
+    if (sanitizedData.imageUrls !== undefined) {
+      result.imageUrls = this.sanitizeStringArray(sanitizedData.imageUrls);
+    }
+    if (sanitizedData.xCoordinate !== undefined) {
+      result.xCoordinate = this.sanitizeNumber(
+        sanitizedData.xCoordinate,
+        -180,
+        180
+      );
+    }
+    if (sanitizedData.yCoordinate !== undefined) {
+      result.yCoordinate = this.sanitizeNumber(
+        sanitizedData.yCoordinate,
+        -90,
+        90
+      );
+    }
+    if (sanitizedData.extraInfo !== undefined) {
+      result.extraInfo = this.sanitizeString(sanitizedData.extraInfo, 1000);
+    }
+    if (sanitizedData.isDomestic !== undefined) {
+      result.isDomestic = this.sanitizeBoolean(sanitizedData.isDomestic);
+    }
+    if (sanitizedData.isMale !== undefined) {
+      result.isMale = this.sanitizeBoolean(sanitizedData.isMale);
+    }
+    if (sanitizedData.isSterilized !== undefined) {
+      result.isSterilized = this.sanitizeBoolean(sanitizedData.isSterilized);
+    }
+    if (sanitizedData.isFriendly !== undefined) {
+      result.isFriendly = this.sanitizeBoolean(sanitizedData.isFriendly);
+    }
+    if (sanitizedData.totalLikes !== undefined) {
+      result.totalLikes = this.sanitizeNumber(
+        sanitizedData.totalLikes,
+        0,
+        999999
+      );
+    }
+
+    return result;
   }
 
   private validateRequiredFields(sanitizedCat: any): {
