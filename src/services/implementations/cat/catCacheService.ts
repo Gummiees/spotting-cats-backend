@@ -187,11 +187,15 @@ export class CatCacheService implements ICatService {
       this.deleteCachePattern(`cats:${currentCat.id}:user:*`)
     );
 
-    // For totalLikes updates, only invalidate ordering caches and specific cat cache
-    // Don't invalidate general list cache to avoid over-invalidation
+    // For totalLikes updates, invalidate ordering caches, specific cat cache, and user-specific list caches
+    // This ensures isLiked status is updated in cached lists
     if (update.totalLikes !== undefined && Object.keys(update).length === 1) {
-      // Only totalLikes is being updated, minimal invalidation
+      // Only totalLikes is being updated, but we need to invalidate user-specific caches for isLiked
       invalidationPromises.push(this.invalidateOrderingCaches());
+      invalidationPromises.push(this.deleteCachePattern('cats:all:user:*'));
+      invalidationPromises.push(
+        this.deleteCachePattern('cats:filtered:*:user:*')
+      );
     } else {
       // Full update, invalidate general list cache (both anonymous and user-specific)
       invalidationPromises.push(CacheService.delete('cats:all'));
