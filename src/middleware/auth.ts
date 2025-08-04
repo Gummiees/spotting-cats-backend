@@ -10,75 +10,133 @@ import {
 } from '@/models/user';
 import { isProduction } from '@/constants/environment';
 
+// Private helper functions
+const getAuthToken = (req: AuthRequest): string | undefined => {
+  return req.cookies?.auth_token;
+};
+
+const verifyAndDecodeToken = (token: string) => {
+  return userService.verifyToken(token);
+};
+
+const validateUserExists = async (userId: string) => {
+  const user = await userService.getUserById(userId);
+  return user && !user.isBanned ? user : null;
+};
+
+const refreshTokenIfNeeded = async (token: string, res: Response) => {
+  const refreshResult = await userService.refreshTokenIfNeeded(token);
+  if (refreshResult.shouldRefresh && refreshResult.newToken) {
+    res.cookie('auth_token', refreshResult.newToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: isProduction(process.env.NODE_ENV || '') ? 'strict' : 'none',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/',
+    });
+  }
+  return refreshResult;
+};
+
+const setUserOnRequest = (req: AuthRequest, decoded: any) => {
+  req.user = decoded;
+};
+
+const sendUnauthorizedResponse = (res: Response, message: string) => {
+  res.status(401).json({
+    success: false,
+    error: 'Unauthorized',
+    message,
+    timestamp: new Date().toISOString(),
+  });
+};
+
+const sendForbiddenResponse = (res: Response, message: string) => {
+  res.status(403).json({
+    success: false,
+    error: 'Forbidden',
+    message,
+    timestamp: new Date().toISOString(),
+  });
+};
+
+const sendBadRequestResponse = (res: Response, message: string) => {
+  res.status(400).json({
+    success: false,
+    error: 'Bad Request',
+    message,
+    timestamp: new Date().toISOString(),
+  });
+};
+
+const sendNotFoundResponse = (res: Response, message: string) => {
+  res.status(404).json({
+    success: false,
+    error: 'Not Found',
+    message,
+    timestamp: new Date().toISOString(),
+  });
+};
+
+const sendInternalServerError = (
+  res: Response,
+  message: string,
+  error?: any
+) => {
+  if (error) {
+    console.error(`${message}:`, error);
+  }
+  res.status(500).json({
+    success: false,
+    error: 'Internal Server Error',
+    message,
+    timestamp: new Date().toISOString(),
+  });
+};
+
+// Core authentication logic
+const authenticateUser = async (
+  req: AuthRequest,
+  res: Response
+): Promise<boolean> => {
+  const token = getAuthToken(req);
+
+  if (!token) {
+    return false;
+  }
+
+  const decoded = verifyAndDecodeToken(token);
+  if (!decoded) {
+    return false;
+  }
+
+  const user = await validateUserExists(decoded.userId);
+  if (!user) {
+    return false;
+  }
+
+  await refreshTokenIfNeeded(token, res);
+  setUserOnRequest(req, decoded);
+
+  return true;
+};
+
 export const authMiddleware = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    // Get token from cookie
-    const token = req.cookies?.auth_token;
+    const isAuthenticated = await authenticateUser(req, res);
 
-    if (!token) {
-      res.status(401).json({
-        success: false,
-        error: 'Unauthorized',
-        message: 'No authentication token provided',
-        timestamp: new Date().toISOString(),
-      });
+    if (!isAuthenticated) {
+      sendUnauthorizedResponse(res, 'Authentication required');
       return;
     }
 
-    // Verify token
-    const decoded = userService.verifyToken(token);
-    if (!decoded) {
-      res.status(401).json({
-        success: false,
-        error: 'Unauthorized',
-        message: 'Invalid or expired authentication token',
-        timestamp: new Date().toISOString(),
-      });
-      return;
-    }
-
-    // Check if user still exists and is active
-    const user = await userService.getUserById(decoded.userId);
-    if (!user || user.isBanned) {
-      res.status(401).json({
-        success: false,
-        error: 'Unauthorized',
-        message: user?.isBanned
-          ? 'User account has been banned'
-          : 'User account not found',
-        timestamp: new Date().toISOString(),
-      });
-      return;
-    }
-
-    // Proactively refresh token if it's close to expiring
-    const refreshResult = await userService.refreshTokenIfNeeded(token);
-    if (refreshResult.shouldRefresh && refreshResult.newToken) {
-      // Set the new token as a secure cookie
-      res.cookie('auth_token', refreshResult.newToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: isProduction(process.env.NODE_ENV || '') ? 'strict' : 'none',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        path: '/',
-      });
-    }
-
-    // Add user info to request
-    req.user = decoded;
     next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Internal Server Error',
-      message: 'Authentication failed',
-      timestamp: new Date().toISOString(),
-    });
+    sendInternalServerError(res, 'Authentication failed', error);
   }
 };
 
@@ -89,50 +147,10 @@ export const optionalAuthMiddleware = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    // Get token from cookie
-    const token = req.cookies?.auth_token;
-
-    if (!token) {
-      // No token provided - continue without authentication
-      next();
-      return;
-    }
-
-    // Verify token
-    const decoded = userService.verifyToken(token);
-    if (!decoded) {
-      // Invalid token - continue without authentication
-      next();
-      return;
-    }
-
-    // Check if user still exists and is active
-    const user = await userService.getUserById(decoded.userId);
-    if (!user || user.isBanned) {
-      // User doesn't exist or is banned - continue without authentication
-      next();
-      return;
-    }
-
-    // Proactively refresh token if it's close to expiring
-    const refreshResult = await userService.refreshTokenIfNeeded(token);
-    if (refreshResult.shouldRefresh && refreshResult.newToken) {
-      // Set the new token as a secure cookie
-      res.cookie('auth_token', refreshResult.newToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: isProduction(process.env.NODE_ENV || '') ? 'strict' : 'none',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        path: '/',
-      });
-    }
-
-    // Add user info to request
-    req.user = decoded;
+    await authenticateUser(req, res);
     next();
   } catch (error) {
     console.error('Optional auth middleware error:', error);
-    // Continue without authentication on error
     next();
   }
 };
@@ -146,45 +164,24 @@ export const requireRole = (requiredRole: UserRole) => {
   ): Promise<void> => {
     try {
       if (!req.user) {
-        res.status(401).json({
-          success: false,
-          error: 'Unauthorized',
-          message: 'Authentication required',
-          timestamp: new Date().toISOString(),
-        });
+        sendUnauthorizedResponse(res, 'Authentication required');
         return;
       }
 
       const user = await userService.getUserById(req.user.userId);
       if (!user) {
-        res.status(401).json({
-          success: false,
-          error: 'Unauthorized',
-          message: 'User not found',
-          timestamp: new Date().toISOString(),
-        });
+        sendUnauthorizedResponse(res, 'User not found');
         return;
       }
 
       if (!hasRolePermission(user.role, requiredRole)) {
-        res.status(403).json({
-          success: false,
-          error: 'Forbidden',
-          message: `${requiredRole} access required`,
-          timestamp: new Date().toISOString(),
-        });
+        sendForbiddenResponse(res, `${requiredRole} access required`);
         return;
       }
 
       next();
     } catch (error) {
-      console.error('Role middleware error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Internal Server Error',
-        message: 'Role validation failed',
-        timestamp: new Date().toISOString(),
-      });
+      sendInternalServerError(res, 'Role validation failed', error);
     }
   };
 };
@@ -202,78 +199,46 @@ export const validateRoleManagement = async (
 ): Promise<void> => {
   try {
     if (!req.user) {
-      res.status(401).json({
-        success: false,
-        error: 'Unauthorized',
-        message: 'Authentication required',
-        timestamp: new Date().toISOString(),
-      });
+      sendUnauthorizedResponse(res, 'Authentication required');
       return;
     }
 
     const { username, role } = req.body;
     if (!username) {
-      res.status(400).json({
-        success: false,
-        error: 'Bad Request',
-        message: 'Username is required',
-        timestamp: new Date().toISOString(),
-      });
+      sendBadRequestResponse(res, 'Username is required');
       return;
     }
 
     if (!role) {
-      res.status(400).json({
-        success: false,
-        error: 'Bad Request',
-        message: 'Role is required',
-        timestamp: new Date().toISOString(),
-      });
+      sendBadRequestResponse(res, 'Role is required');
       return;
     }
 
     const currentUser = await userService.getUserById(req.user.userId);
     if (!currentUser) {
-      res.status(401).json({
-        success: false,
-        error: 'Unauthorized',
-        message: 'User not found',
-        timestamp: new Date().toISOString(),
-      });
+      sendUnauthorizedResponse(res, 'User not found');
       return;
     }
 
     // Check if user is trying to modify themselves
     if (currentUser.username === username) {
-      res.status(400).json({
-        success: false,
-        error: 'Bad Request',
-        message: 'Cannot update your own role',
-        timestamp: new Date().toISOString(),
-      });
+      sendBadRequestResponse(res, 'Cannot update your own role');
       return;
     }
 
     // Get target user to check their current role
     const targetUser = await userService.getUserByUsername(username);
     if (!targetUser) {
-      res.status(404).json({
-        success: false,
-        error: 'Not Found',
-        message: 'Target user not found',
-        timestamp: new Date().toISOString(),
-      });
+      sendNotFoundResponse(res, 'Target user not found');
       return;
     }
 
     // Check if current user can manage the target user's current role
     if (!canManageRole(currentUser.role, targetUser.role)) {
-      res.status(403).json({
-        success: false,
-        error: 'Forbidden',
-        message: `You cannot manage users with role: ${targetUser.role}`,
-        timestamp: new Date().toISOString(),
-      });
+      sendForbiddenResponse(
+        res,
+        `You cannot manage users with role: ${targetUser.role}`
+      );
       return;
     }
 
@@ -285,23 +250,19 @@ export const validateRoleManagement = async (
 
     // For promotions: prevent promoting users who are already at or above the target role
     if (isPromotion && hasRolePermission(targetUser.role, role)) {
-      res.status(400).json({
-        success: false,
-        error: 'Bad Request',
-        message: `User is already ${targetUser.role} or higher`,
-        timestamp: new Date().toISOString(),
-      });
+      sendBadRequestResponse(
+        res,
+        `User is already ${targetUser.role} or higher`
+      );
       return;
     }
 
     // For demotions: prevent demoting users who are already at or below the target role
     if (isDemotion && hasRolePermission(role, targetUser.role)) {
-      res.status(400).json({
-        success: false,
-        error: 'Bad Request',
-        message: `User is already ${targetUser.role} or lower`,
-        timestamp: new Date().toISOString(),
-      });
+      sendBadRequestResponse(
+        res,
+        `User is already ${targetUser.role} or lower`
+      );
       return;
     }
 
@@ -309,13 +270,7 @@ export const validateRoleManagement = async (
     (req as any).targetUser = targetUser;
     next();
   } catch (error) {
-    console.error('Role management validation error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Internal Server Error',
-      message: 'Role management validation failed',
-      timestamp: new Date().toISOString(),
-    });
+    sendInternalServerError(res, 'Role management validation failed', error);
   }
 };
 
@@ -327,55 +282,33 @@ export const validateBanPermission = async (
 ): Promise<void> => {
   try {
     if (!req.user) {
-      res.status(401).json({
-        success: false,
-        error: 'Unauthorized',
-        message: 'Authentication required',
-        timestamp: new Date().toISOString(),
-      });
+      sendUnauthorizedResponse(res, 'Authentication required');
       return;
     }
 
     const { username } = req.body;
     if (!username) {
-      res.status(400).json({
-        success: false,
-        error: 'Bad Request',
-        message: 'Username is required',
-        timestamp: new Date().toISOString(),
-      });
+      sendBadRequestResponse(res, 'Username is required');
       return;
     }
 
     const currentUser = await userService.getUserById(req.user.userId);
     if (!currentUser) {
-      res.status(401).json({
-        success: false,
-        error: 'Unauthorized',
-        message: 'User not found',
-        timestamp: new Date().toISOString(),
-      });
+      sendUnauthorizedResponse(res, 'User not found');
       return;
     }
 
     const targetUser = await userService.getUserByUsername(username);
     if (!targetUser) {
-      res.status(404).json({
-        success: false,
-        error: 'Not Found',
-        message: 'Target user not found',
-        timestamp: new Date().toISOString(),
-      });
+      sendNotFoundResponse(res, 'Target user not found');
       return;
     }
 
     if (!canBanUser(currentUser.role, targetUser.role)) {
-      res.status(403).json({
-        success: false,
-        error: 'Forbidden',
-        message: `You cannot ban users with role: ${targetUser.role}`,
-        timestamp: new Date().toISOString(),
-      });
+      sendForbiddenResponse(
+        res,
+        `You cannot ban users with role: ${targetUser.role}`
+      );
       return;
     }
 
@@ -383,13 +316,7 @@ export const validateBanPermission = async (
     (req as any).targetUser = targetUser;
     next();
   } catch (error) {
-    console.error('Ban permission validation error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Internal Server Error',
-      message: 'Ban permission validation failed',
-      timestamp: new Date().toISOString(),
-    });
+    sendInternalServerError(res, 'Ban permission validation failed', error);
   }
 };
 
@@ -401,49 +328,33 @@ export const requireElevatedPermissions = async (
 ): Promise<void> => {
   try {
     if (!req.user) {
-      res.status(401).json({
-        success: false,
-        error: 'Unauthorized',
-        message: 'Authentication required',
-        timestamp: new Date().toISOString(),
-      });
+      sendUnauthorizedResponse(res, 'Authentication required');
       return;
     }
 
     const user = await userService.getUserById(req.user.userId);
     if (!user || user.isBanned) {
-      res.status(401).json({
-        success: false,
-        error: 'Unauthorized',
-        message: user?.isBanned
+      sendUnauthorizedResponse(
+        res,
+        user?.isBanned
           ? 'User account has been banned'
-          : 'User account not found',
-        timestamp: new Date().toISOString(),
-      });
+          : 'User account not found'
+      );
       return;
     }
 
     // Check if user has elevated permissions (moderator, admin, superadmin)
     if (user.role === 'user') {
-      res.status(403).json({
-        success: false,
-        error: 'Forbidden',
-        message:
-          'Elevated permissions required (moderator, admin, or superadmin)',
-        timestamp: new Date().toISOString(),
-      });
+      sendForbiddenResponse(
+        res,
+        'Elevated permissions required (moderator, admin, or superadmin)'
+      );
       return;
     }
 
     next();
   } catch (error) {
-    console.error('Elevated permissions check error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Internal Server Error',
-      message: 'Elevated permissions check failed',
-      timestamp: new Date().toISOString(),
-    });
+    sendInternalServerError(res, 'Elevated permissions check failed', error);
   }
 };
 
@@ -457,12 +368,7 @@ export const checkProfileAccess = async (
     const { username } = req.params;
 
     if (!username || username.trim() === '') {
-      res.status(400).json({
-        success: false,
-        error: 'Bad Request',
-        message: 'Username is required',
-        timestamp: new Date().toISOString(),
-      });
+      sendBadRequestResponse(res, 'Username is required');
       return;
     }
 
@@ -470,12 +376,7 @@ export const checkProfileAccess = async (
     const targetUser = await userService.getUserByUsername(username.trim());
 
     if (!targetUser) {
-      res.status(404).json({
-        success: false,
-        error: 'Not Found',
-        message: 'User not found',
-        timestamp: new Date().toISOString(),
-      });
+      sendNotFoundResponse(res, 'User not found');
       return;
     }
 
@@ -489,29 +390,19 @@ export const checkProfileAccess = async (
     }
 
     // For banned/inactive users, check the requesting user's permissions
-    const token = req.cookies?.auth_token;
+    const token = getAuthToken(req as AuthRequest);
 
     if (!token) {
       // Anonymous user trying to access banned/inactive profile - return 404 for security
-      res.status(404).json({
-        success: false,
-        error: 'Not Found',
-        message: 'User not found',
-        timestamp: new Date().toISOString(),
-      });
+      sendNotFoundResponse(res, 'User not found');
       return;
     }
 
     // Verify token
-    const decoded = userService.verifyToken(token);
+    const decoded = verifyAndDecodeToken(token);
     if (!decoded) {
       // Invalid token - treat as anonymous user
-      res.status(404).json({
-        success: false,
-        error: 'Not Found',
-        message: 'User not found',
-        timestamp: new Date().toISOString(),
-      });
+      sendNotFoundResponse(res, 'User not found');
       return;
     }
 
@@ -519,36 +410,20 @@ export const checkProfileAccess = async (
     const requestingUser = await userService.getUserById(decoded.userId);
     if (!requestingUser || requestingUser.isBanned) {
       // Requesting user doesn't exist or is banned - return 404 for security
-      res.status(404).json({
-        success: false,
-        error: 'Not Found',
-        message: 'User not found',
-        timestamp: new Date().toISOString(),
-      });
+      sendNotFoundResponse(res, 'User not found');
       return;
     }
 
     // Check if requesting user has elevated permissions (moderator, admin, superadmin)
     if (requestingUser.role === 'user') {
       // User with "user" role trying to access banned/inactive profile - return 404 for security
-      res.status(404).json({
-        success: false,
-        error: 'Not Found',
-        message: 'User not found',
-        timestamp: new Date().toISOString(),
-      });
+      sendNotFoundResponse(res, 'User not found');
       return;
     }
 
     // Moderator, admin, or superadmin can access banned/inactive profiles
     next();
   } catch (error) {
-    console.error('Profile access check error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Internal Server Error',
-      message: 'Profile access check failed',
-      timestamp: new Date().toISOString(),
-    });
+    sendInternalServerError(res, 'Profile access check failed', error);
   }
 };
