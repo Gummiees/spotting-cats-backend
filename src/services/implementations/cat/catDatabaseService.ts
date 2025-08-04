@@ -43,11 +43,10 @@ export class CatDatabaseService implements ICatService {
 
       const insertedId = await this.insertCat(catWithDefaults);
 
-      const createdCat = await this.mapCatToResponse({
+      return await this.mapCatToResponse({
         _id: insertedId,
         ...catWithDefaults,
       });
-      return this.stripUserIdForFrontend(createdCat);
     } catch (error) {
       if (error instanceof Error) {
         throw error;
@@ -79,7 +78,7 @@ export class CatDatabaseService implements ICatService {
         return this.handleAgeOrdering(mappedCats, filters.orderBy.direction);
       }
 
-      return mappedCats.map((cat) => this.stripUserIdForFrontend(cat));
+      return mappedCats;
     } catch (error) {
       this.handleDatabaseError(error, 'getAll');
     }
@@ -89,8 +88,7 @@ export class CatDatabaseService implements ICatService {
     try {
       const cat = await this.findCatById(id);
       if (!cat) return null;
-      const mappedCat = await this.mapCatToResponse(cat, userId);
-      return this.stripUserIdForFrontend(mappedCat);
+      return await this.mapCatToResponse(cat, userId);
     } catch (error) {
       this.handleDatabaseError(error, 'getById');
     }
@@ -113,10 +111,7 @@ export class CatDatabaseService implements ICatService {
         .find({ userId }, { projection: this.createProjection().projection })
         .toArray();
 
-      const mappedCats = await Promise.all(
-        cats.map((cat) => this.mapCatToResponse(cat))
-      );
-      return mappedCats.map((cat) => this.stripUserIdForFrontend(cat));
+      return await Promise.all(cats.map((cat) => this.mapCatToResponse(cat)));
     } catch (error) {
       this.handleDatabaseError(error, 'getByUserId');
     }
@@ -259,9 +254,7 @@ export class CatDatabaseService implements ICatService {
     });
 
     // Combine: cats with age (sorted) + cats without age (at the end)
-    const sortedCats = [...catsWithAge, ...catsWithoutAge];
-
-    return sortedCats.map((cat) => this.stripUserIdForFrontend(cat));
+    return [...catsWithAge, ...catsWithoutAge];
   }
 
   private async insertCat(catData: any): Promise<ObjectId> {
@@ -301,23 +294,39 @@ export class CatDatabaseService implements ICatService {
 
   private async isLikedByUser(userId: string, catId: string): Promise<boolean> {
     try {
-      DatabaseService.requireDatabase();
-      const db = await connectToMongo();
-      const likesCollection = db.collection('likes');
-
-      // Convert catId to ObjectId for consistent querying
       const catObjectId = this.toObjectId(catId);
 
+      const catCollection = await this.getCollection();
+      const cat = await catCollection.findOne({ _id: catObjectId });
+
+      if (!cat) {
+        console.error('No cat was found when searching for like!');
+        return false;
+      }
+
+      console.log(`cat found when searching for like`);
+
+      const likesCollection = await this.getLikesCollection();
       const like = await likesCollection.findOne({
         userId,
         catId: catObjectId,
       });
+
+      console.log(
+        `was cat ${catId} and user ${userId} found on the collection? ${!!like}`
+      );
 
       return !!like;
     } catch (error) {
       console.error('Error checking if user liked cat:', error);
       return false;
     }
+  }
+
+  private async getLikesCollection() {
+    DatabaseService.requireDatabase();
+    const db = await connectToMongo();
+    return db.collection('likes');
   }
 
   private createProjection() {
@@ -347,7 +356,10 @@ export class CatDatabaseService implements ICatService {
     };
   }
 
-  private async mapCatToResponse(cat: any, userId?: string): Promise<Cat> {
+  private async mapCatToResponse(
+    cat: any,
+    userId?: string
+  ): Promise<CatResponse> {
     let username: string | undefined;
     let isLiked: boolean | undefined;
 
@@ -376,7 +388,6 @@ export class CatDatabaseService implements ICatService {
 
     return {
       id: cat._id.toString(),
-      userId: cat.userId,
       username,
       protectorId: cat.protectorId,
       colonyId: cat.colonyId,
@@ -398,11 +409,6 @@ export class CatDatabaseService implements ICatService {
       updatedAt: cat.updatedAt,
       confirmedOwnerAt: cat.confirmedOwnerAt,
     };
-  }
-
-  private stripUserIdForFrontend(cat: Cat): Omit<Cat, 'userId'> {
-    const { userId, ...catForFrontend } = cat;
-    return catForFrontend;
   }
 
   private sanitizeCatData(data: any): Partial<Cat> {
