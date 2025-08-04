@@ -82,6 +82,61 @@ export const authMiddleware = async (
   }
 };
 
+// Optional authentication middleware for public endpoints
+export const optionalAuthMiddleware = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    // Get token from cookie
+    const token = req.cookies?.auth_token;
+
+    if (!token) {
+      // No token provided - continue without authentication
+      next();
+      return;
+    }
+
+    // Verify token
+    const decoded = userService.verifyToken(token);
+    if (!decoded) {
+      // Invalid token - continue without authentication
+      next();
+      return;
+    }
+
+    // Check if user still exists and is active
+    const user = await userService.getUserById(decoded.userId);
+    if (!user || user.isBanned) {
+      // User doesn't exist or is banned - continue without authentication
+      next();
+      return;
+    }
+
+    // Proactively refresh token if it's close to expiring
+    const refreshResult = await userService.refreshTokenIfNeeded(token);
+    if (refreshResult.shouldRefresh && refreshResult.newToken) {
+      // Set the new token as a secure cookie
+      res.cookie('auth_token', refreshResult.newToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: isProduction(process.env.NODE_ENV || '') ? 'strict' : 'none',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        path: '/',
+      });
+    }
+
+    // Add user info to request
+    req.user = decoded;
+    next();
+  } catch (error) {
+    console.error('Optional auth middleware error:', error);
+    // Continue without authentication on error
+    next();
+  }
+};
+
 // Role-based middleware functions
 export const requireRole = (requiredRole: UserRole) => {
   return async (

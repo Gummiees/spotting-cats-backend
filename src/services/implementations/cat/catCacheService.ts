@@ -23,17 +23,12 @@ export class CatCacheService implements ICatService {
   }
 
   async getAll(filters?: CatFilters, userId?: string): Promise<CatResponse[]> {
-    console.log(`=========== CatCacheService - getAll called`);
     const cacheKey = this.generateCacheKey(filters, userId);
     const cached = await CacheService.get<CatResponse[]>(cacheKey);
     if (cached) {
-      console.log(`=========== returning cached cats`);
       return cached;
     }
 
-    console.log(
-      `=========== not returning cached cats, calling dbService.getAll`
-    );
     const result = await this.dbService.getAll(filters, userId);
     await CacheService.set(cacheKey, result, CACHE_TTL);
 
@@ -184,9 +179,6 @@ export class CatCacheService implements ICatService {
     currentCat: CatResponse,
     update: Partial<Cat>
   ): Promise<void> {
-    console.log(
-      `=========== CatCacheService - invalidateCachesForUpdate called`
-    );
     const invalidationPromises: Promise<void>[] = [];
 
     // Invalidate the specific cat cache (both anonymous and user-specific)

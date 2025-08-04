@@ -297,8 +297,6 @@ export class CatController {
       }
 
       const result = await likeService.toggleLike(userId, catId);
-      console.log(`=========== CatController - toggleLike result: ${result}`);
-
       ResponseUtil.success(
         res,
         result,

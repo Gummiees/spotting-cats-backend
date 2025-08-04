@@ -1,6 +1,10 @@
 import { Router } from 'express';
 import { CatController } from '@/controllers/catController';
-import { authMiddleware, requireAdmin } from '@/middleware/auth';
+import {
+  authMiddleware,
+  requireAdmin,
+  optionalAuthMiddleware,
+} from '@/middleware/auth';
 import {
   createCatValidation,
   updateCatValidation,
@@ -143,7 +147,12 @@ const router = Router();
  *     notes:
  *       - "When authenticated, each cat will include an 'isLiked' field indicating whether the current user has liked that cat"
  */
-router.get('/', getCatsQueryValidation, CatController.getAll);
+router.get(
+  '/',
+  optionalAuthMiddleware,
+  getCatsQueryValidation,
+  CatController.getAll
+);
 
 /**
  * @swagger
@@ -400,7 +409,12 @@ router.delete(
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/:id', getCatByIdValidation, CatController.getById);
+router.get(
+  '/:id',
+  optionalAuthMiddleware,
+  getCatByIdValidation,
+  CatController.getById
+);
 
 /**
  * @swagger

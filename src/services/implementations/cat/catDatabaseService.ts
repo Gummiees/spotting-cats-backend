@@ -61,7 +61,6 @@ export class CatDatabaseService implements ICatService {
 
   async getAll(filters?: CatFilters, userId?: string): Promise<CatResponse[]> {
     try {
-      console.log(`=========== CatDatabaseService - getAll called`);
       const collection = await this.getCollection();
       const query = this.buildFilterQuery(filters);
       const options = this.buildQueryOptions(filters);
@@ -76,12 +75,6 @@ export class CatDatabaseService implements ICatService {
 
       const mappedCats = await Promise.all(
         cats.map((cat) => this.mapCatToResponse(cat, userId))
-      );
-
-      console.log(
-        `=========== CatDatabaseService - mappedCats: ${JSON.stringify(
-          mappedCats
-        )}`
       );
 
       // Apply special handling for age ordering (cats with no age at the end)
@@ -350,14 +343,8 @@ export class CatDatabaseService implements ICatService {
     }
 
     if (userId) {
-      console.log(
-        `=========== CatDatabaseService - mapping cat to response for user ${userId}`
-      );
       try {
         isLiked = await this.isLikedByUser(userId, cat._id.toString());
-        console.log(
-          `=========== CatDatabaseService - isLikedByUser for user ${userId} and cat ${cat._id} is ${isLiked}`
-        );
       } catch (error) {
         console.error(
           `Failed to check if user ${userId} liked cat ${cat._id}:`,
