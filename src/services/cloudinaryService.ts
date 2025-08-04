@@ -125,7 +125,7 @@ export class CloudinaryService {
         resource_type: 'image',
         transformation: options.transformation || [
           { width: 800, height: 800, crop: 'limit' },
-          { quality: 'auto:good' },
+          { quality: 'auto:eco' },
         ],
         metadata: {
           hash: hash,

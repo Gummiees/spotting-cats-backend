@@ -333,7 +333,7 @@ export class CatDatabaseService implements ICatService {
     if (cat.userId) {
       try {
         const user = await userService.getBasicUserById(cat.userId);
-        username = user?.username;
+        username = user && !user.isBanned ? user.username : undefined;
       } catch (error) {
         console.error(
           `Failed to fetch username for userId ${cat.userId}:`,
