@@ -61,7 +61,6 @@ export class LikeDatabaseService implements ILikeService {
       );
 
       await this.catService.update(catId, { totalLikes: newTotalLikes });
-
       return { liked, totalLikes: newTotalLikes };
     } catch (error) {
       console.error('Error toggling like:', error);

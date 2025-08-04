@@ -293,28 +293,6 @@ export class CatDatabaseService implements ICatService {
     return db.collection(COLLECTION);
   }
 
-  private async isLikedByUser(userId: string, catId: string): Promise<boolean> {
-    try {
-      const catObjectId = this.toObjectId(catId);
-      const likesCollection = await this.getLikesCollection();
-      const like = await likesCollection.findOne({
-        userId,
-        catId: catObjectId,
-      });
-
-      return !!like;
-    } catch (error) {
-      console.error('Error checking if user liked cat:', error);
-      return false;
-    }
-  }
-
-  private async getLikesCollection() {
-    DatabaseService.requireDatabase();
-    const db = await connectToMongo();
-    return db.collection('likes');
-  }
-
   private createProjection() {
     return {
       projection: {
@@ -362,8 +340,14 @@ export class CatDatabaseService implements ICatService {
     }
 
     if (userId) {
+      console.log(
+        `=========== CatDatabaseService - mapping cat to response for user ${userId}`
+      );
       try {
         isLiked = await this.isLikedByUser(userId, cat._id.toString());
+        console.log(
+          `=========== CatDatabaseService - isLikedByUser for user ${userId} and cat ${cat._id} is ${isLiked}`
+        );
       } catch (error) {
         console.error(
           `Failed to check if user ${userId} liked cat ${cat._id}:`,
@@ -395,6 +379,28 @@ export class CatDatabaseService implements ICatService {
       updatedAt: cat.updatedAt,
       confirmedOwnerAt: cat.confirmedOwnerAt,
     };
+  }
+
+  private async isLikedByUser(userId: string, catId: string): Promise<boolean> {
+    try {
+      const catObjectId = this.toObjectId(catId);
+      const likesCollection = await this.getLikesCollection();
+      const like = await likesCollection.findOne({
+        userId,
+        catId: catObjectId,
+      });
+
+      return !!like;
+    } catch (error) {
+      console.error('Error checking if user liked cat:', error);
+      return false;
+    }
+  }
+
+  private async getLikesCollection() {
+    DatabaseService.requireDatabase();
+    const db = await connectToMongo();
+    return db.collection('likes');
   }
 
   private sanitizeCatData(data: any): Partial<Cat> {
