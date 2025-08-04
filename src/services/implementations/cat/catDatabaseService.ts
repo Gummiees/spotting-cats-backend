@@ -57,6 +57,7 @@ export class CatDatabaseService implements ICatService {
 
   async getAll(filters?: CatFilters, userId?: string): Promise<CatResponse[]> {
     try {
+      console.log(`CatDatabaseService - getAll called`);
       const collection = await this.getCollection();
       const query = this.buildFilterQuery(filters);
       const options = this.buildQueryOptions(filters);
@@ -295,26 +296,11 @@ export class CatDatabaseService implements ICatService {
   private async isLikedByUser(userId: string, catId: string): Promise<boolean> {
     try {
       const catObjectId = this.toObjectId(catId);
-
-      const catCollection = await this.getCollection();
-      const cat = await catCollection.findOne({ _id: catObjectId });
-
-      if (!cat) {
-        console.error('No cat was found when searching for like!');
-        return false;
-      }
-
-      console.log(`cat found when searching for like`);
-
       const likesCollection = await this.getLikesCollection();
       const like = await likesCollection.findOne({
         userId,
         catId: catObjectId,
       });
-
-      console.log(
-        `was cat ${catId} and user ${userId} found on the collection? ${!!like}`
-      );
 
       return !!like;
     } catch (error) {

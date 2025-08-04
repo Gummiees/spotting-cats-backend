@@ -4,18 +4,15 @@ import { connectToMongo } from '@/utils/mongo';
 import { DatabaseService } from '@/services/databaseService';
 import { catService } from '@/services/catService';
 import { ICatService } from '@/services/interfaces/catServiceInterface';
-import { CatDatabaseService } from '@/services/implementations/cat/catDatabaseService';
 import { ObjectId } from 'mongodb';
 
 const COLLECTION = 'likes';
 
 export class LikeDatabaseService implements ILikeService {
   private catService: ICatService;
-  private catDatabaseService: CatDatabaseService;
 
   constructor() {
     this.catService = catService;
-    this.catDatabaseService = new CatDatabaseService();
   }
 
   async toggleLike(
@@ -25,11 +22,8 @@ export class LikeDatabaseService implements ILikeService {
     try {
       DatabaseService.requireDatabase();
       const collection = await this.getCollection();
-
-      // Convert catId to ObjectId for consistent storage
       const catObjectId = this.toObjectId(catId);
 
-      // Check if like already exists
       const existingLike = await collection.findOne({
         userId,
         catId: catObjectId,
@@ -38,19 +32,16 @@ export class LikeDatabaseService implements ILikeService {
       let liked: boolean;
 
       if (existingLike) {
-        // Remove like
         await collection.deleteOne({
           userId,
           catId: catObjectId,
         });
         liked = false;
       } else {
-        // Add like
         const newLike: CreateLike = {
           userId,
           catId,
         };
-
         await collection.insertOne({
           ...newLike,
           catId: catObjectId,
@@ -59,7 +50,7 @@ export class LikeDatabaseService implements ILikeService {
         liked = true;
       }
 
-      const currentCat = await this.catDatabaseService.getById(catId);
+      const currentCat = await this.catService.getById(catId);
       if (!currentCat) {
         throw new Error('Cat not found');
       }

@@ -23,12 +23,17 @@ export class CatCacheService implements ICatService {
   }
 
   async getAll(filters?: CatFilters, userId?: string): Promise<CatResponse[]> {
+    console.log(`=========== CatCacheService - getAll called`);
     const cacheKey = this.generateCacheKey(filters, userId);
     const cached = await CacheService.get<CatResponse[]>(cacheKey);
     if (cached) {
+      console.log(`=========== returning cached cats`);
       return cached;
     }
 
+    console.log(
+      `=========== not returning cached cats, calling dbService.getAll`
+    );
     const result = await this.dbService.getAll(filters, userId);
     await CacheService.set(cacheKey, result, CACHE_TTL);
 
@@ -179,6 +184,9 @@ export class CatCacheService implements ICatService {
     currentCat: CatResponse,
     update: Partial<Cat>
   ): Promise<void> {
+    console.log(
+      `=========== CatCacheService - invalidateCachesForUpdate called`
+    );
     const invalidationPromises: Promise<void>[] = [];
 
     // Invalidate the specific cat cache (both anonymous and user-specific)
@@ -189,61 +197,64 @@ export class CatCacheService implements ICatService {
 
     // For totalLikes updates, invalidate ordering caches, specific cat cache, and user-specific list caches
     // This ensures isLiked status is updated in cached lists
-    if (update.totalLikes !== undefined && Object.keys(update).length === 1) {
-      // Only totalLikes is being updated, but we need to invalidate user-specific caches for isLiked
-      invalidationPromises.push(this.invalidateOrderingCaches());
-      invalidationPromises.push(this.deleteCachePattern('cats:all:user:*'));
-      invalidationPromises.push(
-        this.deleteCachePattern('cats:filtered:*:user:*')
-      );
-      // Also invalidate the specific cat cache for all users since isLiked status changes
-      invalidationPromises.push(
-        this.deleteCachePattern(`cats:${currentCat.id}:user:*`)
-      );
-    } else {
-      // Full update, invalidate general list cache (both anonymous and user-specific)
-      invalidationPromises.push(CacheService.delete('cats:all'));
-      invalidationPromises.push(this.deleteCachePattern('cats:all:user:*'));
+    // if (update.totalLikes !== undefined && Object.keys(update).length === 1) {
+    //   console.log(
+    //     `=========== CatCacheService - invalidating with totalLikes update`
+    //   );
+    //   // Only totalLikes is being updated, but we need to invalidate user-specific caches for isLiked
+    //   invalidationPromises.push(this.invalidateOrderingCaches());
+    //   invalidationPromises.push(this.deleteCachePattern('cats:all:user:*'));
+    //   invalidationPromises.push(
+    //     this.deleteCachePattern('cats:filtered:*:user:*')
+    //   );
+    //   // Also invalidate the specific cat cache for all users since isLiked status changes
+    //   invalidationPromises.push(
+    //     this.deleteCachePattern(`cats:${currentCat.id}:user:*`)
+    //   );
+    // } else {
+    // Full update, invalidate general list cache (both anonymous and user-specific)
+    invalidationPromises.push(CacheService.delete('cats:all'));
+    invalidationPromises.push(this.deleteCachePattern('cats:all:user:*'));
 
-      // Get current userId from username for comparison
-      let currentUserId: string | null = null;
-      if (currentCat.username) {
-        currentUserId = await this.getUserIdFromUsername(currentCat.username);
-        if (currentUserId) {
-          invalidationPromises.push(this.invalidateUserCaches(currentUserId));
-        }
+    // Get current userId from username for comparison
+    let currentUserId: string | null = null;
+    if (currentCat.username) {
+      currentUserId = await this.getUserIdFromUsername(currentCat.username);
+      if (currentUserId) {
+        invalidationPromises.push(this.invalidateUserCaches(currentUserId));
       }
-
-      // If userId is being changed, invalidate new user caches too
-      if (update.userId && update.userId !== currentUserId) {
-        invalidationPromises.push(this.invalidateUserCaches(update.userId));
-      }
-
-      // Handle protector changes
-      if (currentCat.protectorId) {
-        invalidationPromises.push(
-          this.invalidateProtectorCaches(currentCat.protectorId)
-        );
-      }
-      if (update.protectorId && update.protectorId !== currentCat.protectorId) {
-        invalidationPromises.push(
-          this.invalidateProtectorCaches(update.protectorId)
-        );
-      }
-
-      // Handle colony changes
-      if (currentCat.colonyId) {
-        invalidationPromises.push(
-          this.invalidateColonyCaches(currentCat.colonyId)
-        );
-      }
-      if (update.colonyId && update.colonyId !== currentCat.colonyId) {
-        invalidationPromises.push(this.invalidateColonyCaches(update.colonyId));
-      }
-
-      // Invalidate filtered caches that might be affected
-      invalidationPromises.push(this.invalidateFilteredCaches(currentCat));
     }
+
+    // If userId is being changed, invalidate new user caches too
+    if (update.userId && update.userId !== currentUserId) {
+      invalidationPromises.push(this.invalidateUserCaches(update.userId));
+    }
+
+    // Handle protector changes
+    if (currentCat.protectorId) {
+      invalidationPromises.push(
+        this.invalidateProtectorCaches(currentCat.protectorId)
+      );
+    }
+    if (update.protectorId && update.protectorId !== currentCat.protectorId) {
+      invalidationPromises.push(
+        this.invalidateProtectorCaches(update.protectorId)
+      );
+    }
+
+    // Handle colony changes
+    if (currentCat.colonyId) {
+      invalidationPromises.push(
+        this.invalidateColonyCaches(currentCat.colonyId)
+      );
+    }
+    if (update.colonyId && update.colonyId !== currentCat.colonyId) {
+      invalidationPromises.push(this.invalidateColonyCaches(update.colonyId));
+    }
+
+    // Invalidate filtered caches that might be affected
+    invalidationPromises.push(this.invalidateFilteredCaches(currentCat));
+    // }
 
     // If totalLikes or age are being updated, invalidate ordering caches specifically
     if (update.totalLikes !== undefined || update.age !== undefined) {
