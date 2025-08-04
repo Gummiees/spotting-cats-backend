@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { CatFilters } from '@/services/interfaces/catServiceInterface';
 import { ResponseUtil } from '@/utils/response';
 import { AuthRequest } from '@/models/requests';
@@ -60,7 +60,7 @@ export class CatController {
     }
   }
 
-  static async getAll(req: Request, res: Response, next: NextFunction) {
+  static async getAll(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       await CatController.getAllFromDatabase(req, res);
     } catch (err) {
@@ -68,7 +68,16 @@ export class CatController {
     }
   }
 
-  private static async getAllFromDatabase(req: Request, res: Response) {
+  private static async getAllFromDatabase(req: AuthRequest, res: Response) {
+    const filters = this.buildFilters(req);
+    const cats = await catService.getAll(
+      Object.keys(filters).length > 0 ? filters : undefined,
+      req.user?.userId
+    );
+    ResponseUtil.success(res, cats, 'Cats retrieved from database');
+  }
+
+  private static buildFilters(req: AuthRequest): CatFilters {
     const filters: CatFilters = {
       userId: req.query.userId as string,
       protectorId: req.query.protectorId as string,
@@ -91,7 +100,6 @@ export class CatController {
       page: req.query.page ? parseInt(req.query.page as string) : undefined,
     };
 
-    // Handle ordering parameters
     if (req.query.orderBy && req.query.orderDirection) {
       const orderBy = req.query.orderBy as string;
       const orderDirection = req.query.orderDirection as string;
@@ -107,19 +115,9 @@ export class CatController {
       }
     }
 
-    const cleanFilters: CatFilters = Object.fromEntries(
+    return Object.fromEntries(
       Object.entries(filters).filter(([_, value]) => value !== undefined)
     );
-
-    // Get userId from auth request if available
-    const authReq = req as AuthRequest;
-    const userId = authReq.user?.userId;
-
-    const cats = await catService.getAll(
-      Object.keys(cleanFilters).length > 0 ? cleanFilters : undefined,
-      userId
-    );
-    ResponseUtil.success(res, cats, 'Cats retrieved from database');
   }
 
   static async getMyCats(req: AuthRequest, res: Response, next: NextFunction) {
@@ -131,13 +129,9 @@ export class CatController {
     }
   }
 
-  static async getById(req: Request, res: Response, next: NextFunction) {
+  static async getById(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      // Get userId from auth request if available
-      const authReq = req as AuthRequest;
-      const userId = authReq.user?.userId;
-
-      const cat = await catService.getById(req.params.id, userId);
+      const cat = await catService.getById(req.params.id, req.user?.userId);
       if (!cat) return ResponseUtil.notFound(res, 'Cat not found');
       ResponseUtil.success(res, cat, 'Cat retrieved');
     } catch (err) {

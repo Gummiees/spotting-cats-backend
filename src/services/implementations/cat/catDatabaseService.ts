@@ -11,6 +11,10 @@ import { userService } from '@/services/userService';
 
 const COLLECTION = 'cats';
 
+const DEFAULT_LIMIT = 12;
+const MAX_LIMIT = 24;
+const DEFAULT_SORT = { createdAt: -1 };
+
 export class CatDatabaseService implements ICatService {
   async create(cat: Omit<Cat, 'id'>): Promise<CatResponse> {
     try {
@@ -57,7 +61,7 @@ export class CatDatabaseService implements ICatService {
 
   async getAll(filters?: CatFilters, userId?: string): Promise<CatResponse[]> {
     try {
-      console.log(`CatDatabaseService - getAll called`);
+      console.log(`=========== CatDatabaseService - getAll called`);
       const collection = await this.getCollection();
       const query = this.buildFilterQuery(filters);
       const options = this.buildQueryOptions(filters);
@@ -72,6 +76,12 @@ export class CatDatabaseService implements ICatService {
 
       const mappedCats = await Promise.all(
         cats.map((cat) => this.mapCatToResponse(cat, userId))
+      );
+
+      console.log(
+        `=========== CatDatabaseService - mappedCats: ${JSON.stringify(
+          mappedCats
+        )}`
       );
 
       // Apply special handling for age ordering (cats with no age at the end)
@@ -161,7 +171,7 @@ export class CatDatabaseService implements ICatService {
   }
 
   private buildFilterQuery(filters?: CatFilters): any {
-    if (!filters) return {};
+    if (!filters || Object.keys(filters).length === 0) return {};
 
     const query: any = {};
 
@@ -206,8 +216,8 @@ export class CatDatabaseService implements ICatService {
     skip: number;
   } {
     const limit = filters?.limit
-      ? Math.min(Math.max(filters.limit, 1), 24)
-      : 12;
+      ? Math.min(Math.max(filters.limit, 1), MAX_LIMIT)
+      : DEFAULT_LIMIT;
     const page = filters?.page ? Math.max(filters.page, 1) : 1;
     const skip = (page - 1) * limit;
 
@@ -216,7 +226,7 @@ export class CatDatabaseService implements ICatService {
 
   private buildSortOptions(filters?: CatFilters): any {
     if (!filters?.orderBy) {
-      return { createdAt: -1 }; // Default sort by newest first
+      return DEFAULT_SORT;
     }
 
     const { field, direction } = filters.orderBy;
@@ -231,7 +241,7 @@ export class CatDatabaseService implements ICatService {
       case 'createdAt':
         return { createdAt: sortDirection };
       default:
-        return { createdAt: -1 };
+        return DEFAULT_SORT;
     }
   }
 
@@ -354,6 +364,8 @@ export class CatDatabaseService implements ICatService {
           error
         );
       }
+    } else {
+      console.warn(`No userId provided when mapping cat to response`);
     }
 
     return {
