@@ -2,65 +2,120 @@ const FormData = require('form-data');
 const fs = require('fs');
 const path = require('path');
 
-async function testImageUpload() {
-  const formData = new FormData();
+async function testImageUpdate() {
+  const catId = '689233f4834a00e23a747816';
+  const baseUrl = 'https://spotting-cats-backend-staging.up.railway.app';
 
-  // Add some test data
-  formData.append('name', 'Test Cat');
-  formData.append('age', '3');
-  formData.append('xCoordinate', '-73.935242');
-  formData.append('yCoordinate', '40.730610');
+  // First, get the current cat
+  console.log('=== Getting current cat ===');
+  const getResponse = await fetch(`${baseUrl}/api/v1/cats/${catId}`, {
+    method: 'GET',
+    headers: {
+      Cookie:
+        'auth_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODcwZGRkZDAxZDJkZGY2ZjUxMmNiMzQiLCJlbWFpbCI6InhhdmljYXJvbWlyb0BnbWFpbC5jb20iLCJ1c2VybmFtZSI6Ikd1bW1pZWVzIiwicm9sZSI6InN1cGVyYWRtaW4iLCJpYXQiOjE3NTQwNDQxMzAsImV4cCI6MTc1NDY0ODkzMH0.XikwR586WlBkIz4BwfTNXT92cwm03gtM4qQjI6IB6i8',
+    },
+  });
+
+  const catData = await getResponse.json();
+  console.log('Original images:', catData.data.imageUrls);
+  console.log('Original count:', catData.data.imageUrls.length);
+
+  // Create a test image file (1x1 pixel PNG)
+  const testImagePath = path.join(__dirname, 'test-image.png');
+  const testImageBuffer = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+    'base64'
+  );
+  fs.writeFileSync(testImagePath, testImageBuffer);
+
+  // Create FormData for update
+  const formData = new FormData();
+  formData.append('name', 'Batman');
+  formData.append('age', '10');
+  formData.append('breed', 'Tuxedo');
+  formData.append('xCoordinate', '0');
+  formData.append('yCoordinate', '0');
+  formData.append('extraInfo', 'wapeton');
   formData.append('isDomestic', 'true');
   formData.append('isMale', 'true');
-  formData.append('isSterilized', 'false');
+  formData.append('isSterilized', 'true');
   formData.append('isFriendly', 'true');
-  formData.append('breed', 'Persian');
-  formData.append('extraInfo', 'Very friendly cat, loves children');
+  formData.append('images', fs.createReadStream(testImagePath), {
+    filename: 'test-image.png',
+    contentType: 'image/png',
+  });
 
-  // Try to add a test image if it exists
-  const testImagePath = path.join(__dirname, 'test-image.jpg');
-  if (fs.existsSync(testImagePath)) {
-    formData.append('images', fs.createReadStream(testImagePath));
-    console.log('✅ Test image found and added to FormData');
+  console.log('=== Updating cat with new image ===');
+  const updateResponse = await fetch(`${baseUrl}/api/v1/cats/${catId}`, {
+    method: 'PUT',
+    headers: {
+      Cookie:
+        'auth_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODcwZGRkZDAxZDJkZGY2ZjUxMmNiMzQiLCJlbWFpbCI6InhhdmljYXJvbWlyb0BnbWFpbC5jb20iLCJ1c2VybmFtZSI6Ikd1bW1pZWVzIiwicm9sZSI6InN1cGVyYWRtaW4iLCJpYXQiOjE3NTQwNDQxMzAsImV4cCI6MTc1NDY0ODkzMH0.XikwR586WlBkIz4BwfTNXT92cwm03gtM4qQjI6IB6i8',
+      ...formData.getHeaders(),
+    },
+    body: formData,
+  });
+
+  const updateResult = await updateResponse.json();
+  console.log('Update result:', updateResult);
+
+  // Get the cat again to see the changes
+  console.log('=== Getting updated cat ===');
+  const getResponse2 = await fetch(`${baseUrl}/api/v1/cats/${catId}`, {
+    method: 'GET',
+    headers: {
+      Cookie:
+        'auth_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODcwZGRkZDAxZDJkZGY2ZjUxMmNiMzQiLCJlbWFpbCI6InhhdmljYXJvbWlyb0BnbWFpbC5jb20iLCJ1c2VybmFtZSI6Ikd1bW1pZWVzIiwicm9sZSI6InN1cGVyYWRtaW4iLCJpYXQiOjE3NTQwNDQxMzAsImV4cCI6MTc1NDY0ODkzMH0.XikwR586WlBkIz4BwfTNXT92cwm03gtM4qQjI6IB6i8',
+    },
+  });
+
+  const catData2 = await getResponse2.json();
+  console.log('Updated images:', catData2.data.imageUrls);
+  console.log('Updated count:', catData2.data.imageUrls.length);
+
+  // Clean up
+  fs.unlinkSync(testImagePath);
+
+  console.log('=== Summary ===');
+  console.log('Original count:', catData.data.imageUrls.length);
+  console.log('Updated count:', catData2.data.imageUrls.length);
+  console.log('Expected count:', catData.data.imageUrls.length + 1);
+
+  // Check if any images were replaced
+  const originalUrls = new Set(catData.data.imageUrls);
+  const updatedUrls = new Set(catData2.data.imageUrls);
+  const replacedImages = catData.data.imageUrls.filter(
+    (url) => !updatedUrls.has(url)
+  );
+  const newImages = catData2.data.imageUrls.filter(
+    (url) => !originalUrls.has(url)
+  );
+
+  console.log('Replaced images:', replacedImages);
+  console.log('New images:', newImages);
+
+  // Detailed analysis
+  console.log('\n=== Detailed Analysis ===');
+  console.log('Original URLs:');
+  catData.data.imageUrls.forEach((url, index) => {
+    console.log(`  ${index + 1}. ${url}`);
+  });
+
+  console.log('\nUpdated URLs:');
+  catData2.data.imageUrls.forEach((url, index) => {
+    console.log(`  ${index + 1}. ${url}`);
+  });
+
+  if (replacedImages.length > 0) {
+    console.log('\n⚠️  WARNING: Images were replaced instead of added!');
+    console.log(
+      'This suggests there might be a limit or bug in the image handling logic.'
+    );
+  } else if (newImages.length > 0) {
+    console.log('\n✅ SUCCESS: New images were added correctly!');
   } else {
-    console.log('⚠️ No test image found at:', testImagePath);
-    console.log('Create a test image file to test image upload functionality');
+    console.log('\n❓ UNEXPECTED: No changes detected in images.');
   }
-
-  console.log('\n📋 FormData contents:');
-  console.log('- name: Test Cat');
-  console.log('- age: 3');
-  console.log('- xCoordinate: -73.935242');
-  console.log('- yCoordinate: 40.730610');
-  console.log('- isDomestic: true');
-  console.log('- isMale: true');
-  console.log('- isSterilized: false');
-  console.log('- isFriendly: true');
-  console.log('- breed: Persian');
-  console.log('- extraInfo: Very friendly cat, loves children');
-
-  console.log('\n🚀 To test the API:');
-  console.log('1. Start the server: npm run dev');
-  console.log('2. Use curl or Postman to send a POST request to:');
-  console.log('   POST http://localhost:3000/api/v1/cats');
-  console.log('3. Set Content-Type to multipart/form-data');
-  console.log('4. Include the FormData with the fields above');
-  console.log('5. Add image files to the "images" field');
-
-  console.log('\n📝 Example curl command:');
-  console.log('curl -X POST http://localhost:3000/api/v1/cats \\');
-  console.log('  -H "Content-Type: multipart/form-data" \\');
-  console.log('  -F "name=Test Cat" \\');
-  console.log('  -F "age=3" \\');
-  console.log('  -F "xCoordinate=-73.935242" \\');
-  console.log('  -F "yCoordinate=40.730610" \\');
-  console.log('  -F "isDomestic=true" \\');
-  console.log('  -F "isMale=true" \\');
-  console.log('  -F "isSterilized=false" \\');
-  console.log('  -F "isFriendly=true" \\');
-  console.log('  -F "breed=Persian" \\');
-  console.log('  -F "extraInfo=Very friendly cat, loves children" \\');
-  console.log('  -F "images=@test-image.jpg"');
 }
 
-testImageUpload().catch(console.error);
+testImageUpdate().catch(console.error);

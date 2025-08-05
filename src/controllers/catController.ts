@@ -215,11 +215,21 @@ export class CatController {
         finalImageUrls = cat.imageUrls;
       }
 
+      // Remove any unwanted fields that might interfere with the update
+      const { imageUrls: _, ...cleanBody } = req.body;
       const updateData = {
-        ...req.body,
+        ...cleanBody,
         imageUrls: finalImageUrls,
       };
 
+      // Return the data for debugging instead of updating
+      return ResponseUtil.success(
+        res,
+        updateData,
+        'DEBUG: Dry run. This is the data that would be saved.'
+      );
+
+      /*
       const updated = await catService.update(req.params.id, updateData);
       if (!updated) return ResponseUtil.notFound(res, 'Cat not found');
 
@@ -233,6 +243,7 @@ export class CatController {
       }
 
       ResponseUtil.success(res, null, 'Cat updated');
+      */
     } catch (err) {
       next(err);
     }
