@@ -248,6 +248,11 @@ export class CatCacheService implements ICatService {
     invalidationPromises.push(this.invalidateFilteredCaches(currentCat));
     // }
 
+    // If imageUrls are part of the update, it's safer to invalidate all list caches
+    if (update.imageUrls) {
+      invalidationPromises.push(this.invalidateAllCatCaches());
+    }
+
     // If totalLikes or age are being updated, invalidate ordering caches specifically
     if (update.totalLikes !== undefined || update.age !== undefined) {
       invalidationPromises.push(this.invalidateOrderingCaches());
