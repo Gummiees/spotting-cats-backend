@@ -114,9 +114,7 @@ export class CatDatabaseService implements ICatService {
 
   async getByIdForAuth(id: string): Promise<Cat | null> {
     try {
-      const cat = await this.findCatById(id);
-      if (!cat) return null;
-      return await this.mapCatToResponse(cat);
+      return await this.findCatById(id);
     } catch (error) {
       this.handleDatabaseError(error, 'getByIdForAuth');
     }
