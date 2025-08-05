@@ -95,6 +95,24 @@ export class ResponseUtil {
     res.status(429).json(response);
   }
 
+  static disposableEmail(
+    res: Response,
+    message: string = 'Disposable email addresses are not allowed'
+  ): void {
+    const response: ErrorResponse = {
+      success: false,
+      error: 'Disposable Email Not Allowed',
+      message,
+      timestamp: new Date().toISOString(),
+      details: {
+        errorCode: 'DISPOSABLE_EMAIL',
+        canRetry: false,
+      },
+    };
+
+    res.status(400).json(response);
+  }
+
   static nsfwContentDetected(
     res: Response,
     message: string = 'NSFW content detected',

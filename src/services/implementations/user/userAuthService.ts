@@ -4,6 +4,7 @@ import { UserUtilityService } from './userUtilityService';
 import { UserIpBanService } from '../ip-ban/userIpBanService';
 import { decryptEmail } from '@/utils/security';
 import { emailService } from '@/services/emailService';
+import { EmailValidationService } from '@/services/emailValidationService';
 
 export class UserAuthService {
   constructor(
@@ -17,8 +18,13 @@ export class UserAuthService {
     clientIp?: string
   ): Promise<{ success: boolean; message: string; errorCode?: string }> {
     try {
-      if (!this.utilityService.isValidEmail(email)) {
-        return { success: false, message: 'Invalid email format' };
+      const emailValidation = EmailValidationService.validateEmail(email);
+      if (!emailValidation.valid) {
+        return {
+          success: false,
+          message: emailValidation.message,
+          errorCode: emailValidation.errorCode,
+        };
       }
 
       // Check if IP is banned
@@ -33,7 +39,7 @@ export class UserAuthService {
         }
       }
 
-      const normalizedEmail = this.utilityService.normalizeEmail(email);
+      const normalizedEmail = EmailValidationService.normalizeEmail(email);
       // We need to check all users and decrypt their emails to find a match
       const allUsers = await this.dbOps.findAllUsers();
       const existingUser = allUsers.find((user) => {
@@ -194,7 +200,7 @@ export class UserAuthService {
 
   async getUserByEmail(email: string): Promise<User | null> {
     try {
-      const normalizedEmail = this.utilityService.normalizeEmail(email);
+      const normalizedEmail = EmailValidationService.normalizeEmail(email);
       // We need to check all users and decrypt their emails to find a match
       const allUsers = await this.dbOps.findAllUsers();
       const user = allUsers.find((user) => {
@@ -264,7 +270,7 @@ export class UserAuthService {
     }
 
     // We need to check all users and decrypt their emails to find a match
-    const normalizedEmail = this.utilityService.normalizeEmail(email);
+    const normalizedEmail = EmailValidationService.normalizeEmail(email);
     const allUsers = await this.dbOps.findAllUsers();
     let user = allUsers.find((user) => {
       try {

@@ -3,6 +3,7 @@ import { emailService } from '@/services/emailService';
 import { UserDatabaseOperations } from './userDatabaseOperations';
 import { UserUtilityService } from './userUtilityService';
 import { encryptEmail, decryptEmail } from '@/utils/security';
+import { EmailValidationService } from '@/services/emailValidationService';
 
 export class UserManagementService {
   constructor(
@@ -35,7 +36,7 @@ export class UserManagementService {
         shouldRegenerateToken = true; // Username is in JWT token
       }
 
-      if (this.utilityService.isValidEmailForUpdate(updates.email)) {
+      if (EmailValidationService.isValidEmailForUpdate(updates.email)) {
         const email = updates.email;
         const emailCheck = await this.handleEmailUpdate(userId, email);
         if (!emailCheck.success) {
@@ -43,7 +44,7 @@ export class UserManagementService {
         }
 
         updateData.email = encryptEmail(
-          this.utilityService.normalizeEmail(email)
+          EmailValidationService.normalizeEmail(email)
         );
         updateData.emailUpdatedAt = this.utilityService.createTimestamp();
         shouldRegenerateToken = true; // Email is in JWT token
@@ -484,7 +485,7 @@ export class UserManagementService {
     }
 
     // Check if email is already in use by comparing decrypted emails
-    const normalizedEmail = this.utilityService.normalizeEmail(email);
+    const normalizedEmail = EmailValidationService.normalizeEmail(email);
     const allUsers = await this.dbOps.findAllUsers();
     const emailExists = allUsers.some((user) => {
       if (user._id.toString() === userId) {

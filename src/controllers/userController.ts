@@ -18,6 +18,7 @@ import { isValidDiceBearUrl } from '@/utils/avatar';
 import { config } from '@/config';
 import { getClientIp, decryptEmail, encryptEmail } from '@/utils/security';
 import { isProduction } from '@/constants/environment';
+import { EmailValidationService } from '@/services/emailValidationService';
 
 export class UserController {
   static async sendVerificationCode(
@@ -37,9 +38,13 @@ export class UserController {
 
       const result = await userService.sendVerificationCode(email, clientIp);
 
-      // Handle banned user case specifically
       if (!result.success && result.errorCode === 'ACCOUNT_BANNED') {
         ResponseUtil.accountBanned(res, result.message);
+        return;
+      }
+
+      if (!result.success && result.errorCode === 'DISPOSABLE_EMAIL') {
+        ResponseUtil.disposableEmail(res, result.message);
         return;
       }
 
@@ -281,9 +286,13 @@ export class UserController {
         emailValidation.normalizedEmail!
       );
 
-      // Handle rate limiting case specifically
       if (!result.success && result.errorCode === 'EMAIL_CHANGE_RATE_LIMITED') {
         ResponseUtil.tooManyRequests(res, result.message);
+        return;
+      }
+
+      if (!result.success && result.errorCode === 'DISPOSABLE_EMAIL') {
+        ResponseUtil.disposableEmail(res, result.message);
         return;
       }
 
@@ -365,6 +374,12 @@ export class UserController {
     if (!email || typeof email !== 'string') {
       return { valid: false, message: 'Email is required' };
     }
+
+    const emailValidation = EmailValidationService.validateEmail(email);
+    if (!emailValidation.valid) {
+      return { valid: false, message: emailValidation.message };
+    }
+
     return { valid: true };
   }
 
@@ -390,15 +405,15 @@ export class UserController {
       };
     }
 
-    const trimmedEmail = email.trim().toLowerCase();
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(trimmedEmail)) {
+    const emailValidation = EmailValidationService.validateEmailFormat(email);
+    if (!emailValidation.valid) {
       return {
         valid: false,
-        message: 'Please provide a valid email address',
+        message: emailValidation.message,
       };
     }
+
+    const trimmedEmail = email.trim().toLowerCase();
 
     if (trimmedEmail.length > 320) {
       return {

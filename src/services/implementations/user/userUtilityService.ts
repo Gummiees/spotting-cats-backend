@@ -13,6 +13,7 @@ import {
 import { generateAvatarForUsername } from '@/utils/avatar';
 import { config } from '@/config';
 import { encryptEmail, decryptEmail, hashIp } from '@/utils/security';
+import { EmailValidationService } from '@/services/emailValidationService';
 
 export class UserUtilityService {
   private readonly JWT_SECRET: string;
@@ -27,20 +28,12 @@ export class UserUtilityService {
     this.CODE_EXPIRES_IN = 10; // 10 minutes
   }
 
-  // Validation methods
-  isValidEmail(email: string): boolean {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  }
+  // Validation methods - email validation moved to EmailValidationService
 
   isValidUsername(username: string | undefined): username is string {
     return (
       username !== undefined && username !== null && username.trim() !== ''
     );
-  }
-
-  isValidEmailForUpdate(email: string | undefined): email is string {
-    return email !== undefined && email !== null && email.trim() !== '';
   }
 
   isValidAvatarUrl(avatarUrl: string | undefined): avatarUrl is string {
@@ -201,7 +194,7 @@ export class UserUtilityService {
     const timestamp = this.createTimestamp();
     const finalUsername = username || 'temp_username'; // Will be replaced by actual generation
     const avatarUrl = generateAvatarForUsername(finalUsername);
-    const normalizedEmail = this.normalizeEmail(email);
+    const normalizedEmail = EmailValidationService.normalizeEmail(email);
 
     // Determine user role based on email whitelists
     let role: 'user' | 'moderator' | 'admin' | 'superadmin' = 'user';
@@ -295,7 +288,7 @@ export class UserUtilityService {
   // Auth code creation methods
   createAuthCode(email: string, code: string): any {
     const expiresAt = this.calculateExpirationTime(this.CODE_EXPIRES_IN);
-    const normalizedEmail = this.normalizeEmail(email);
+    const normalizedEmail = EmailValidationService.normalizeEmail(email);
     const timestamp = this.createTimestamp();
 
     return {
@@ -323,11 +316,6 @@ export class UserUtilityService {
       used: false,
       createdAt: timestamp,
     };
-  }
-
-  // Utility methods
-  normalizeEmail(email: string): string {
-    return email.toLowerCase().trim();
   }
 
   createTimestamp(): Date {

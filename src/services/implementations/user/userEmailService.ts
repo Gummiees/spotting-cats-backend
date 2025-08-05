@@ -3,6 +3,7 @@ import { UserDatabaseOperations } from './userDatabaseOperations';
 import { UserUtilityService } from './userUtilityService';
 import { encryptEmail, decryptEmail } from '@/utils/security';
 import { emailService } from '@/services/emailService';
+import { EmailValidationService } from '@/services/emailValidationService';
 
 export class UserEmailService {
   constructor(
@@ -15,8 +16,13 @@ export class UserEmailService {
     newEmail: string
   ): Promise<{ success: boolean; message: string; errorCode?: string }> {
     try {
-      if (!this.utilityService.isValidEmail(newEmail)) {
-        return { success: false, message: 'Invalid email format' };
+      const emailValidation = EmailValidationService.validateEmail(newEmail);
+      if (!emailValidation.valid) {
+        return {
+          success: false,
+          message: emailValidation.message,
+          errorCode: emailValidation.errorCode,
+        };
       }
 
       const dbUser = await this.dbOps.findUserById(userId);
@@ -45,7 +51,8 @@ export class UserEmailService {
       }
 
       // Check if new email is available
-      const normalizedNewEmail = this.utilityService.normalizeEmail(newEmail);
+      const normalizedNewEmail =
+        EmailValidationService.normalizeEmail(newEmail);
       const availabilityCheck = await this.checkEmailAvailability(
         normalizedNewEmail,
         userId
@@ -110,7 +117,7 @@ export class UserEmailService {
         return { success: false, message: 'User not found' };
       }
 
-      const normalizedEmail = this.utilityService.normalizeEmail(
+      const normalizedEmail = EmailValidationService.normalizeEmail(
         emailChangeRequest.newEmail
       );
       const encryptedEmail = encryptEmail(normalizedEmail);
@@ -159,15 +166,16 @@ export class UserEmailService {
     excludeUserId?: string
   ): Promise<{ available: boolean; message: string; statusCode?: string }> {
     try {
-      if (!this.utilityService.isValidEmail(email)) {
+      const basicEmailValidation = EmailValidationService.validateEmail(email);
+      if (!basicEmailValidation.valid) {
         return {
           available: false,
-          message: 'Invalid email format',
-          statusCode: 'INVALID_EMAIL_FORMAT',
+          message: basicEmailValidation.message,
+          statusCode: basicEmailValidation.errorCode,
         };
       }
 
-      const normalizedEmail = this.utilityService.normalizeEmail(email);
+      const normalizedEmail = EmailValidationService.normalizeEmail(email);
 
       // If excludeUserId is provided, first check if the email is the same as the current user's email
       if (excludeUserId) {
