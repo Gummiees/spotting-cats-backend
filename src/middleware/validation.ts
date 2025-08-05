@@ -7,6 +7,7 @@ import {
 } from 'express-validator';
 import { Request, Response, NextFunction } from 'express';
 import { ResponseUtil } from '@/utils/response';
+import { CAT_BREEDS } from '@/constants/catBreeds';
 
 // Validation result handler
 export const handleValidationErrors = (
@@ -99,8 +100,8 @@ export const createCatValidation = [
     .trim()
     .isLength({ max: 100 })
     .withMessage('Breed must be less than 100 characters')
-    .matches(/^[a-zA-Z0-9\s\-_]+$/)
-    .withMessage('Breed contains invalid characters'),
+    .isIn(CAT_BREEDS)
+    .withMessage('Breed must be one of the valid cat breeds'),
   body('extraInfo')
     .optional()
     .trim()
@@ -163,8 +164,8 @@ export const updateCatValidation = [
     .trim()
     .isLength({ max: 100 })
     .withMessage('Breed must be less than 100 characters')
-    .matches(/^[a-zA-Z0-9\s\-_]+$/)
-    .withMessage('Breed contains invalid characters'),
+    .isIn(CAT_BREEDS)
+    .withMessage('Breed must be one of the valid cat breeds'),
   body('extraInfo')
     .optional()
     .trim()

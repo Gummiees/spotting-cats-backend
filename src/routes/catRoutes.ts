@@ -25,6 +25,34 @@ const router = Router();
 
 /**
  * @swagger
+ * /api/v1/cats/breed:
+ *   get:
+ *     summary: Get all available cat breeds
+ *     tags: [Cats]
+ *     responses:
+ *       200:
+ *         description: List of cat breeds retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["Agouti", "Bi-color", "Calico", "Chinchilla", "Colorpoint", "Cream Tabby", "Dilute Calico", "Dilute Tortie", "Fawn", "Harlequin", "Lynx Point", "Mackerel Tabby", "Marbled", "Mitted", "Mixed", "Patched Tabby", "Pointed", "Rosetted", "Self-colored", "Shaded", "Silver Tabby", "Smoke", "Solid", "Spotted", "Tabby", "Tabby with White", "Tortoiseshell", "Torbie", "Tricolor", "Tuxedo", "Van Pattern", "Whisker Spotting"]
+ *                 message:
+ *                   type: string
+ *                   example: "Cat breeds retrieved successfully"
+ */
+router.get('/breed', CatController.getBreeds);
+
+/**
+ * @swagger
  * /api/v1/cats:
  *   get:
  *     summary: Get all cats with optional filtering (public endpoint)

@@ -8,6 +8,7 @@ import { cloudinaryService } from '@/services/cloudinaryService';
 import { getImageBuffers } from '@/middleware/fileUpload';
 import { likeService } from '@/services/likeService';
 import { catService } from '@/services/catService';
+import { CAT_BREEDS } from '@/constants/catBreeds';
 
 const algoliaService = new AlgoliaService();
 
@@ -301,6 +302,18 @@ export class CatController {
         res,
         result,
         `Cat ${result.liked ? 'liked' : 'unliked'} successfully`
+      );
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async getBreeds(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      ResponseUtil.success(
+        res,
+        CAT_BREEDS,
+        'Cat breeds retrieved successfully'
       );
     } catch (err) {
       next(err);
