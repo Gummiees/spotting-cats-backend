@@ -8,6 +8,7 @@ import cacheRoutes from './cacheRoutes';
 import { userRoutes } from './userRoutes';
 import noteRoutes from './noteRoutes';
 import algoliaRoutes from './algoliaRoutes';
+import geocodingRoutes from './geocodingRoutes';
 
 const router = Router();
 
@@ -55,5 +56,9 @@ router.use(`${config.api.prefix}/${config.api.version}/cache`, cacheRoutes);
 router.use(`${config.api.prefix}/${config.api.version}/users`, userRoutes);
 router.use(`${config.api.prefix}/${config.api.version}/notes`, noteRoutes);
 router.use(`${config.api.prefix}/${config.api.version}/algolia`, algoliaRoutes);
+router.use(
+  `${config.api.prefix}/${config.api.version}/geocoding`,
+  geocodingRoutes
+);
 
 export default router;
