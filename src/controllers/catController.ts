@@ -215,11 +215,11 @@ export class CatController {
         finalImageUrls = cat.imageUrls;
       }
 
-      // Remove any unwanted fields that might interfere with the update
       const { imageUrls: _, ...cleanBody } = req.body;
+      const uniqueImageUrls = [...new Set(finalImageUrls)];
       const updateData = {
         ...cleanBody,
-        imageUrls: finalImageUrls,
+        imageUrls: uniqueImageUrls,
       };
 
       const updated = await catService.update(req.params.id, updateData);
