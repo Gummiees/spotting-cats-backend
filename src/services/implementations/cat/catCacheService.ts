@@ -182,6 +182,9 @@ export class CatCacheService implements ICatService {
     const invalidationPromises: Promise<void>[] = [];
 
     // Invalidate the specific cat cache (both anonymous and user-specific)
+    invalidationPromises.push(
+      CacheService.delete(`cats:auth:${currentCat.id}`)
+    );
     invalidationPromises.push(CacheService.delete(`cats:${currentCat.id}`));
     invalidationPromises.push(
       this.deleteCachePattern(`cats:${currentCat.id}:user:*`)
