@@ -8,6 +8,7 @@ import {
 } from '@/services/interfaces/catServiceInterface';
 import { ObjectId } from 'mongodb';
 import { userService } from '@/services/userService';
+import { GeocodingService } from '@/services/geocodingService';
 
 const COLLECTION = 'cats';
 
@@ -25,10 +26,23 @@ export class CatDatabaseService implements ICatService {
         throw new Error(validation.message);
       }
 
+      let address: string | undefined;
+      try {
+        const geocodedAddress = await GeocodingService.reverseGeocode(
+          sanitizedCat.xCoordinate!,
+          sanitizedCat.yCoordinate!
+        );
+        address = geocodedAddress || undefined;
+      } catch (error) {
+        console.error('Failed to calculate address for cat:', error);
+        // Continue without address if geocoding fails
+      }
+
       const catWithDefaults = {
         userId: sanitizedCat.userId,
         xCoordinate: sanitizedCat.xCoordinate!,
         yCoordinate: sanitizedCat.yCoordinate!,
+        address,
         totalLikes: 0,
         imageUrls: sanitizedCat.imageUrls ?? [],
         isUserOwner: false,
@@ -130,7 +144,16 @@ export class CatDatabaseService implements ICatService {
         throw new Error(validation.message);
       }
 
-      // Add updatedAt timestamp
+      const coordinateX = sanitizedUpdate.xCoordinate;
+      const coordinateY = sanitizedUpdate.yCoordinate;
+      if (coordinateX !== undefined && coordinateY !== undefined) {
+        const geocodedAddress = await GeocodingService.reverseGeocode(
+          coordinateX,
+          coordinateY
+        );
+        sanitizedUpdate.address = geocodedAddress || undefined;
+      }
+
       const updateWithTimestamp = {
         ...sanitizedUpdate,
         updatedAt: new Date(),
@@ -310,6 +333,7 @@ export class CatDatabaseService implements ICatService {
         imageUrls: 1,
         xCoordinate: 1,
         yCoordinate: 1,
+        address: 1,
         extraInfo: 1,
         isDomestic: 1,
         isMale: 1,
@@ -367,6 +391,7 @@ export class CatDatabaseService implements ICatService {
       imageUrls: cat.imageUrls ?? [],
       xCoordinate: cat.xCoordinate,
       yCoordinate: cat.yCoordinate,
+      address: cat.address,
       extraInfo: cat.extraInfo,
       isDomestic: cat.isDomestic,
       isMale: cat.isMale,
@@ -408,6 +433,7 @@ export class CatDatabaseService implements ICatService {
       updatedAt,
       confirmedOwnerAt,
       isUserOwner,
+      address,
       ...sanitizedData
     } = data;
 

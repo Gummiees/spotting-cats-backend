@@ -11,6 +11,7 @@ export interface Cat {
   imageUrls: string[];
   xCoordinate: number;
   yCoordinate: number;
+  address?: string;
   extraInfo?: string;
   isDomestic?: boolean;
   isMale?: boolean;
