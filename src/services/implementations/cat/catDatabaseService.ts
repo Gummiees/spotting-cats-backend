@@ -61,10 +61,13 @@ export class CatDatabaseService implements ICatService {
 
       const insertedId = await this.insertCat(catWithDefaults);
 
-      return await this.mapCatToResponse({
-        _id: insertedId,
-        ...catWithDefaults,
-      });
+      return await this.mapCatToResponse(
+        {
+          _id: insertedId,
+          ...catWithDefaults,
+        },
+        catWithDefaults.userId
+      );
     } catch (error) {
       if (error instanceof Error) {
         throw error;
@@ -127,7 +130,9 @@ export class CatDatabaseService implements ICatService {
         .find({ userId }, { projection: this.createProjection().projection })
         .toArray();
 
-      return await Promise.all(cats.map((cat) => this.mapCatToResponse(cat)));
+      return await Promise.all(
+        cats.map((cat) => this.mapCatToResponse(cat, userId))
+      );
     } catch (error) {
       this.handleDatabaseError(error, 'getByUserId');
     }
