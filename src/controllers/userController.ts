@@ -993,7 +993,6 @@ export class UserController {
         // Get database user to access encrypted email
         const dbUser = await userService.getDbUserById(user.id!);
         if (dbUser && dbUser.email) {
-          // Decrypt email for whitelist comparison
           const decryptedEmail = decryptEmail(dbUser.email);
           const userEmail = decryptedEmail.toLowerCase();
           const isInSuperadminWhitelist =

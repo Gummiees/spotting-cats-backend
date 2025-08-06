@@ -41,16 +41,7 @@ export class UserAuthService {
 
       const normalizedEmail = EmailValidationService.normalizeEmail(email);
       // We need to check all users and decrypt their emails to find a match
-      const allUsers = await this.dbOps.findAllUsers();
-      const existingUser = allUsers.find((user) => {
-        try {
-          const decryptedUserEmail = decryptEmail(user.email);
-          return decryptedUserEmail === normalizedEmail;
-        } catch (decryptError) {
-          console.error('Error decrypting user email:', decryptError);
-          return false;
-        }
-      });
+      const existingUser = await this.findUserByEmail(normalizedEmail);
 
       // Check if existing user is banned
       if (existingUser && existingUser.isBanned) {
@@ -200,19 +191,7 @@ export class UserAuthService {
 
   async getUserByEmail(email: string): Promise<User | null> {
     try {
-      const normalizedEmail = EmailValidationService.normalizeEmail(email);
-      // We need to check all users and decrypt their emails to find a match
-      const allUsers = await this.dbOps.findAllUsers();
-      const user = allUsers.find((user) => {
-        try {
-          const decryptedUserEmail = decryptEmail(user.email);
-          return decryptedUserEmail === normalizedEmail;
-        } catch (decryptError) {
-          console.error('Error decrypting user email:', decryptError);
-          return false;
-        }
-      });
-
+      const user = await this.findUserByEmail(email);
       if (!user || user.isBanned) return null;
       return this.utilityService.mapUserToResponse(user);
     } catch (error) {
@@ -230,6 +209,27 @@ export class UserAuthService {
       console.error('Error getting user by username:', error);
       return null;
     }
+  }
+
+  private async findUserByEmail(email: string): Promise<any | null> {
+    const allUsers = await this.dbOps.findAllUsers();
+    const normalizedEmail = EmailValidationService.normalizeEmail(email);
+
+    for (const user of allUsers) {
+      try {
+        const decryptedUserEmail = decryptEmail(user.email);
+        if (decryptedUserEmail === normalizedEmail) {
+          return user;
+        }
+      } catch (decryptError) {
+        console.error(
+          `Error decrypting email for user ${user._id}:`,
+          decryptError
+        );
+      }
+    }
+
+    return null;
   }
 
   // Private methods
@@ -271,16 +271,7 @@ export class UserAuthService {
 
     // We need to check all users and decrypt their emails to find a match
     const normalizedEmail = EmailValidationService.normalizeEmail(email);
-    const allUsers = await this.dbOps.findAllUsers();
-    let user = allUsers.find((user) => {
-      try {
-        const decryptedUserEmail = decryptEmail(user.email);
-        return decryptedUserEmail === normalizedEmail;
-      } catch (decryptError) {
-        console.error('Error decrypting user email:', decryptError);
-        return false;
-      }
-    });
+    let user = await this.findUserByEmail(normalizedEmail);
     let isNewUser = false;
 
     if (!user) {
