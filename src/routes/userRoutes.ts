@@ -1117,7 +1117,12 @@ router.post(
   UserController.ensureAllUsersHaveAvatars
 );
 
-router.post('/admin/populate-email-hashes', UserController.populateEmailHashes);
+router.post(
+  '/admin/populate-email-hashes',
+  authMiddleware,
+  requireAdmin,
+  UserController.populateEmailHashes
+);
 
 /**
  * @swagger
