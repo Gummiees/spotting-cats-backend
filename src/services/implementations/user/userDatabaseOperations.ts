@@ -255,7 +255,7 @@ export class UserDatabaseOperations {
     await this.ensureInitialized();
     return this.authCodesCollection.findOne({
       email: email,
-      code: code,
+      code: String(code), // Ensure code is always a string
       used: false,
       expiresAt: { $gt: new Date() },
     });
