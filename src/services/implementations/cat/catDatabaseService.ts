@@ -29,8 +29,8 @@ export class CatDatabaseService implements ICatService {
       let address: string | undefined;
       try {
         const geocodedAddress = await GeocodingService.reverseGeocode(
-          sanitizedCat.xCoordinate!,
-          sanitizedCat.yCoordinate!
+          sanitizedCat.yCoordinate!,
+          sanitizedCat.xCoordinate!
         );
         address = geocodedAddress || undefined;
       } catch (error) {
@@ -151,8 +151,8 @@ export class CatDatabaseService implements ICatService {
       const coordinateY = sanitizedUpdate.yCoordinate;
       if (coordinateX !== undefined && coordinateY !== undefined) {
         const geocodedAddress = await GeocodingService.reverseGeocode(
-          coordinateX,
-          coordinateY
+          coordinateY,
+          coordinateX
         );
         sanitizedUpdate.address = geocodedAddress || undefined;
       }
