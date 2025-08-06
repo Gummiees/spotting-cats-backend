@@ -9,9 +9,6 @@ export async function connectToRedis(): Promise<RedisClientType> {
 
   redisClient = createClient({
     url: redisUrl,
-    socket: {
-      family: 4,
-    },
   });
 
   redisClient.on('error', (err) => {
