@@ -57,9 +57,12 @@ export class UserAuthService {
       const code = this.utilityService.generateVerificationCode();
 
       await this.dbOps.invalidatePreviousCodes(normalizedEmail);
-      await this.dbOps.insertAuthCode(
-        this.utilityService.createAuthCode(normalizedEmail, code)
+      const authCodeData = this.utilityService.createAuthCode(
+        normalizedEmail,
+        code
       );
+      await this.dbOps.insertAuthCode(authCodeData);
+      console.log('Saved auth code data:', JSON.stringify(authCodeData));
 
       const emailSent = await emailService.sendVerificationCode(
         normalizedEmail,
