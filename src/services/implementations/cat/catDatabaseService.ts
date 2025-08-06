@@ -378,8 +378,6 @@ export class CatDatabaseService implements ICatService {
           error
         );
       }
-    } else {
-      console.warn(`No userId provided when mapping cat to response`);
     }
 
     return {
