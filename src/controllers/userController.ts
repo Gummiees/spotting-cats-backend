@@ -19,6 +19,7 @@ import { config } from '@/config';
 import { getClientIp, decryptEmail, encryptEmail } from '@/utils/security';
 import { isProduction } from '@/constants/environment';
 import { EmailValidationService } from '@/services/emailValidationService';
+import { UserAdminService } from '@/services/implementations/user/userAdminService';
 
 export class UserController {
   static async sendVerificationCode(
@@ -1130,6 +1131,28 @@ export class UserController {
         ResponseUtil.success(res, result.data, result.message);
       } else {
         ResponseUtil.badRequest(res, result.message);
+      }
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async populateEmailHashes(
+    _req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const adminService = new UserAdminService();
+      const result = await adminService.populateEmailHashes();
+      if (result.success) {
+        ResponseUtil.success(
+          res,
+          { updatedCount: result.updatedCount },
+          result.message
+        );
+      } else {
+        ResponseUtil.error(res, 'Migration Failed', result.message, 500);
       }
     } catch (error) {
       next(error);

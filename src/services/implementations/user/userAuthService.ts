@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { User } from '@/models/user';
 import { UserDatabaseOperations } from './userDatabaseOperations';
 import { UserUtilityService } from './userUtilityService';
@@ -212,24 +213,25 @@ export class UserAuthService {
   }
 
   private async findUserByEmail(email: string): Promise<any | null> {
-    const allUsers = await this.dbOps.findAllUsers();
     const normalizedEmail = EmailValidationService.normalizeEmail(email);
+    const emailHash = createHash('sha256')
+      .update(normalizedEmail)
+      .digest('hex');
+    const user = await this.dbOps.findUserByEmailHash(emailHash);
 
-    for (const user of allUsers) {
-      try {
-        const decryptedUserEmail = decryptEmail(user.email);
-        if (decryptedUserEmail === normalizedEmail) {
-          return user;
-        }
-      } catch (decryptError) {
+    if (user) {
+      // Optional: Verify that the decrypted email matches, as a sanity check
+      const decryptedEmail = decryptEmail(user.email);
+      if (decryptedEmail !== normalizedEmail) {
+        // This case should ideally never happen if hashes are managed correctly
         console.error(
-          `Error decrypting email for user ${user._id}:`,
-          decryptError
+          `Critical: Email hash mismatch for user ${user._id}. The user's email may have been tampered with.`
         );
+        return null;
       }
     }
 
-    return null;
+    return user;
   }
 
   // Private methods

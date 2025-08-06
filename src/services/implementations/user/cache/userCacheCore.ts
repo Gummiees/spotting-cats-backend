@@ -1,10 +1,12 @@
+import { createHash } from 'crypto';
 import { User } from '@/models/user';
 import { connectToRedis, isRedisConfigured } from '@/utils/redis';
 
 export class UserCacheCore {
   protected readonly CACHE_TTL = 3600; // 1 hour in seconds
   protected readonly USER_CACHE_PREFIX = 'user:';
-  protected readonly USER_EMAIL_CACHE_PREFIX = 'user_email:';
+
+  protected readonly USER_EMAIL_HASH_CACHE_PREFIX = 'user_email_hash:';
   protected readonly USER_USERNAME_CACHE_PREFIX = 'user_username:';
 
   protected async cacheUserData(
@@ -26,8 +28,11 @@ export class UserCacheCore {
 
       // Cache normalized email to user ID mapping if provided
       if (normalizedEmail) {
-        const emailKey = `${this.USER_EMAIL_CACHE_PREFIX}${normalizedEmail}`;
-        await redisClient.setEx(emailKey, this.CACHE_TTL, user.id!);
+        const emailHash = createHash('sha256')
+          .update(normalizedEmail)
+          .digest('hex');
+        const emailHashKey = `${this.USER_EMAIL_HASH_CACHE_PREFIX}${emailHash}`;
+        await redisClient.setEx(emailHashKey, this.CACHE_TTL, user.id!);
       }
 
       // Cache normalized username to user ID mapping if provided
@@ -61,25 +66,6 @@ export class UserCacheCore {
     }
   }
 
-  protected async getUserIdFromEmailCache(
-    email: string
-  ): Promise<string | null> {
-    if (!isRedisConfigured()) {
-      return null;
-    }
-
-    try {
-      const redisClient = await connectToRedis();
-      // Use normalized email as cache key instead of encrypted email
-      const normalizedEmail = email.toLowerCase().trim();
-      const emailKey = `${this.USER_EMAIL_CACHE_PREFIX}${normalizedEmail}`;
-      return await redisClient.get(emailKey);
-    } catch (error) {
-      console.error('Error getting user ID from email cache:', error);
-      return null;
-    }
-  }
-
   protected async getUserIdFromUsernameCache(
     username: string
   ): Promise<string | null> {
@@ -95,6 +81,23 @@ export class UserCacheCore {
       return await redisClient.get(usernameKey);
     } catch (error) {
       console.error('Error getting user ID from username cache:', error);
+      return null;
+    }
+  }
+
+  protected async getUserIdFromEmailHashCache(
+    emailHash: string
+  ): Promise<string | null> {
+    if (!isRedisConfigured()) {
+      return null;
+    }
+
+    try {
+      const redisClient = await connectToRedis();
+      const emailHashKey = `${this.USER_EMAIL_HASH_CACHE_PREFIX}${emailHash}`;
+      return await redisClient.get(emailHashKey);
+    } catch (error) {
+      console.error('Error getting user ID from email hash cache:', error);
       return null;
     }
   }

@@ -1,3 +1,5 @@
+import { createHash } from 'crypto';
+import { decryptEmail } from '@/utils/security';
 import { AdminUserResponse } from '@/models/user';
 import { UserDatabaseOperations } from './userDatabaseOperations';
 import { NoteCacheService } from '../note/noteCacheService';
@@ -88,6 +90,52 @@ export class UserAdminService {
     } catch (error) {
       console.error('Error resolving user ID to username:', error);
       return null;
+    }
+  }
+
+  async populateEmailHashes(): Promise<{
+    success: boolean;
+    updatedCount: number;
+    message: string;
+  }> {
+    try {
+      const usersToUpdate = await this.dbOps.findAllUsersWithoutEmailHash();
+      if (usersToUpdate.length === 0) {
+        return {
+          success: true,
+          updatedCount: 0,
+          message: 'All users already have email hashes.',
+        };
+      }
+
+      let updatedCount = 0;
+      for (const user of usersToUpdate) {
+        try {
+          const decryptedEmail = decryptEmail(user.email);
+          const normalizedEmail = decryptedEmail.toLowerCase().trim();
+          const emailHash = createHash('sha256')
+            .update(normalizedEmail)
+            .digest('hex');
+
+          await this.dbOps.updateUser(user._id.toString(), { emailHash });
+          updatedCount++;
+        } catch (error) {
+          console.error(`Failed to update user ${user._id}:`, error);
+        }
+      }
+
+      return {
+        success: true,
+        updatedCount,
+        message: `Successfully updated ${updatedCount} users with email hashes.`,
+      };
+    } catch (error) {
+      console.error('Error populating email hashes:', error);
+      return {
+        success: false,
+        updatedCount: 0,
+        message: 'An error occurred while populating email hashes.',
+      };
     }
   }
 }

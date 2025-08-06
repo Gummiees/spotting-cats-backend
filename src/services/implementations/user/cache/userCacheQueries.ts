@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { User, BasicUser } from '@/models/user';
 import { UserServiceInterface } from '../../../interfaces/userServiceInterface';
 import { UserCacheCore } from './userCacheCore';
@@ -70,8 +71,12 @@ export class UserCacheQueries extends UserCacheCore {
 
   async getUserByEmail(email: string): Promise<User | null> {
     try {
-      // Check cache first using normalized email
-      const cachedUserId = await this.getUserIdFromEmailCache(email);
+      const normalizedEmail = email.toLowerCase().trim();
+      const emailHash = createHash('sha256')
+        .update(normalizedEmail)
+        .digest('hex');
+      const cachedUserId = await this.getUserIdFromEmailHashCache(emailHash);
+
       if (cachedUserId) {
         const cachedUser = await this.getUserFromCache(cachedUserId);
         if (cachedUser) {
@@ -79,18 +84,14 @@ export class UserCacheQueries extends UserCacheCore {
         }
       }
 
-      // If not in cache, get from database service
       const user = await this.userService.getUserByEmail(email);
       if (user) {
-        // Cache the user data with normalized email
-        const normalizedEmail = email.toLowerCase().trim();
         await this.cacheUserData(user, normalizedEmail);
       }
 
       return user;
     } catch (error) {
       console.error('Error getting user by email from cache:', error);
-      // Fallback to database service
       return this.userService.getUserByEmail(email);
     }
   }

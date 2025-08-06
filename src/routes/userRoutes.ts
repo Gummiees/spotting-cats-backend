@@ -1117,6 +1117,8 @@ router.post(
   UserController.ensureAllUsersHaveAvatars
 );
 
+router.post('/admin/populate-email-hashes', UserController.populateEmailHashes);
+
 /**
  * @swagger
  * /api/v1/users/admin/cleanup:

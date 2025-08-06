@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { User } from '@/models/user';
 import { UserDatabaseOperations } from './userDatabaseOperations';
 import { UserUtilityService } from './userUtilityService';
@@ -121,8 +122,12 @@ export class UserEmailService {
         emailChangeRequest.newEmail
       );
       const encryptedEmail = encryptEmail(normalizedEmail);
+      const emailHash = createHash('sha256')
+        .update(normalizedEmail)
+        .digest('hex');
       const result = await this.dbOps.updateUser(userId, {
         email: encryptedEmail,
+        emailHash: emailHash,
         emailUpdatedAt: this.utilityService.createTimestamp(),
         updatedAt: this.utilityService.createTimestamp(),
       });
@@ -176,43 +181,25 @@ export class UserEmailService {
       }
 
       const normalizedEmail = EmailValidationService.normalizeEmail(email);
+      const emailHash = createHash('sha256')
+        .update(normalizedEmail)
+        .digest('hex');
 
-      // If excludeUserId is provided, first check if the email is the same as the current user's email
       if (excludeUserId) {
         const currentUser = await this.dbOps.findUserById(excludeUserId);
-        if (currentUser) {
-          try {
-            const decryptedCurrentEmail = decryptEmail(currentUser.email);
-            if (decryptedCurrentEmail === normalizedEmail) {
-              return {
-                available: false,
-                message: 'Email is the same as your current email',
-                statusCode: 'EMAIL_SAME_AS_CURRENT',
-              };
-            }
-          } catch (decryptError) {
-            console.error('Error decrypting current user email:', decryptError);
-            // If we can't decrypt the current email, continue with the availability check
-          }
+        if (currentUser && currentUser.emailHash === emailHash) {
+          return {
+            available: false,
+            message: 'Email is the same as your current email',
+            statusCode: 'EMAIL_SAME_AS_CURRENT',
+          };
         }
       }
 
-      // Check if the email is already in use by other users (excluding current user)
-      // We need to check all users and decrypt their emails to compare
-      const allUsers = await this.dbOps.findAllUsers();
-      const emailExists = allUsers.some((user) => {
-        if (excludeUserId && user._id.toString() === excludeUserId) {
-          return false; // Exclude current user
-        }
-        try {
-          const decryptedUserEmail = decryptEmail(user.email);
-          return decryptedUserEmail === normalizedEmail;
-        } catch (decryptError) {
-          console.error('Error decrypting user email:', decryptError);
-          return false; // If we can't decrypt, assume it doesn't match
-        }
-      });
-
+      const emailExists = await this.dbOps.checkEmailHashExists(
+        emailHash,
+        excludeUserId
+      );
       const isAvailable = !emailExists;
 
       return {

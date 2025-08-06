@@ -55,6 +55,8 @@ export interface UserWithObjectId extends Omit<User, 'id'> {
 
 export interface UserDocument extends Omit<User, 'id'> {
   _id: ObjectId;
+  email: string;
+  emailHash?: string;
 }
 
 export interface UserSession {

@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import jwt from 'jsonwebtoken';
 import {
   uniqueUsernameGenerator,
@@ -195,6 +196,9 @@ export class UserUtilityService {
     const finalUsername = username || 'temp_username'; // Will be replaced by actual generation
     const avatarUrl = generateAvatarForUsername(finalUsername);
     const normalizedEmail = EmailValidationService.normalizeEmail(email);
+    const emailHash = createHash('sha256')
+      .update(normalizedEmail)
+      .digest('hex');
 
     // Determine user role based on email whitelists
     let role: 'user' | 'moderator' | 'admin' | 'superadmin' = 'user';
@@ -209,6 +213,7 @@ export class UserUtilityService {
 
     const userData = {
       email: encryptEmail(normalizedEmail), // Encrypt email before storing
+      emailHash,
       username: finalUsername,
       avatarUrl,
       role,

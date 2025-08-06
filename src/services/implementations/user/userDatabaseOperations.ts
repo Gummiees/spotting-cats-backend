@@ -44,13 +44,6 @@ export class UserDatabaseOperations {
     });
   }
 
-  async findUserByEmail(email: string): Promise<any> {
-    await this.ensureInitialized();
-    return this.usersCollection.findOne({
-      email: email,
-    });
-  }
-
   async findUserByUsername(username: string): Promise<any> {
     await this.ensureInitialized();
     return this.usersCollection.findOne({
@@ -58,9 +51,23 @@ export class UserDatabaseOperations {
     });
   }
 
+  async findUserByEmailHash(emailHash: string): Promise<any> {
+    await this.ensureInitialized();
+    return this.usersCollection.findOne({
+      emailHash: emailHash,
+    });
+  }
+
   async findAllUsers(): Promise<any[]> {
     await this.ensureInitialized();
     return this.usersCollection.find({}).toArray();
+  }
+
+  async findAllUsersWithoutEmailHash(): Promise<any[]> {
+    await this.ensureInitialized();
+    return this.usersCollection
+      .find({ emailHash: { $exists: false } })
+      .toArray();
   }
 
   async findAllUsersWithPrivileges(): Promise<any[]> {
@@ -230,12 +237,12 @@ export class UserDatabaseOperations {
     return !!user;
   }
 
-  async checkEmailExists(
-    email: string,
+  async checkEmailHashExists(
+    emailHash: string,
     excludeUserId?: string
   ): Promise<boolean> {
     await this.ensureInitialized();
-    const query: any = { email: email };
+    const query: any = { emailHash: emailHash };
     if (excludeUserId) {
       query._id = { $ne: this.createObjectId(excludeUserId) };
     }
