@@ -92,18 +92,27 @@ export class UserAuthService {
     user?: User;
     isNewUser?: boolean;
   }> {
+    console.log(
+      `Verifying code for email: ${email}, code: ${code}, IP: ${clientIp}`
+    );
     try {
       // Step 1: Validate the verification code
       const codeValidation = await this.validateVerificationCode(email, code);
       if (!codeValidation.valid) {
+        console.log(`Code validation failed: ${codeValidation.message}`);
         return { success: false, message: codeValidation.message! };
       }
+      console.log('Code validation successful.');
 
       // Step 2: Process user authentication
       const userResult = await this.processUserAuthentication(email, clientIp);
       if (!userResult.success) {
+        console.log(`User authentication failed: ${userResult.message}`);
         return { success: false, message: userResult.message! };
       }
+      console.log(
+        `User authentication successful. New user: ${userResult.isNewUser}`
+      );
 
       // Step 3: Map user to response format
       if (!userResult.user) {
@@ -124,6 +133,7 @@ export class UserAuthService {
         console.error('Error generating token from user:', error);
         return { success: false, message: 'Authentication failed' };
       }
+      console.log('Token generated successfully.');
 
       return {
         success: true,
@@ -239,7 +249,8 @@ export class UserAuthService {
     email: string,
     code: string
   ): Promise<{ valid: boolean; message?: string }> {
-    const authCode = await this.dbOps.findValidAuthCode(email, code);
+    const normalizedEmail = EmailValidationService.normalizeEmail(email);
+    const authCode = await this.dbOps.findValidAuthCode(normalizedEmail, code);
     if (!authCode) {
       return {
         valid: false,
