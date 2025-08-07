@@ -51,14 +51,6 @@ export const config = {
         }
       }
 
-      // Allow all origins for development/staging environment
-      if (
-        isStaging(process.env.NODE_ENV || '') ||
-        isDevelopment(process.env.NODE_ENV || '')
-      ) {
-        return callback(null, true);
-      }
-
       // Default: be restrictive
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) {
